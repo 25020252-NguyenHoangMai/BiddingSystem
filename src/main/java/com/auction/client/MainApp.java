@@ -7,5 +7,6 @@ public class MainApp {
         //chi hâm
 
         //hello quỳnh
+        //sao ko dc
     }
 }
