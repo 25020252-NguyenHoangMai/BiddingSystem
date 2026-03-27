@@ -1,4 +1,4 @@
 package com.auction.server.model;
 
-public class Bidder {
+public class Bidder extends User {
 }

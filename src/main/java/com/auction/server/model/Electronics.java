@@ -1,4 +1,4 @@
 package com.auction.server.model;
 
-public class Electronics {
+public class Electronics extends Item {
 }
