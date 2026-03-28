@@ -4,7 +4,7 @@ public abstract class User extends Entity {
     private String username;
     private String password;
     private String fullName;
-    private String role;  //"BIDDER", "SELLER", hoặc "ADMIN"
+    private String role;  //"BIDDER", "SELLER", "ADMIN"
 
     public User() {
         super();
