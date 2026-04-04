@@ -5,22 +5,15 @@ public abstract class Item extends Entity {
     private String name;
     private String description;
     private double startingPrice;
-    private double currentPrice;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
 
     public Item() { super(); }
 
     public Item(String id, String name, String description,
-                double startingPrice, LocalDateTime startTime,
-                LocalDateTime endTime) {
+                double startingPrice) {
         super(id);
         this.name = name;
         this.description = description;
         this.startingPrice = startingPrice;
-        this.currentPrice = startingPrice;
-        this.startTime = startTime;
-        this.endTime = endTime;
     }
 
     public abstract String getCategoryDetails();
@@ -47,30 +40,6 @@ public abstract class Item extends Entity {
 
     public void setStartingPrice(double startingPrice) {
         this.startingPrice = startingPrice;
-    }
-
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
-
-    public void setCurrentPrice(double currentPrice) {
-        this.currentPrice = currentPrice;
-    }
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
     }
 
 }

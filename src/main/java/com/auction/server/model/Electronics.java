@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 public class Electronics extends Item {
     private String brand;
 
-    public Electronics(String id, String name, String description, double startingPrice, LocalDateTime startTime, LocalDateTime endTime, String brand) {
-        super(id, name, description, startingPrice, startTime, endTime);
+    public Electronics(String id, String name, String description, double startingPrice,  String brand) {
+        super(id, name, description, startingPrice);
         this.brand = brand;
     }
 
