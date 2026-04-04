@@ -12,7 +12,7 @@ public class MainApp extends Application {
         Parent root = FXMLLoader.load(getClass().getResource("/views/login_view.fxml"));
 
         primaryStage.setTitle("UET Bidding System");
-        primaryStage.setScene(new Scene(root));
+        primaryStage.setScene(new Scene(root, 520, 400));
         primaryStage.show();
     }
 

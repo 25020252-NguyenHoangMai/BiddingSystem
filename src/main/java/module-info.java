@@ -1,0 +1,13 @@
+module BiddingSystem {
+    requires javafx.graphics;
+    requires javafx.fxml;
+    requires javafx.controls;
+    requires java.sql;
+    requires mysql.connector.j;
+
+    opens com.auction.client.controller to javafx.fxml;
+
+    opens com.auction.client.util to javafx.graphics, javafx.fxml;
+
+    exports com.auction.client.util;
+}
