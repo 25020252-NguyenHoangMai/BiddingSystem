@@ -20,7 +20,7 @@ public class DatabaseManager {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             return DriverManager.getConnection(CONNECTION_URL, USER, PASS);
         } catch (ClassNotFoundException e) {
-            System.err.println("Không tìm thấy Driver JDBC: " + e.getMessage());
+            System.err.println(e.getMessage());
             throw new SQLException(e);
         }
     }
