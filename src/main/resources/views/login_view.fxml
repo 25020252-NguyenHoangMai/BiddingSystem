@@ -5,11 +5,11 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="520.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane fx:controller="com.auction.client.controller.LoginController" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="520.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
    <left>
       <AnchorPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
          <children>
-            <ImageView fitHeight="407.0" fitWidth="238.0" layoutX="-10.0" pickOnBounds="true" preserveRatio="true">
+            <ImageView fx:id="brandingImageView" fitHeight="407.0" fitWidth="238.0" layoutX="-10.0" pickOnBounds="true" preserveRatio="true">
                <image>
                   <Image url="@../images/welcome.png" />
                </image>
@@ -37,8 +37,8 @@
                   <Font size="14.0" />
                </font>
             </Label>
-            <Button fx:id="loginButton" layoutX="96.0" layoutY="273.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="104.0" style="-fx-background-color: #36454F;" text="Login" textFill="WHITE" />
-            <Label fx:id="loginMessageLabel" layoutX="70.0" layoutY="239.0" text="Invalid Login. Please try again." textFill="#d42323">
+            <Button fx:id="loginButton" layoutX="96.0" layoutY="273.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="104.0" style="-fx-background-color: #36454F;" text="Login" textFill="WHITE" onAction="#loginButtonOnAction" />
+            <Label fx:id="loginMessageLabel" layoutX="70.0" layoutY="239.0" text="Invalid Login. Please try again." textFill="#d42323" visible="false">
                <font>
                   <Font size="13.0" />
                </font>

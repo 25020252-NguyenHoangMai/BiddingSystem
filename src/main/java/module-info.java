@@ -5,9 +5,10 @@ module BiddingSystem {
     requires java.sql;
     requires mysql.connector.j;
 
-    opens com.auction.client.controller to javafx.fxml;
+    opens com.auction.client to javafx.graphics, javafx.fxml;
 
+    opens com.auction.client.controller to javafx.fxml;
     opens com.auction.client.util to javafx.graphics, javafx.fxml;
 
-    exports com.auction.client.util;
+    exports com.auction.client;
 }
