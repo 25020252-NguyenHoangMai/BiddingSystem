@@ -1,8 +1,10 @@
 package com.auction.client.controller;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
@@ -17,6 +19,8 @@ import java.net.URL;
 public class LoginController implements Initializable {
 
     @FXML
+    private TextField enterUsernameField;
+    @FXML
     private Label loginMessageLabel;
     @FXML
     private ImageView brandingImageView;
@@ -26,6 +30,8 @@ public class LoginController implements Initializable {
         File brandingFile = new File("src/main/resources/images/welcome.png");
         Image brandingImage = new Image(brandingFile.toURI().toString());
         brandingImageView.setImage(brandingImage);
+
+        Platform.runLater(() -> enterUsernameField.requestFocus());
 
         loginMessageLabel.setVisible(false);
     }
