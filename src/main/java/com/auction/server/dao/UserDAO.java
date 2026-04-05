@@ -57,12 +57,12 @@ public class UserDAO {
             ps.setString(4, user.getFullName());
             ps.setString(5, user.getRole());
 
-            if (user instanceof Bidder) {
-                ps.setDouble(6, ((Bidder) user).getBalance());
+            if (user instanceof Bidder bidder) {
+                ps.setDouble(6, bidder.getBalance());
                 ps.setNull(7, java.sql.Types.NVARCHAR);
-            } else if (user instanceof Seller) {
+            } else if (user instanceof Seller seller) {
                 ps.setDouble(6, 0.0);
-                ps.setString(7, ((Seller) user).getStoreName());
+                ps.setString(7, seller.getStoreName());
             } else {
                 ps.setDouble(6, 0.0);
                 ps.setNull(7, java.sql.Types.NVARCHAR);
