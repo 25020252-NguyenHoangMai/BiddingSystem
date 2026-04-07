@@ -1,5 +1,4 @@
-package com.auction.server.model;
-import java.time.LocalDateTime;
+package com.auction.model;
 
 public class Vehicle extends Item {
     private String model;      // Dòng xe (ví dụ: Civic, Vios)

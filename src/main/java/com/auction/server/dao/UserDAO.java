@@ -1,9 +1,9 @@
 package com.auction.server.dao;
 
-import com.auction.server.model.Admin;
-import com.auction.server.model.Bidder;
-import com.auction.server.model.Seller;
-import com.auction.server.model.User;
+import com.auction.model.Admin;
+import com.auction.model.Bidder;
+import com.auction.model.Seller;
+import com.auction.model.User;
 
 
 import java.sql.Connection;
