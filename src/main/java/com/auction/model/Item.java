@@ -1,5 +1,4 @@
-package com.auction.server.model;
-import java.time.LocalDateTime;
+package com.auction.model;
 
 public abstract class Item extends Entity {
     private String name;

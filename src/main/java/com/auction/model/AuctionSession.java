@@ -1,4 +1,5 @@
-package com.auction.server.model;
+package com.auction.model;
+
 import java.time.LocalDateTime;
 
 public class AuctionSession extends Entity {

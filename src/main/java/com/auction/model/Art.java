@@ -1,5 +1,4 @@
-package com.auction.server.model;
-import java.time.LocalDateTime;
+package com.auction.model;
 
 public class Art extends Item {
     private String artist;

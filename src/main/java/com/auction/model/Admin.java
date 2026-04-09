@@ -1,4 +1,4 @@
-package com.auction.server.model;
+package com.auction.model;
 
 public class Admin extends User {
     public Admin() {
