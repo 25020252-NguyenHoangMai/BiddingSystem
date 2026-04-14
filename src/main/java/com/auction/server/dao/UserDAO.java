@@ -74,4 +74,42 @@ public class UserDAO {
             return false;
         }
     }
+
+    //thay đổi thông tin của user
+    public boolean updateProfile(User user) {
+        String sql = "UPDATE Users SET username = ?, password = ?, fullName = ?, role = ?, storeName = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getPassword());
+            ps.setString(3, user.getFullName());
+            ps.setString(4, user.getRole());
+            ps.setString(6, user.getId());
+
+            //nếu user là bidder thì ở vị trí store name ta gán giá trị null
+            if (user instanceof Bidder bidder) {
+                ps.setNull(5, java.sql.Types.NVARCHAR);
+            }
+
+            //nếu user là seller thì có thể thay đổi thêm store name
+            else if (user instanceof Seller seller) {
+                ps.setString(5, seller.getStoreName());
+            }
+
+            //admin tất cả đều được set mặc định và null
+            else {
+                ps.setDouble(6, 0.0);
+                ps.setNull(7, java.sql.Types.NVARCHAR);
+            }
+
+            //lệnh executeUpdate() dùng để thực thi lệnh UPDATE và trả về số dòng được update
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
