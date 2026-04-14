@@ -3,6 +3,7 @@ package com.auction.model;
 public abstract class Item extends Entity {
     private String name;
     private String description;
+    private String itemType;
     private double startingPrice;
 
     public Item() { super(); }
@@ -30,6 +31,14 @@ public abstract class Item extends Entity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getItemType() {
+        return itemType;
+    }
+
+    public void setItemType(String itemType) {
+        this.itemType = itemType;
     }
 
     public double getStartingPrice() {
