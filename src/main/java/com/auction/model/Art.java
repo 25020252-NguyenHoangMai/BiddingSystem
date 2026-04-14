@@ -5,7 +5,7 @@ public class Art extends Item {
 
     public Art(String id, String name, String description,
                double startingPrice, String artist) {
-        super(id, name, description, startingPrice);
+        super(id, name, description, "ART", startingPrice);
         this.artist = artist;
     }
 
