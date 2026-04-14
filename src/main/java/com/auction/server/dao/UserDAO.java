@@ -12,6 +12,53 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UserDAO {
+
+
+    //kiểm tra trùng lặp username
+    public void checkDuplicate() {}
+
+    //đăng ký - thêm user
+    public boolean register(User user) {
+
+        //tự động tạo id ngẫu nhiên không trùng lặp cho mỗi user khi đăng kí
+        String randomID = java.util.UUID.randomUUID().toString();
+        user.setId(randomID);
+
+        String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, user.getId());
+            ps.setString(2, user.getUsername());
+            ps.setString(3, user.getPassword());
+            ps.setString(4, user.getFullName());
+            ps.setString(5, user.getRole());
+
+            if (user instanceof Bidder bidder) {
+                ps.setDouble(6, bidder.getBalance());
+                ps.setNull(7, java.sql.Types.NVARCHAR);
+            } else if (user instanceof Seller seller) {
+                ps.setDouble(6, 0.0);
+                ps.setString(7, seller.getStoreName());
+            } else {
+                ps.setDouble(6, 0.0);
+                ps.setNull(7, java.sql.Types.NVARCHAR);
+            }
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    //hiển thị thông tin (có thể được hiển thị) của 1 user cụ thể cho user khác thấy (tìm theo ID)
+    public void displayUserInfo() {}
+
+    //hiển thị danh sách tất cả users và thông tin của họ để admin quản lí
+    public void displayAllUsers() {}
+
+    //xác thực user qua username và password
     public User authenticate(String username, String password) {
         String sql = "SELECT * FROM Users WHERE username = ? AND password = ?";
         try (Connection conn = DatabaseManager.getConnection();
@@ -46,30 +93,41 @@ public class UserDAO {
         return null; // Đăng nhập thất bại
     }
 
-    public boolean register(User user) {
-        String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+
+    //thay đổi thông tin của user
+    public boolean updateProfile(User user) {
+        String sql = "UPDATE Users SET username = ?, password = ?, fullName = ?, role = ?, storeName = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, user.getId());
-            ps.setString(2, user.getUsername());
-            ps.setString(3, user.getPassword());
-            ps.setString(4, user.getFullName());
-            ps.setString(5, user.getRole());
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getPassword());
+            ps.setString(3, user.getFullName());
+            ps.setString(4, user.getRole());
 
+
+            //nếu user là bidder thì ở vị trí store name ta gán giá trị null
             if (user instanceof Bidder bidder) {
-                ps.setDouble(6, bidder.getBalance());
-                ps.setNull(7, java.sql.Types.NVARCHAR);
-            } else if (user instanceof Seller seller) {
-                ps.setDouble(6, 0.0);
-                ps.setString(7, seller.getStoreName());
-            } else {
-                ps.setDouble(6, 0.0);
-                ps.setNull(7, java.sql.Types.NVARCHAR);
+                ps.setNull(5, java.sql.Types.NVARCHAR);
             }
 
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
+            //nếu user là seller thì có thể thay đổi thêm store name
+            else if (user instanceof Seller seller) {
+                ps.setString(5, seller.getStoreName());
+            }
+
+            //admin store name - null
+            else {
+                ps.setNull(5, java.sql.Types.NVARCHAR);
+            }
+            ps.setString(6, user.getId());
+
+            //lệnh executeUpdate() dùng để thực thi lệnh UPDATE và trả về số dòng được update
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;
+        }
+        catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
