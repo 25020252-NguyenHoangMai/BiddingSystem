@@ -1,4 +1,4 @@
 package com.auction.server.dao;
 
-public class bidDAO {
+public class AuctionDAO {
 }
