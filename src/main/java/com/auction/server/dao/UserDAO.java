@@ -1,5 +1,6 @@
 package com.auction.server.dao;
 
+import com.auction.exception.AuctionException;
 import com.auction.model.Admin;
 import com.auction.model.Bidder;
 import com.auction.model.Seller;
@@ -18,7 +19,7 @@ public class UserDAO {
     public void checkDuplicate() {}
 
     //đăng ký - thêm user
-    public boolean register(User user) {
+    public void register(User user) {
 
         //tự động tạo id ngẫu nhiên không trùng lặp cho mỗi user khi đăng kí
         String randomID = java.util.UUID.randomUUID().toString();
@@ -44,10 +45,14 @@ public class UserDAO {
                 ps.setDouble(6, 0.0);
                 ps.setNull(7, java.sql.Types.NVARCHAR);
             }
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows == 0) {
+                throw new AuctionException("Đăng ký thất bại, không có dòng nào được tạo.");
+            }
+        }
+        catch (SQLException e) {
+            // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
+            throw new AuctionException("Lỗi hệ thống khi đăng ký: " + e.getMessage());
         }
     }
 
