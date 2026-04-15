@@ -5,3 +5,4 @@ public class AuctionException extends RuntimeException {
         super(message);
     }
 }
+//lỗi chung chung- quẳng mình cái này thôi là bắt được hết lỗi
