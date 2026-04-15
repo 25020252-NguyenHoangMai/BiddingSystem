@@ -1,8 +1,6 @@
 package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
-import com.auction.exception.AuthenticationException;
-import com.auction.exception.ItemNotFoundException;
 import com.auction.model.*;
 
 import java.sql.Connection;
@@ -51,7 +49,6 @@ public class ItemDAO {
             }
         }
         catch (SQLException e) {
-            // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
             throw new AuctionException("Lỗi hệ thống khi thêm sản phẩm: " + e.getMessage());
         }
     }
