@@ -104,7 +104,7 @@ public class UserDAO {
 
 
     //thay đổi thông tin của user
-    public boolean updateProfile(User user) {
+    public void updateProfile(User user) {
         String sql = "UPDATE Users SET username = ?, password = ?, fullName = ?, role = ?, storeName = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -133,11 +133,12 @@ public class UserDAO {
 
             //lệnh executeUpdate() dùng để thực thi lệnh UPDATE và trả về số dòng được update
             int rowsUpdated = ps.executeUpdate();
-            return rowsUpdated > 0;
+            if (rowsUpdated == 0) {
+                throw new AuctionException("Không tìm thấy người dùng để cập nhật (ID không tồn tại).");
+            }
         }
         catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new AuctionException("Lỗi khi cập nhật thông tin: " + e.getMessage());
         }
     }
 }
