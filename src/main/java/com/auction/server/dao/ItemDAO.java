@@ -1,5 +1,8 @@
 package com.auction.server.dao;
 
+import com.auction.exception.AuctionException;
+import com.auction.exception.AuthenticationException;
+import com.auction.exception.ItemNotFoundException;
 import com.auction.model.*;
 
 import java.sql.Connection;
@@ -7,7 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class ItemDAO {
-    public boolean addItem(Item item, User user) {
+    public void addItem(Item item, User user) {
 
         String randomID = java.util.UUID.randomUUID().toString();
         item.setId(randomID);
@@ -42,10 +45,14 @@ public class ItemDAO {
                 ps.setNull(10, java.sql.Types.NVARCHAR);
                 ps.setString(11, art.getArtist());
             }
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            int affectedRows = ps.executeUpdate();
+            if (affectedRows == 0) {
+                throw new AuctionException("Thêm sản phẩm đấu giá thất bại, không có dòng nào được tạo.");
+            }
+        }
+        catch (SQLException e) {
+            // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
+            throw new AuctionException("Lỗi hệ thống khi thêm sản phẩm: " + e.getMessage());
         }
     }
 }
