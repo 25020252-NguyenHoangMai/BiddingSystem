@@ -1,6 +1,7 @@
 package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
+import com.auction.exception.AuthenticationException;
 import com.auction.model.Admin;
 import com.auction.model.Bidder;
 import com.auction.model.Seller;
@@ -93,9 +94,11 @@ public class UserDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new AuctionException("Lỗi kết nối cơ sở dữ liệu khi xác thực.");
         }
-        return null; // Đăng nhập thất bại
+
+        // nếu chạy xuống đến đây tức là không tìm thấy user
+        throw new AuthenticationException("Tên đăng nhập hoặc mật khẩu không chính xác!");
     }
 
 
