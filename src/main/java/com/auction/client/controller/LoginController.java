@@ -41,4 +41,9 @@ public class LoginController implements Initializable {
         loginMessageLabel.setText("Invalid Login. Please try again.");
         loginMessageLabel.setVisible(true);
     }
+
+    @FXML
+    private void handleRegisterAction(ActionEvent event) {
+        com.auction.client.util.SceneUtil.changeScene(event, "/views/register_view.fxml", "Register");
+    }
 }

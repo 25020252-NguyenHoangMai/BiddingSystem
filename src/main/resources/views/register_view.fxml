@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<AnchorPane fx:controller="com.auction.client.controller.RegisterController" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="520.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="520.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.RegisterController">
    <children>
       <AnchorPane prefHeight="93.0" prefWidth="520.0" style="-fx-background-color: #152238;">
          <children>
@@ -15,39 +15,33 @@
             </Label>
          </children>
       </AnchorPane>
-      <Label layoutX="43.0" layoutY="134.0" text="Firstname">
+      <Label layoutX="37.0" layoutY="147.0" text="Username">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <TextField fx:id="firstnameTextField" layoutX="43.0" layoutY="153.0" prefHeight="26.0" prefWidth="442.0" promptText="Firstname" />
-      <Label layoutX="44.0" layoutY="192.0" text="Lastname">
+      <TextField fx:id="UsernameTextField" layoutX="39.0" layoutY="175.0" prefHeight="26.0" prefWidth="442.0" promptText="Username" />
+      <Label layoutX="39.0" layoutY="210.0" text="Password">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <TextField fx:id="lastnameTextField" layoutX="43.0" layoutY="211.0" prefHeight="26.0" prefWidth="442.0" promptText="Lastname" />
-      <Label layoutX="42.0" layoutY="250.0" text="Username">
+      <PasswordField fx:id="setPasswordField" layoutX="39.0" layoutY="237.0" prefHeight="18.0" prefWidth="442.0" promptText="Password" />
+      <Label layoutX="39.0" layoutY="272.0" text="Confirm Password">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <TextField fx:id="UsernameTextField" layoutX="43.0" layoutY="271.0" prefHeight="26.0" prefWidth="442.0" promptText="Username" />
-      <Label layoutX="43.0" layoutY="309.0" text="Password">
-         <font>
-            <Font name="Segoe UI Bold" size="14.0" />
-         </font>
-      </Label>
-      <PasswordField fx:id="setPasswordField" layoutX="43.0" layoutY="328.0" prefHeight="18.0" prefWidth="442.0" promptText="Password" />
-      <Label layoutX="42.0" layoutY="367.0" text="Confirm Password">
-         <font>
-            <Font name="Segoe UI Bold" size="14.0" />
-         </font>
-      </Label>
-      <PasswordField fx:id="confirmPasswordField" layoutX="43.0" layoutY="386.0" prefHeight="18.0" prefWidth="442.0" promptText="Confirm Password" />
-      <Button fx:id="registerButton" layoutX="158.0" layoutY="444.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="204.0" style="-fx-background-color: #36454F;" text="Register" textFill="WHITE">
+      <PasswordField fx:id="confirmPasswordField" layoutX="39.0" layoutY="298.0" prefHeight="18.0" prefWidth="442.0" promptText="Confirm Password" />
+      <Button fx:id="registerButton" layoutX="158.0" layoutY="420.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="204.0" style="-fx-background-color: #36454F;" text="Register" textFill="WHITE">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font></Button>
+      <ChoiceBox fx:id="roleChoiceBox" layoutX="41.0" layoutY="352.0" prefWidth="150.0" />
+      <Label layoutX="41.0" layoutY="334.0" text="Role">
+         <font>
+            <Font name="Segoe UI Bold" size="14.0" />
+         </font>
+      </Label>
    </children>
 </AnchorPane>
