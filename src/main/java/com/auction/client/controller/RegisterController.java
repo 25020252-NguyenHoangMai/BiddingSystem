@@ -3,11 +3,9 @@ package com.auction.client.controller;
 import com.auction.model.Bidder;
 import com.auction.model.Seller;
 import com.auction.model.User;
+import com.auction.server.dao.UserDAO;
 import javafx.fxml.FXML;
-import javafx.scene.control.ChoiceBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.event.ActionEvent;
 import com.auction.client.util.SceneUtil;
 
@@ -31,6 +29,7 @@ public class RegisterController {
         storeNameLabel.setManaged(false);
         storeNameField.setManaged(false);
 
+        // Chỉ hiện ra Store Name khi là Seller
         roleChoiceBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             boolean isSeller = "Seller".equals(newVal);
 
@@ -55,8 +54,8 @@ public class RegisterController {
         String selectedRole = roleChoiceBox.getValue();
         String storeName = storeNameField.getText();
 
-        if (!password.equals(confirmPassword)) {
-            System.out.println("Lỗi: Mật khẩu xác nhận không khớp");
+        if (username.isEmpty() || password.isEmpty() || !password.equals(confirmPassword)) {
+            System.out.println("Vui lòng kiểm tra lại thông tin hoặc mật khẩu không khớp");
             return;
         }
 
@@ -74,17 +73,32 @@ public class RegisterController {
         User newUser;
         if ("Bidder".equals(selectedRole)) {
             newUser = new Bidder();
+            ((Bidder) newUser).setBalance(0.0);
         } else {
             newUser = new Seller();
-            ((Seller) newUser).setStoreName(storeNameField.getText());
+            ((Seller) newUser).setStoreName(storeName);
         }
 
-        newUser.setFullName(fullNameTextField.getText());
-        newUser.setFullName(fullNameTextField.getText());
-        newUser.setUsername(UsernameTextField.getText());
-        newUser.setPassword(setPasswordField.getText());
-        newUser.setRole(roleChoiceBox.getValue());
+        newUser.setFullName(fullName);
+        newUser.setUsername(username);
+        newUser.setPassword(password);
+        newUser.setRole(selectedRole);
 
-        SceneUtil.changeScene(event, "/views/login_view.fxml", "Login");
+        try {
+            UserDAO userDAO = new UserDAO();
+            userDAO.register(newUser);
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Success");
+            alert.setHeaderText(null);
+            alert.setContentText("Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.");
+            alert.showAndWait(); // Dừng lại đợi người dùng bấm OK mới chạy tiếp
+
+            // Chuyển về màn hình Login
+            SceneUtil.changeScene(event, "/views/login_view.fxml", "Login");
+
+        } catch (Exception e) {
+            System.err.println("Lỗi đăng ký: " + e.getMessage());
+        }
     }
 }
