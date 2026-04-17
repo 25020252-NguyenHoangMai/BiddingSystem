@@ -1,6 +1,7 @@
 package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
+import com.auction.exception.ItemNotFoundException;
 import com.auction.model.*;
 
 import java.sql.Connection;
@@ -10,11 +11,12 @@ import java.sql.SQLException;
 public class ItemDAO {
     public void addItem(Item item, User user) {
 
+        //set id random không trùng lặp cho mỗi sản phẩm
         String randomID = java.util.UUID.randomUUID().toString();
         item.setId(randomID);
 
         String sql = "INSERT INTO Item (id, name, description, itemType, sellerID, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, item.getId());
@@ -43,13 +45,33 @@ public class ItemDAO {
                 ps.setNull(10, java.sql.Types.NVARCHAR);
                 ps.setString(11, art.getArtist());
             }
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows == 0) {
-                throw new AuctionException("Thêm sản phẩm đấu giá thất bại, không có dòng nào được tạo.");
-            }
         }
         catch (SQLException e) {
             throw new AuctionException("Lỗi hệ thống khi thêm sản phẩm: " + e.getMessage());
         }
     }
+    public void deleteItem(Item item) {
+        String sql = "DELETE FROM Item WHERE id = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, item.getId());
+        }
+        catch (SQLException e) {
+            throw new AuctionException("Lỗi khi xóa thông tin: " + e.getMessage());
+        }
+        throw new ItemNotFoundException("Sản phẩm không tồn tại");
+    }
+    public void updateItemInfo(Item item) {
+        String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, item.getName());
+            ps.setString(2, item.getDescription());
+            ps.setString(3, item.getItemType());
+            ps.setDouble(4, item.getStartingPrice());
+
+        }
+    }
+
 }

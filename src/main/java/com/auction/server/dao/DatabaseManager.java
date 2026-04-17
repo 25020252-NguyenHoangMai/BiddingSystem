@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DatabaseManager {
+    private static volatile DatabaseManager instance;
+
     private static final String SERVER_NAME = "localhost";
     private static final String DB_NAME = "BiddingSystem";
     private static final String USER = "sa";
@@ -15,13 +17,24 @@ public class DatabaseManager {
                     "databaseName=" + DB_NAME + ";" +
                     "encrypt=true;trustServerCertificate=true;";
 
-    public static Connection getConnection() throws SQLException {
+    private DatabaseManager() {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            return DriverManager.getConnection(CONNECTION_URL, USER, PASS);
         } catch (ClassNotFoundException e) {
             System.err.println(e.getMessage());
-            throw new SQLException(e);
         }
+    }
+    public static DatabaseManager getInstance() {
+        if (instance == null) {
+            synchronized (DatabaseManager.class) {
+                if (instance == null) {
+                    instance = new DatabaseManager();
+                }
+            }
+        }
+        return instance;
+    }
+    public Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(CONNECTION_URL, USER, PASS);
     }
 }

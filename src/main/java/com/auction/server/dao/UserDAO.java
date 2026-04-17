@@ -21,13 +21,12 @@ public class UserDAO {
 
     //đăng ký - thêm user
     public void register(User user) {
-
         //tự động tạo id ngẫu nhiên không trùng lặp cho mỗi user khi đăng kí
         String randomID = java.util.UUID.randomUUID().toString();
         user.setId(randomID);
 
         String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, user.getId());
@@ -46,10 +45,6 @@ public class UserDAO {
                 ps.setDouble(6, 0.0);
                 ps.setNull(7, java.sql.Types.NVARCHAR);
             }
-            int affectedRows = ps.executeUpdate();
-            if (affectedRows == 0) {
-                throw new AuctionException("Đăng ký thất bại, không có dòng nào được tạo.");
-            }
         }
         catch (SQLException e) {
             // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
@@ -67,7 +62,7 @@ public class UserDAO {
     //xác thực user qua username và password
     public User authenticate(String username, String password) {
         String sql = "SELECT * FROM Users WHERE username = ? AND password = ?";
-        try (Connection conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, username);
@@ -106,7 +101,7 @@ public class UserDAO {
     //thay đổi thông tin của user
     public void updateProfile(User user) {
         String sql = "UPDATE Users SET username = ?, password = ?, fullName = ?, role = ?, storeName = ? WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, user.getUsername());
@@ -130,13 +125,21 @@ public class UserDAO {
                 ps.setNull(5, java.sql.Types.NVARCHAR);
             }
             ps.setString(6, user.getId());
-
-            //lệnh executeUpdate() dùng để thực thi lệnh UPDATE và trả về số dòng được update
-            int rowsUpdated = ps.executeUpdate();
-            if (rowsUpdated == 0) {
-                throw new AuctionException("Không tìm thấy người dùng để cập nhật (ID không tồn tại).");
-            }
         }
+        catch (SQLException e) {
+            throw new AuctionException("Lỗi khi xóa thông tin: " + e.getMessage());
+        }
+    }
+
+    //xóa user
+    public void deleteUser(User user) {
+        String sql = "DELETE FROM Users WHERE username = ? AND password = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getPassword());
+        }
+
         catch (SQLException e) {
             throw new AuctionException("Lỗi khi cập nhật thông tin: " + e.getMessage());
         }

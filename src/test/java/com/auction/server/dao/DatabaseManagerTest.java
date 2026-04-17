@@ -10,7 +10,7 @@ public class DatabaseManagerTest {
     @Test
     void testConnection() {
         System.out.println("Đang kiểm tra kết nối");
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             assertNotNull(conn, "Lỗi, Connection bị null!");
             assertFalse(conn.isClosed(), "Kết nối đã bị đóng");
             System.out.println("Kết nối SQL Server thành công");
