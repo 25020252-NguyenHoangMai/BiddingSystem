@@ -17,7 +17,23 @@ public class UserDAO {
 
 
     //kiểm tra trùng lặp username
-    public void checkDuplicate() {}
+    public boolean isAlreadyExist(User user) {
+        String sql = "SELECT * FROM Users WHERE username = ? AND role = ?";
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, user.getUsername());
+            ps.setString(2, user.getRole());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi kiểm tra trùng lặp: " + e.getMessage());
+        }
+        return false;
+    }
 
     //đăng ký - thêm user
     public void register(User user) {
@@ -51,13 +67,6 @@ public class UserDAO {
             throw new AuctionException("Lỗi hệ thống khi đăng ký: " + e.getMessage());
         }
     }
-
-
-    //hiển thị thông tin (có thể được hiển thị) của 1 user cụ thể cho user khác thấy (tìm theo ID)
-    public void displayUserInfo() {}
-
-    //hiển thị danh sách tất cả users và thông tin của họ để admin quản lí
-    public void displayAllUsers() {}
 
     //xác thực user qua username và password
     public User authenticate(String username, String password) {

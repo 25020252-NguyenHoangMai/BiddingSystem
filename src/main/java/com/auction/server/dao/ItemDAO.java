@@ -62,7 +62,7 @@ public class ItemDAO {
         throw new ItemNotFoundException("Sản phẩm không tồn tại");
     }
     public void updateItemInfo(Item item) {
-        String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?";
+        String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?, model = ?, engineType = ?, mileage = ?, brand = ?, artist = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -71,6 +71,32 @@ public class ItemDAO {
             ps.setString(3, item.getItemType());
             ps.setDouble(4, item.getStartingPrice());
 
+            if (item instanceof Vehicle vehicle) {
+                ps.setString(6, vehicle.getModel());
+                ps.setString(7, vehicle.getEngineType());
+                ps.setInt(8, vehicle.getMileage());
+                ps.setNull(9, java.sql.Types.NVARCHAR);
+                ps.setNull(10, java.sql.Types.NVARCHAR);
+
+            }
+            else if (item instanceof Electronics electronic) {
+                ps.setNull(6, java.sql.Types.NVARCHAR);
+                ps.setNull(7, java.sql.Types.NVARCHAR);
+                ps.setNull(8, java.sql.Types.NVARCHAR);
+                ps.setString(9, electronic.getBrand());
+                ps.setNull(10, java.sql.Types.NVARCHAR);
+            }
+
+            else if (item instanceof Art art) {
+                ps.setNull(6, java.sql.Types.NVARCHAR);
+                ps.setNull(7, java.sql.Types.NVARCHAR);
+                ps.setNull(8, java.sql.Types.NVARCHAR);
+                ps.setNull(9, java.sql.Types.NVARCHAR);
+                ps.setString(10, art.getArtist());
+            }
+        }
+        catch (SQLException e) {
+            throw new AuctionException("Lỗi khi cập nhật thông tin: " + e.getMessage());
         }
     }
 
