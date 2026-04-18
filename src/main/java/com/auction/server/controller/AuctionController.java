@@ -18,5 +18,6 @@ public class AuctionController {
         if (request instanceof LoginRequest loginRequest) {
             return userService.login(loginRequest);
         }
+        return new Response(false, "Unknown request") {};
     }
 }
