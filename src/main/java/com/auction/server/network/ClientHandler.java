@@ -38,14 +38,19 @@ public class ClientHandler extends Thread {
 
                     Response response = auctionController.handleRequest(request);
 
+                    System.out.println("Sending response: " + response.getClass().getSimpleName());
+
                     out.writeObject(response);
                     out.flush();
+
+                    System.out.println("Response sent successfully");
                 } else {
                     System.out.println("Unknown object type: " + obj);
                 }
             }
         } catch (Exception e) {
-            System.out.println("Client disconnected: " + socket);
+            System.out.println("Error while handling client: " + socket);
+            e.printStackTrace();
         }
     }
 }

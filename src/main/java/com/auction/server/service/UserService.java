@@ -140,6 +140,7 @@ public class UserService {
             );
 
         } catch (Exception e) {
+            e.printStackTrace();
             return new LoginResponse(
                     false,
                     "Có lỗi xảy ra khi đăng nhập!",
