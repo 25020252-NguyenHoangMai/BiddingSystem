@@ -11,6 +11,11 @@ import javafx.stage.Stage;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Label;
 
+import com.auction.client.network.ClientSocket;
+import com.auction.client.util.ClientSession;
+import com.auction.request.LoginRequest;
+import com.auction.response.LoginResponse;
+
 import java.io.File;
 import java.util.ResourceBundle;
 
@@ -43,28 +48,52 @@ public class LoginController implements Initializable {
         String username = enterUsernameField.getText();
         String password = enterPasswordField.getText();
 
-        if (username.isEmpty()) {
+        loginMessageLabel.setVisible(false);
+
+        if (username == null || username.isBlank()) {
             loginMessageLabel.setText("Please enter username.");
             loginMessageLabel.setVisible(true);
             return;
         }
 
+        if (password == null || password.isBlank()) {
+            loginMessageLabel.setText("Please enter password.");
+            loginMessageLabel.setVisible(true);
+            return;
+        }
+
         try {
-            // Gửi yêu cầu Login sang Server
-            System.out.println("Đang gửi yêu cầu đăng nhập sang Server...");
-            com.auction.client.network.ClientSocket clientSocket = new com.auction.client.network.ClientSocket();
+            ClientSocket clientSocket = ClientSocket.getInstance();
+            clientSocket.connect();
 
-            // Gửi thông tin đăng nhập sang Server
-            String[] loginData = {"LOGIN", username, password};
-            Object response = clientSocket.sendRequest(loginData);
+            LoginRequest request = new LoginRequest(username, password);
+            clientSocket.sendRequest(request);
 
-            // Xử lý phản hồi từ Server
-            if ("SUCCESS".equals(response)) {
-                System.out.println("Đăng nhập thành công!");
-                // Chuyển sang màn hình chính (Dashboard/Main)
-                com.auction.client.util.SceneUtil.changeScene(event, "/views/main_view.fxml", "Auction Dashboard");
+            Object obj = clientSocket.receiveResponse();
+
+            if (obj == null) {
+                loginMessageLabel.setText("No response from server.");
+                loginMessageLabel.setVisible(true);
+                return;
+            }
+
+            if (obj instanceof LoginResponse response) {
+                if (response.isSuccess()) {
+                    System.out.println("Đăng nhập thành công!");
+
+                    ClientSession.setCurrentUser(response.getUser());
+
+                    com.auction.client.util.SceneUtil.changeScene(
+                            event,
+                            "/views/main_view.fxml",
+                            "Auction Dashboard"
+                    );
+                } else {
+                    loginMessageLabel.setText(response.getMessage());
+                    loginMessageLabel.setVisible(true);
+                }
             } else {
-                loginMessageLabel.setText("Invalid Login. Please try again.");
+                loginMessageLabel.setText("Invalid response from server.");
                 loginMessageLabel.setVisible(true);
             }
 
