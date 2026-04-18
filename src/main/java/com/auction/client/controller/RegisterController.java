@@ -20,9 +20,9 @@ public class RegisterController {
 
     @FXML
     public void initialize() {
-        roleChoiceBox.getItems().addAll("Bidder", "Seller");
+        roleChoiceBox.getItems().addAll("BIDDER", "SELLER");
 
-        roleChoiceBox.setValue("Bidder");
+        roleChoiceBox.setValue("BIDDER");
 
         storeNameLabel.setVisible(false);
         storeNameField.setVisible(false);
@@ -31,7 +31,7 @@ public class RegisterController {
 
         // Chỉ hiện ra Store Name khi là Seller
         roleChoiceBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            boolean isSeller = "Seller".equals(newVal);
+            boolean isSeller = "SELLER".equals(newVal);
 
             storeNameLabel.setVisible(isSeller);
             storeNameField.setVisible(isSeller);
@@ -59,7 +59,7 @@ public class RegisterController {
             return;
         }
 
-        if ("Bidder".equals(selectedRole)) {
+        if ("BIDDER".equals(selectedRole)) {
             storeName = null;
         } else {
             if (storeName == null || storeName.trim().isEmpty()) {
@@ -71,7 +71,7 @@ public class RegisterController {
         System.out.println("User: " + username + " | Role: " + selectedRole);
 
         User newUser;
-        if ("Bidder".equals(selectedRole)) {
+        if ("BIDDER".equals(selectedRole)) {
             newUser = new Bidder();
             ((Bidder) newUser).setBalance(0.0);
         } else {
