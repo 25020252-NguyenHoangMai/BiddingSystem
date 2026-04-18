@@ -12,7 +12,7 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.Label;
 
 import com.auction.client.network.ClientSocket;
-import com.auction.client.util.ClientSession;
+import com.auction.client.ClientSession;
 import com.auction.request.LoginRequest;
 import com.auction.response.LoginResponse;
 
