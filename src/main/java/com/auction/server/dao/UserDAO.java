@@ -1,13 +1,12 @@
 package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
-import com.auction.factory.UserFactory;
 import com.auction.model.*;
 import com.auction.server.dto.UserDTO;
 
-
-
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDAO {
 
@@ -23,7 +22,7 @@ public class UserDAO {
         return data;
     }
 
-    //kiểm tra trùng lặp username
+    //=============== kiểm tra trùng lặp username ===============
     public boolean isUsernameExist(String username) {
         String sql = "SELECT 1 FROM Users WHERE username = ?";
 
@@ -40,11 +39,8 @@ public class UserDAO {
         }
     }
 
-    //đăng ký - thêm user
+    //============== đăng ký - thêm user ==============
     public void register(User user) {
-        //tự động tạo id ngẫu nhiên không trùng lặp cho mỗi user khi đăng kí
-        String randomID = java.util.UUID.randomUUID().toString();
-        user.setId(randomID);
 
         String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -58,13 +54,13 @@ public class UserDAO {
 
             if (user instanceof Bidder bidder) {
                 ps.setDouble(6, bidder.getBalance());
-                ps.setNull(7, java.sql.Types.NVARCHAR);
+                ps.setNull(7, Types.NVARCHAR);
             } else if (user instanceof Seller seller) {
                 ps.setDouble(6, 0.0);
                 ps.setString(7, seller.getStoreName());
             } else {
                 ps.setDouble(6, 0.0);
-                ps.setNull(7, java.sql.Types.NVARCHAR);
+                ps.setNull(7, Types.NVARCHAR);
             }
             ps.executeUpdate();
         }
@@ -80,7 +76,7 @@ public class UserDAO {
      * 2. Khi người dùng đã đăng nhập và thực hiện các thao tác tiếp theo
      * Server chỉ cần dùng ID trong Session để lấy lại trạng thái mới nhất của User đó từ DB )
      */
-    public User getUserById(String id) {
+    public UserDTO getUserById(String id) {
         String sql = "SELECT * FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -88,7 +84,7 @@ public class UserDAO {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return UserFactory.createUser(mapToDTO(rs));
+                    return mapToDTO(rs);
                 }
             }
         } catch (SQLException e) {
@@ -96,7 +92,9 @@ public class UserDAO {
         }
         return null;
     }
-    public User getUserByUsername(String username) {
+
+    //=============== tìm user theo username ===============
+    public UserDTO getUserByUsername(String username) {
         String sql = "SELECT * FROM Users WHERE username = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -104,7 +102,7 @@ public class UserDAO {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return UserFactory.createUser(mapToDTO(rs));
+                    return mapToDTO(rs);
                 }
             }
         } catch (SQLException e) {
@@ -122,24 +120,24 @@ public class UserDAO {
      * ;cho phép Admin xóa user)
      *
      */
-    public java.util.List<User> getAllUsers() {
-        java.util.List<User> userList = new java.util.ArrayList<>();
+    public List<UserDTO> getAllUsers() {
+        List<UserDTO> list = new ArrayList<>();
         String sql = "SELECT * FROM Users";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                userList.add(UserFactory.createUser(mapToDTO(rs)));
+                list.add(mapToDTO(rs));
             }
 
         } catch (SQLException e) {
             throw new AuctionException("Lỗi khi lấy danh sách người dùng.");
         }
-        return userList;
+        return list;
     }
 
-    //kiểm tra số dư tài khoản trước khi đặt bid
+    //=============== kiểm tra số dư tài khoản trước khi đặt bid ===============
     public double getBalance(String userId) {
         String sql = "SELECT balance FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -156,7 +154,7 @@ public class UserDAO {
 
 
 
-    //thay đổi thông tin của user
+    //=============== thay đổi thông tin của user ===============
     public void updateProfile(User user) {
 
         String sql = "UPDATE Users SET username = ?, fullName = ?, storeName = ? WHERE id = ?";
@@ -184,7 +182,7 @@ public class UserDAO {
         }
     }
 
-    //dành cho chức năng đổi mật khẩu hoặc quên mật khẩu
+    //=============== dành cho chức năng đổi mật khẩu hoặc quên mật khẩu ===============
     public void updatePassword(String id, String newPassword) {
         String sql = "UPDATE Users SET password = ? WHERE id = ?";
 
@@ -204,7 +202,7 @@ public class UserDAO {
         }
     }
 
-    //cập nhật balance
+    //=============== cập nhật balance ===============
     public void updateBalance(String id, double amount) {
         //cập nhật số dư bằng cách cộng/trừ trực tiếp trong SQL
         String sql = "UPDATE Users SET balance = balance + ? WHERE id = ? AND (balance + ? >= 0)";
@@ -226,7 +224,7 @@ public class UserDAO {
         }
     }
 
-    //xóa user
+    //=============== xóa user ===============
     public void deleteUser(String id) {
         String sql = "DELETE FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
