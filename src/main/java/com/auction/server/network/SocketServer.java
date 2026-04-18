@@ -1,4 +1,4 @@
 package com.auction.server.network;
 
-public class ServerSocket {
+public class SocketServer {
 }
