@@ -1,9 +1,9 @@
 package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
-import com.auction.exception.AuthenticationException;
+import com.auction.factory.UserFactory;
 import com.auction.model.*;
-import org.mindrot.jbcrypt.BCrypt;
+import com.auction.server.dto.UserDTO;
 
 
 
@@ -11,15 +11,26 @@ import java.sql.*;
 
 public class UserDAO {
 
+    private UserDTO mapToDTO(ResultSet rs) throws SQLException {
+        UserDTO data = new UserDTO();
+        data.id = rs.getString("id");
+        data.username = rs.getString("username");
+        data.password = rs.getString("password");
+        data.fullName = rs.getString("fullName");
+        data.role = rs.getString("role");
+        data.balance = rs.getDouble("balance");
+        data.storeName = rs.getString("storeName");
+        return data;
+    }
 
     //kiểm tra trùng lặp username
-    public boolean isAlreadyExist(User user) {
+    public boolean isUsernameExist(String username) {
         String sql = "SELECT 1 FROM Users WHERE username = ?";
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, user.getUsername());
+            ps.setString(1, username);
 
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -31,16 +42,9 @@ public class UserDAO {
 
     //đăng ký - thêm user
     public void register(User user) {
-        if (isAlreadyExist(user)) {
-            throw new AuctionException("Username đã tồn tại!");
-        }
         //tự động tạo id ngẫu nhiên không trùng lặp cho mỗi user khi đăng kí
         String randomID = java.util.UUID.randomUUID().toString();
         user.setId(randomID);
-
-        //băm password để lưu thay vì plain text for security (password đã bị băm không thể đảo ngược)
-        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
-
 
         String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -48,7 +52,7 @@ public class UserDAO {
 
             ps.setString(1, user.getId());
             ps.setString(2, user.getUsername());
-            ps.setString(3, hashedPassword);
+            ps.setString(3, user.getPassword());
             ps.setString(4, user.getFullName());
             ps.setString(5, user.getRole());
 
@@ -70,44 +74,6 @@ public class UserDAO {
         }
     }
 
-    //xác thực user qua username và password
-    public User authenticate(String username, String password) {
-        String sql = "SELECT * FROM Users WHERE username = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, username);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String hashedPassword = rs.getString("password");
-
-                    if (!BCrypt.checkpw(password, hashedPassword)) {
-                        throw new AuthenticationException("Sai mật khẩu!");
-                    }
-
-                    String role = rs.getString("role");
-                    String id = rs.getString("id");
-                    String user = rs.getString("username");
-                    String name = rs.getString("fullName");
-
-                    if ("ADMIN".equalsIgnoreCase(role)) {
-                        return new Admin(id, user, null, name);
-                    } else if ("BIDDER".equalsIgnoreCase(role)) {
-                        return new Bidder(id, user, null, name, rs.getDouble("balance"));
-                    } else if ("SELLER".equalsIgnoreCase(role)) {
-                        return new Seller(id, user, null, name, rs.getString("storeName"));
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            throw new AuctionException("Lỗi kết nối cơ sở dữ liệu khi xác thực.");
-        }
-
-        // nếu chạy xuống đến đây tức là không tìm thấy user
-        throw new AuthenticationException("Tên đăng nhập hoặc mật khẩu không chính xác!");
-    }
-
     /**
      * lấy thông tin user qua id
      * (1. Vinh danh người thắng cuộc;
@@ -122,19 +88,13 @@ public class UserDAO {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String role = rs.getString("role");
-                    String username = rs.getString("username");
-                    String fullName = rs.getString("fullName");
-
-                    if ("ADMIN".equalsIgnoreCase(role)) return new Admin(id, username, null, fullName);
-                    if ("BIDDER".equalsIgnoreCase(role)) return new Bidder(id, username, null, fullName, rs.getDouble("balance"));
-                    if ("SELLER".equalsIgnoreCase(role)) return new Seller(id, username, null, fullName, rs.getString("storeName"));
+                    return UserFactory.createUser(mapToDTO(rs));
                 }
             }
         } catch (SQLException e) {
             throw new AuctionException("Lỗi khi tìm người dùng theo ID: " + e.getMessage());
         }
-        throw new AuctionException("Không tìm thấy user");
+        return null;
     }
     public User getUserByUsername(String username) {
         String sql = "SELECT * FROM Users WHERE username = ?";
@@ -144,19 +104,13 @@ public class UserDAO {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String role = rs.getString("role");
-                    String id = rs.getString("id");
-                    String fullName = rs.getString("fullName");
-
-                    if ("ADMIN".equalsIgnoreCase(role)) return new Admin(id, username, null, fullName);
-                    if ("BIDDER".equalsIgnoreCase(role)) return new Bidder(id, username, null, fullName, rs.getDouble("balance"));
-                    if ("SELLER".equalsIgnoreCase(role)) return new Seller(id, username, null, fullName, rs.getString("storeName"));
+                    return UserFactory.createUser(mapToDTO(rs));
                 }
             }
         } catch (SQLException e) {
             throw new AuctionException("Lỗi khi tìm người dùng theo username: " + e.getMessage());
         }
-        throw new AuctionException("Không tìm thấy user");
+        return null;
     }
 
 
@@ -176,19 +130,9 @@ public class UserDAO {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                String role = rs.getString("role");
-                String id = rs.getString("id");
-                String username = rs.getString("username");
-                String fullName = rs.getString("fullName");
-
-                if ("ADMIN".equalsIgnoreCase(role)) {
-                    userList.add(new Admin(id, username, null, fullName));
-                } else if ("BIDDER".equalsIgnoreCase(role)) {
-                    userList.add(new Bidder(id, username, null, fullName, rs.getDouble("balance")));
-                } else if ("SELLER".equalsIgnoreCase(role)) {
-                    userList.add(new Seller(id, username, null, fullName, rs.getString("storeName")));
-                }
+                userList.add(UserFactory.createUser(mapToDTO(rs)));
             }
+
         } catch (SQLException e) {
             throw new AuctionException("Lỗi khi lấy danh sách người dùng.");
         }
@@ -214,17 +158,6 @@ public class UserDAO {
 
     //thay đổi thông tin của user
     public void updateProfile(User user) {
-        User existing = null;
-        try {
-            existing = getUserByUsername(user.getUsername());
-        } catch (AuctionException e) {
-            //không tìm thấy --> OK
-        }
-
-        if (existing != null && !existing.getId().equals(user.getId())) {
-            throw new AuctionException("Username đã tồn tại!");
-        }
-
 
         String sql = "UPDATE Users SET username = ?, fullName = ?, storeName = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -255,21 +188,18 @@ public class UserDAO {
     public void updatePassword(String id, String newPassword) {
         String sql = "UPDATE Users SET password = ? WHERE id = ?";
 
-        //băm password để lưu thay vì plain text for security (password đã bị băm không thể đảo ngược)
-        String hashed = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, hashed);
+            ps.setString(1, newPassword);
             ps.setString(2, id);
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
                 throw new AuctionException("Không tìm thấy người dùng để cập nhật mật khẩu.");
             }
-
-            System.out.println("Cập nhật mật khẩu thành công cho ID: " + id);
-        } catch (SQLException e) {
+        }
+        catch (SQLException e) {
             throw new AuctionException("Lỗi hệ thống khi cập nhật mật khẩu: " + e.getMessage());
         }
     }
