@@ -110,6 +110,22 @@ public class UserDAO {
         }
         return null;
     }
+    public UserDTO getUserByRole(String role) {
+        String sql = "SELECT * FROM Users WHERE username = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapToDTO(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("Lỗi khi tìm người dùng theo username: " + e.getMessage());
+        }
+        return null;
+    }
 
 
     /**
