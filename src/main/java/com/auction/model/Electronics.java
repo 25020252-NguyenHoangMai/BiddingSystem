@@ -4,7 +4,7 @@ public class Electronics extends Item {
     private String brand;
 
     public Electronics(String id, String name, String description, double startingPrice,  String brand) {
-        super(id, name, description, "ELECTRONNICS", startingPrice);
+        super(id, name, description, "ELECTRONICS", startingPrice);
         this.brand = brand;
     }
 
