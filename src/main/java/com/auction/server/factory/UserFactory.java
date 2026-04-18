@@ -1,4 +1,4 @@
-package com.auction.factory;
+package com.auction.server.factory;
 
 import com.auction.model.Admin;
 import com.auction.model.Bidder;

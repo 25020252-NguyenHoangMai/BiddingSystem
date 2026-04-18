@@ -1,20 +1,37 @@
 package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
-import com.auction.exception.ItemNotFoundException;
 import com.auction.model.*;
+import com.auction.server.dto.ItemDTO;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ItemDAO {
-    public void addItem(Item item, User user) {
 
-        //set id random không trùng lặp cho mỗi sản phẩm
-        String randomID = java.util.UUID.randomUUID().toString();
-        item.setId(randomID);
+    private ItemDTO mapToDTO(ResultSet rs) throws SQLException {
+        ItemDTO data = new ItemDTO();
+        data.id = rs.getString("id");
+        data.name = rs.getString("name");
+        data.description = rs.getString("description");
+        data.itemType = rs.getString("itemType");
+        data.sellerID = rs.getString("sellerID");
+        data.startingPrice = rs.getDouble("startingPrice");
+        data.model = rs.getString("model");
+        data.engineType = rs.getString("engineType");
+        data.mileage = rs.getInt("mileage");
+        data.brand = rs.getString("brand");
+        data.artist = rs.getString("artist");
+        return data;
+    }
 
+
+    //=============== thêm sản phẩm ===============
+    public void addItem(Item item) {
         String sql = "INSERT INTO Item (id, name, description, itemType, sellerID, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -23,7 +40,7 @@ public class ItemDAO {
             ps.setString(2, item.getName());
             ps.setString(3, item.getDescription());
             ps.setString(4, item.getClass().getSimpleName().toUpperCase());
-            ps.setString(5, user.getId());
+            ps.setString(5, item.getSellerID());
             ps.setDouble(6, item.getStartingPrice());
 
             if (item instanceof Vehicle vehicle) {
@@ -56,16 +73,16 @@ public class ItemDAO {
     }
 
 
-    public void deleteItem(Item item) {
+    //=============== xóa sản phẩm ===============
+    public void deleteItem(String id) {
         String sql = "DELETE FROM Item WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, item.getId());
+            ps.setString(1, id);
             int rows = ps.executeUpdate();
-
             if (rows == 0) {
-                throw new ItemNotFoundException("Sản phẩm không tồn tại");
+                throw new AuctionException("Không xóa được sản phẩm");
             }
         }
         catch (SQLException e) {
@@ -74,7 +91,7 @@ public class ItemDAO {
     }
 
 
-
+    //=============== cập nhật thông tin sản phẩm ===============
     public void updateItemInfo(Item item) {
         String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?, model = ?, engineType = ?, mileage = ?, brand = ?, artist = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -112,16 +129,92 @@ public class ItemDAO {
                 throw new AuctionException("Loại sản phẩm không hợp lệ");
             }
             ps.setString(10, item.getId());
-            int rows = ps.executeUpdate();
-            if (rows == 0) {
-                throw new ItemNotFoundException("Sản phẩm không tồn tại");
-            }
+            ps.executeUpdate();
         }
         catch (SQLException e) {
             throw new AuctionException("Lỗi khi cập nhật thông tin: " + e.getMessage());
         }
     }
-    public void getAllItems() {}
-    public void getItemById() {}
 
+    //=============== hiển thị toàn bộ danh sách sản phẩm ===============
+    public List<ItemDTO> getAllItems() {
+        List<ItemDTO> list = new ArrayList<>();
+        String sql = "SELECT * FROM Item";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(mapToDTO(rs));
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("Lỗi khi lấy danh sách sản phẩm.");
+        }
+        return list;
+    }
+
+
+    //=============== tìm user theo id ===============
+    public ItemDTO getItemById(String id) {
+        String sql = "SELECT * FROM Item WHERE id = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapToDTO(rs);
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("Lỗi khi tìm sản phẩm theo ID: " + e.getMessage());
+        }
+        return null;
+    }
+
+
+    //=============== tìm item theo name ===============
+    public List<ItemDTO> getItemByName(String name) {
+        List<ItemDTO> list = new ArrayList<>();
+        String sql = "SELECT * FROM Item WHERE name = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name); // ✔ đặt ở đây
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDTO(rs));
+                }
+            }
+        }
+        catch (SQLException e) {
+            throw new AuctionException("Lỗi khi tìm sản phẩm theo tên.");
+        }
+        return list;
+    }
+
+    //=============== tìm item theo itemType ===============
+    public List<ItemDTO> getItemByItemType(String itemType) {
+        List<ItemDTO> list = new ArrayList<>();
+        String sql = "SELECT * FROM Item WHERE itemType = ?";
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, itemType);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToDTO(rs));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("Lỗi khi tìm sản phẩm theo danh mục");
+        }
+
+        return list;
+    }
 }
+

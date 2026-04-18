@@ -2,7 +2,7 @@ package com.auction.server.service;
 
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
-import com.auction.factory.UserFactory;
+import com.auction.server.factory.UserFactory;
 import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.dto.UserDTO;
@@ -11,11 +11,14 @@ import com.auction.request.LoginRequest;
 import com.auction.response.LoginResponse;
 
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 public class UserService {
     private final UserDAO userDAO = new UserDAO();
 
+
+
+    //=============== đăng ký ===============
     public void register(User user) {
         UserDTO existing = userDAO.getUserByUsername(user.getUsername());
 
@@ -33,6 +36,11 @@ public class UserService {
 
         userDAO.register(user);
     }
+
+
+
+
+    //=============== đăng nhập ===============
     public User login(String username, String password) {
         UserDTO dto = userDAO.getUserByUsername(username);
 
@@ -48,6 +56,10 @@ public class UserService {
         return user;
     }
 
+
+
+
+    //=============== đổi mật khẩu ===============
     public void changePassword(String id, String newPassword) {
 
         //băm password
@@ -55,6 +67,10 @@ public class UserService {
         userDAO.updatePassword(id, hashed);
     }
 
+
+
+
+    //=============== cập nhật thông tin người dùng ===============
     public void updateProfile(User user) {
         UserDTO existing = userDAO.getUserByUsername(user.getUsername());
 
@@ -63,16 +79,45 @@ public class UserService {
         }
         userDAO.updateProfile(user);
     }
-    public List<User> getAllUsers() {
 
-        List<UserDTO> dtoList = userDAO.getAllUsers();
 
-        return dtoList.stream()
-                .map(UserFactory::createUser)
-                .peek(u -> u.setPassword(null)) // tránh lộ password
-                .collect(Collectors.toList());
+
+
+    //=============== hiển thị toàn bộ thông tin người dùng ===============
+    public List<UserDTO> getAllUsers() {
+        return userDAO.getAllUsers();
     }
 
+
+
+
+    //=============== hiển thị người dùng (qua id) ===============
+//    public UserDTO getUserById(String id) {
+//        UserDTO dto = userDAO.getUserById(id);
+//
+//        if (dto == null) {
+//            throw new UserNotFoundException("ID không tồn tại!");
+//        }
+//        return dto;
+//    }
+
+
+
+
+    //=============== hiển thị người dùng (qua username) ===============
+//    public UserDTO getUserByUsername(String username) {
+//        UserDTO dto = userDAO.getUserByUsername(username);
+//
+//        if (dto == null) {
+//            throw new UserNotFoundException("Username không tồn tại!");
+//        }
+//        return dto;
+//    }
+
+
+
+
+    //=============== hiển thị số dư tài khoản ===============
     public double getBalance(String userId) {
         return userDAO.getBalance(userId);
     }

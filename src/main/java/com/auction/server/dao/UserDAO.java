@@ -110,6 +110,8 @@ public class UserDAO {
         }
         return null;
     }
+
+    //=============== tìm user theo role ===============
     public UserDTO getUserByRole(String role) {
         String sql = "SELECT * FROM Users WHERE username = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
