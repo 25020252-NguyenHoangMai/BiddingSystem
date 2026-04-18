@@ -2,6 +2,8 @@ package com.auction.server.service;
 
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
+import com.auction.model.Bidder;
+import com.auction.model.Seller;
 import com.auction.server.factory.UserFactory;
 import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
@@ -9,6 +11,8 @@ import com.auction.server.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
 import com.auction.request.LoginRequest;
 import com.auction.response.LoginResponse;
+import com.auction.request.RegisterRequest;
+import com.auction.response.RegisterResponse;
 
 import java.util.List;
 
@@ -146,6 +150,71 @@ public class UserService {
                     "Có lỗi xảy ra khi đăng nhập!",
                     null
             );
+        }
+    }
+
+    public RegisterResponse register(RegisterRequest request) {
+        try {
+            if (request.getFullName() == null || request.getFullName().isBlank()) {
+                return new RegisterResponse(false, "Full name is required!");
+            }
+
+            if (request.getUsername() == null || request.getUsername().isBlank()) {
+                return new RegisterResponse(false, "Username is required!");
+            }
+
+            if (request.getPassword() == null || request.getPassword().isBlank()) {
+                return new RegisterResponse(false, "Password is required!");
+            }
+
+            if (request.getConfirmPassword() == null || request.getConfirmPassword().isBlank()) {
+                return new RegisterResponse(false, "Confirm password is required!");
+            }
+
+            if (!request.getPassword().equals(request.getConfirmPassword())) {
+                return new RegisterResponse(false, "Passwords do not match!");
+            }
+
+            if (request.getRole() == null || request.getRole().isBlank()) {
+                return new RegisterResponse(false, "Role is required!");
+            }
+
+            User user;
+
+            if ("SELLER".equalsIgnoreCase(request.getRole())) {
+                if (request.getStoreName() == null || request.getStoreName().isBlank()) {
+                    return new RegisterResponse(false, "Store name is required for seller!");
+                }
+
+                Seller seller = new Seller();
+                seller.setStoreName(request.getStoreName());
+                user = seller;
+                user.setRole("SELLER");
+
+            } else if ("BIDDER".equalsIgnoreCase(request.getRole())) {
+                Bidder bidder = new Bidder();
+                bidder.setBalance(0.0);
+                user = bidder;
+                user.setRole("BIDDER");
+
+            } else {
+                return new RegisterResponse(false, "Invalid role!");
+            }
+
+            user.setFullName(request.getFullName());
+            user.setUsername(request.getUsername());
+            user.setPassword(request.getPassword());
+
+            register(user);
+
+            return new RegisterResponse(true, "Register success!");
+
+        } catch (AuctionException e) {
+            return new RegisterResponse(false, e.getMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new RegisterResponse(false, "Register failed!");
         }
     }
 }
