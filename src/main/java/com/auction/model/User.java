@@ -1,6 +1,9 @@
 package com.auction.model;
 
-public abstract class User extends Entity {
+import java.io.Serializable;
+
+public abstract class User extends Entity implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String username;
     private String password;
     private String fullName;

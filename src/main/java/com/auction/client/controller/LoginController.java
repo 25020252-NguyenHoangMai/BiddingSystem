@@ -21,6 +21,8 @@ public class LoginController implements Initializable {
     @FXML
     private TextField enterUsernameField;
     @FXML
+    private TextField enterPasswordField;
+    @FXML
     private Label loginMessageLabel;
     @FXML
     private ImageView brandingImageView;
@@ -38,8 +40,39 @@ public class LoginController implements Initializable {
 
     @FXML
     public void loginButtonOnAction(ActionEvent event) {
-        loginMessageLabel.setText("Invalid Login. Please try again.");
-        loginMessageLabel.setVisible(true);
+        String username = enterUsernameField.getText();
+        String password = enterPasswordField.getText();
+
+        if (username.isEmpty()) {
+            loginMessageLabel.setText("Please enter username.");
+            loginMessageLabel.setVisible(true);
+            return;
+        }
+
+        try {
+            // Gửi yêu cầu Login sang Server
+            System.out.println("Đang gửi yêu cầu đăng nhập sang Server...");
+            com.auction.client.network.ClientSocket clientSocket = new com.auction.client.network.ClientSocket();
+
+            // Gửi thông tin đăng nhập sang Server
+            String[] loginData = {"LOGIN", username, password};
+            Object response = clientSocket.sendRequest(loginData);
+
+            // Xử lý phản hồi từ Server
+            if ("SUCCESS".equals(response)) {
+                System.out.println("Đăng nhập thành công!");
+                // Chuyển sang màn hình chính (Dashboard/Main)
+                com.auction.client.util.SceneUtil.changeScene(event, "/views/main_view.fxml", "Auction Dashboard");
+            } else {
+                loginMessageLabel.setText("Invalid Login. Please try again.");
+                loginMessageLabel.setVisible(true);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            loginMessageLabel.setText("Server connection error!");
+            loginMessageLabel.setVisible(true);
+        }
     }
 
     @FXML

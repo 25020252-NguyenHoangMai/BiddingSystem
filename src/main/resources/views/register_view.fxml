@@ -39,7 +39,7 @@
          </font>
       </Label>
       <PasswordField fx:id="confirmPasswordField" layoutX="39.0" layoutY="321.0" onAction="#handleRegister" prefHeight="18.0" prefWidth="442.0" promptText="Confirm Password" />
-      <Button fx:id="registerButton" layoutX="156.0" layoutY="434.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="204.0" style="-fx-background-color: #36454F;" text="Register" textFill="WHITE">
+      <Button fx:id="registerButton" layoutX="156.0" layoutY="434.0" mnemonicParsing="false" onAction="#handleRegister" prefHeight="26.0" prefWidth="204.0" style="-fx-background-color: #36454F;" text="Register" textFill="WHITE">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font></Button>
@@ -49,11 +49,11 @@
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <PasswordField fx:id="storeNameField" layoutX="285.0" layoutY="378.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="194.0" promptText="Store Name" />
       <Label fx:id="storeNameLabel" layoutX="197.0" layoutY="382.0" text="Store Name">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
+      <TextField fx:id="storeNameField" layoutX="285.0" layoutY="378.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="195.0" promptText="Store Name" />
    </children>
 </AnchorPane>

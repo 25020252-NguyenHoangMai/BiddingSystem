@@ -1,6 +1,9 @@
 package com.auction.model;
 
-public class Seller extends User {
+import java.io.Serializable;
+
+public class Seller extends User implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String storeName;
     public Seller() {
         super();

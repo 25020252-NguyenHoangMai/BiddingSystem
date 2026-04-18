@@ -85,20 +85,36 @@ public class RegisterController {
         newUser.setRole(selectedRole);
 
         try {
-            UserDAO userDAO = new UserDAO();
-            userDAO.register(newUser);
+            System.out.println("Đang gửi yêu cầu đăng ký sang Server...");
+            com.auction.client.network.ClientSocket clientSocket = new com.auction.client.network.ClientSocket();
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Success");
-            alert.setHeaderText(null);
-            alert.setContentText("Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.");
-            alert.showAndWait(); // Dừng lại đợi người dùng bấm OK mới chạy tiếp
+            // Gửi newUser sang cho Server
+            Object response = clientSocket.sendRequest(newUser);
 
-            // Chuyển về màn hình Login
-            SceneUtil.changeScene(event, "/views/login_view.fxml", "Login");
+            // Kiểm tra phản hồi từ Server
+            if ("SUCCESS".equals(response)) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Success");
+                alert.setHeaderText(null);
+                alert.setContentText("Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.");
+                alert.showAndWait();
+
+                // Chuyển về màn hình Login
+                System.out.println("Chuẩn bị chuyển sang Login...");
+                SceneUtil.changeScene(event, "/views/login_view.fxml", "Login");
+            } else {
+                // Nếu Server trả về "FAIL" (do trùng username hoặc lỗi SQL bên Server)
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Lỗi");
+                errorAlert.setContentText("Đăng ký thất bại! Username có thể đã tồn tại.");
+                errorAlert.show();
+            }
 
         } catch (Exception e) {
-            System.err.println("Lỗi đăng ký: " + e.getMessage());
+            e.printStackTrace();
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setContentText("Lỗi kết nối Server: " + e.getMessage());
+            errorAlert.show();
         }
     }
 }

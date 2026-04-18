@@ -61,6 +61,10 @@ public class UserDAO {
                 ps.setDouble(6, 0.0);
                 ps.setNull(7, java.sql.Types.NVARCHAR);
             }
+
+            int rowsAffected = ps.executeUpdate();
+            System.out.println("Đã insert thành công " + rowsAffected + " dòng.");
+
         }
         catch (SQLException e) {
             // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
