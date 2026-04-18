@@ -115,7 +115,7 @@ public class UserDAO {
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, username);
+            ps.setString(1, role);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapToDTO(rs);
