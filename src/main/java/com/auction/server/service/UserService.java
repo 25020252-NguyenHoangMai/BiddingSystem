@@ -7,6 +7,8 @@ import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
+import com.auction.request.LoginRequest;
+import com.auction.response.LoginResponse;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,5 +75,31 @@ public class UserService {
 
     public double getBalance(String userId) {
         return userDAO.getBalance(userId);
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        try {
+            User user = login(request.getUsername(), request.getPassword());
+
+            return new LoginResponse(
+                    true,
+                    "Đăng nhập thành công!",
+                    user
+            );
+
+        } catch (AuthenticationException e) {
+            return new LoginResponse(
+                    false,
+                    e.getMessage(),
+                    null
+            );
+
+        } catch (Exception e) {
+            return new LoginResponse(
+                    false,
+                    "Có lỗi xảy ra khi đăng nhập!",
+                    null
+            );
+        }
     }
 }
