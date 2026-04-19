@@ -2,6 +2,7 @@ package com.auction.server.service;
 
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
+import com.auction.exception.UserNotFoundException;
 import com.auction.model.Bidder;
 import com.auction.model.Seller;
 import com.auction.server.factory.UserFactory;
@@ -97,27 +98,27 @@ public class UserService {
 
 
     //=============== hiển thị người dùng (qua id) ===============
-//    public UserDTO getUserById(String id) {
-//        UserDTO dto = userDAO.getUserById(id);
-//
-//        if (dto == null) {
-//            throw new UserNotFoundException("ID không tồn tại!");
-//        }
-//        return dto;
-//    }
+    public UserDTO getUserById(String id) {
+        UserDTO dto = userDAO.getUserById(id);
+
+        if (dto == null) {
+            throw new UserNotFoundException("ID không tồn tại!");
+        }
+        return dto;
+    }
 
 
 
 
     //=============== hiển thị người dùng (qua username) ===============
-//    public UserDTO getUserByUsername(String username) {
-//        UserDTO dto = userDAO.getUserByUsername(username);
-//
-//        if (dto == null) {
-//            throw new UserNotFoundException("Username không tồn tại!");
-//        }
-//        return dto;
-//    }
+    public UserDTO getUserByUsername(String username) {
+        UserDTO dto = userDAO.getUserByUsername(username);
+
+        if (dto == null) {
+            throw new UserNotFoundException("Username không tồn tại!");
+        }
+        return dto;
+    }
 
 
 
