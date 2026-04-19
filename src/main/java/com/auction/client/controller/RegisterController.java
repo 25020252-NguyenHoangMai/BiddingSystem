@@ -1,8 +1,5 @@
 package com.auction.client.controller;
 
-import com.auction.model.Bidder;
-import com.auction.model.Seller;
-import com.auction.model.User;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.event.ActionEvent;
