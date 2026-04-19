@@ -15,24 +15,24 @@ public class ItemDAO {
 
     private ItemDTO mapToDTO(ResultSet rs) throws SQLException {
         ItemDTO data = new ItemDTO();
-        data.id = rs.getString("id");
-        data.name = rs.getString("name");
-        data.description = rs.getString("description");
-        data.itemType = rs.getString("itemType");
-        data.sellerID = rs.getString("sellerID");
-        data.startingPrice = rs.getDouble("startingPrice");
-        data.model = rs.getString("model");
-        data.engineType = rs.getString("engineType");
-        data.mileage = rs.getInt("mileage");
-        data.brand = rs.getString("brand");
-        data.artist = rs.getString("artist");
+        data.setId(rs.getString("id"));
+        data.setName(rs.getString("name"));
+        data.setDescription(rs.getString("description"));
+        data.setItemType(rs.getString("itemType"));
+        data.setSellerId(rs.getString("sellerId"));
+        data.setStartingPrice(rs.getDouble("startingPrice"));
+        data.setModel(rs.getString("model"));
+        data.setEngineType(rs.getString("engineType"));
+        data.setMileage(rs.getInt("mileage"));
+        data.setBrand(rs.getString("brand"));
+        data.setArtist(rs.getString("artist"));
         return data;
     }
 
 
     //=============== thêm sản phẩm ===============
     public void addItem(Item item) {
-        String sql = "INSERT INTO Item (id, name, description, itemType, sellerID, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Item (id, name, description, itemType, sellerId, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -40,7 +40,7 @@ public class ItemDAO {
             ps.setString(2, item.getName());
             ps.setString(3, item.getDescription());
             ps.setString(4, item.getClass().getSimpleName().toUpperCase());
-            ps.setString(5, item.getSellerID());
+            ps.setString(5, item.getSellerId());
             ps.setDouble(6, item.getStartingPrice());
 
             if (item instanceof Vehicle vehicle) {

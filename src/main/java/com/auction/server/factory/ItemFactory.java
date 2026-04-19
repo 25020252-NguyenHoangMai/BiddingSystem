@@ -5,15 +5,14 @@ import com.auction.server.dto.ItemDTO;
 
 public class ItemFactory {
     public static Item createItem(ItemDTO data) {
-        switch (data.itemType == null ? "" : data.itemType.toUpperCase()) {
-            case "VEHICLE":
-                return new Vehicle(data.id, data.name, data.description, data.sellerID, data.startingPrice, data.model, data.engineType, data.mileage);
-            case "ELECTRONICS":
-                return new Electronics(data.id, data.name, data.description, data.sellerID, data.startingPrice, data.brand);
-            case "ART":
-                return new Art(data.id, data.name, data.description, data.sellerID, data.startingPrice, data.artist);
-            default:
-                throw new RuntimeException("ItemType không hợp lệ: " + data.itemType);
-        }
+        return switch (data.getItemType() == null ? "" : data.getItemType().toUpperCase()) {
+            case "VEHICLE" ->
+                    new Vehicle(data.getId(), data.getName(), data.getDescription(), data.getSellerId(), data.getStartingPrice(), data.getModel(), data.getEngineType(), data.getMileage());
+            case "ELECTRONICS" ->
+                    new Electronics(data.getId(), data.getName(), data.getDescription(), data.getSellerId(), data.getStartingPrice(), data.getBrand());
+            case "ART" ->
+                    new Art(data.getId(), data.getName(), data.getDescription(), data.getSellerId(), data.getStartingPrice(), data.getArtist());
+            default -> throw new RuntimeException("ItemType không hợp lệ: " + data.getItemType());
+        };
     }
 }

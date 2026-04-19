@@ -4,17 +4,17 @@ public abstract class Item extends Entity {
     private String name;
     private String description;
     private String itemType;
-    private String sellerID;
+    private String sellerId;
     private double startingPrice;
 
     public Item() { super(); }
 
-    public Item(String id, String name, String description, String itemType, String sellerID, double startingPrice) {
+    public Item(String id, String name, String description, String itemType, String sellerId, double startingPrice) {
         super(id);
         this.name = name;
         this.description = description;
         this.itemType = itemType;
-        this.sellerID = sellerID;
+        this.sellerId = sellerId;
         this.startingPrice = startingPrice;
     }
 
@@ -44,12 +44,12 @@ public abstract class Item extends Entity {
         this.itemType = itemType;
     }
 
-    public String getSellerID() {
-        return sellerID;
+    public String getSellerId() {
+        return sellerId;
     }
 
-    public void setSellerID(String sellerID) {
-        this.sellerID = sellerID;
+    public void setSellerId(String sellerId) {
+        this.sellerId = sellerId;
     }
 
     public double getStartingPrice() {
