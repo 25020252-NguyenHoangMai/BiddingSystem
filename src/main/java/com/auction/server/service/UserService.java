@@ -52,10 +52,11 @@ public class UserService {
             throw new AuthenticationException("Username không tồn tại!");
         }
 
-        if (!BCrypt.checkpw(password, dto.password)) {
+        if (!BCrypt.checkpw(password, dto.getPassword())) {
             throw new AuthenticationException("Sai mật khẩu!");
         }
         User user = UserFactory.createUser(dto);
+        //xóa mật khẩu để đảm bảo bảo mật trước khi trả ra ngoài
         user.setPassword(null);
         return user;
     }
@@ -78,7 +79,7 @@ public class UserService {
     public void updateProfile(User user) {
         UserDTO existing = userDAO.getUserByUsername(user.getUsername());
 
-        if (existing != null && !existing.id.equals(user.getId())) {
+        if (existing != null && !existing.getId().equals(user.getId())) {
             throw new AuctionException("Username đã tồn tại!");
         }
         userDAO.updateProfile(user);

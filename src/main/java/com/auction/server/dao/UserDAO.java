@@ -12,13 +12,13 @@ public class UserDAO {
 
     private UserDTO mapToDTO(ResultSet rs) throws SQLException {
         UserDTO data = new UserDTO();
-        data.id = rs.getString("id");
-        data.username = rs.getString("username");
-        data.password = rs.getString("password");
-        data.fullName = rs.getString("fullName");
-        data.role = rs.getString("role");
-        data.balance = rs.getDouble("balance");
-        data.storeName = rs.getString("storeName");
+        data.setId(rs.getString("id"));
+        data.setUsername(rs.getString("username"));
+        data.setPassword(rs.getString("password"));
+        data.setFullName(rs.getString("fullName"));
+        data.setRole(rs.getString("role"));
+        data.setBalance(rs.getDouble("balance"));
+        data.setStoreName(rs.getString("storeName"));
         return data;
     }
 
