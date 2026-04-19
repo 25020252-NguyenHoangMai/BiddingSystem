@@ -8,5 +8,5 @@ public class UserDTO {
     public String role;
     public double balance;
     public String storeName;
-
+// nên để private và getter/setter đảm bảo Encapsulation
 }
