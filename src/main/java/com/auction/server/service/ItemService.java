@@ -23,7 +23,7 @@ public class ItemService {
         item.setId(id);
 
         //thiết lập chủ sở hữu cho item
-        item.setSellerID(user.getId());
+        item.setSellerId(user.getId());
 
         itemDAO.addItem(item);
     }
