@@ -40,7 +40,7 @@ public class UserDAO {
     }
 
     //============== đăng ký - thêm user ==============
-    public void register(User user) {
+    public void insertUser(User user) {
 
         String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -173,7 +173,7 @@ public class UserDAO {
 
 
     //=============== thay đổi thông tin của user ===============
-    public void updateProfile(User user) {
+    public void updateUser(User user) {
 
         String sql = "UPDATE Users SET username = ?, fullName = ?, storeName = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();

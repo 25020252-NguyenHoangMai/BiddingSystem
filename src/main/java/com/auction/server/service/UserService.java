@@ -38,7 +38,7 @@ public class UserService {
         String hashed = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
         user.setPassword(hashed);
 
-        userDAO.register(user);
+        userDAO.insertUser(user);
     }
 
 
@@ -82,7 +82,7 @@ public class UserService {
         if (existing != null && !existing.getId().equals(user.getId())) {
             throw new AuctionException("Username đã tồn tại!");
         }
-        userDAO.updateProfile(user);
+        userDAO.updateUser(user);
     }
 
 

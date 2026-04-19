@@ -31,7 +31,7 @@ public class ItemDAO {
 
 
     //=============== thêm sản phẩm ===============
-    public void addItem(Item item) {
+    public void insertItem(Item item) {
         String sql = "INSERT INTO Item (id, name, description, itemType, sellerId, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -92,7 +92,7 @@ public class ItemDAO {
 
 
     //=============== cập nhật thông tin sản phẩm ===============
-    public void updateItemInfo(Item item) {
+    public void updateItem(Item item) {
         String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?, model = ?, engineType = ?, mileage = ?, brand = ?, artist = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
