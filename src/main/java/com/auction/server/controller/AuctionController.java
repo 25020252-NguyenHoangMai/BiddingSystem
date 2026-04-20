@@ -10,8 +10,8 @@ public class AuctionController {
 
     private final AuthController authController;
 
-    public AuctionController() {
-        this.authController = new AuthController();
+    public AuctionController(AuthController authController) {
+        this.authController = authController;
     }
 
     public Response handleRequest(Request request) {
