@@ -7,9 +7,9 @@ import com.auction.model.User;
 import com.auction.server.dto.UserDTO;
 
 
-public class UserFactory {
+public class UserFromDTOFactory {
 
-    public static User createUser(UserDTO data) {
+    public static User fromDTO(UserDTO data) {
         return switch (data.getRole() == null ? "" : data.getRole().toUpperCase()) {
             case "ADMIN" -> new Admin(data.getId(), data.getUsername(), data.getPassword(), data.getFullName());
             case "BIDDER" ->
