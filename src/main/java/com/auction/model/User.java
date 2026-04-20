@@ -1,24 +1,20 @@
 package com.auction.model;
 
-import java.io.Serializable;
-
-public abstract class User extends Entity implements Serializable {
+public abstract class User extends Entity{
     private static final long serialVersionUID = 1L;
     private String username;
     private String password;
     private String fullName;
-    private String role;  //"BIDDER", "SELLER", "ADMIN"
 
     public User() {
         super();
     }
 
-    public User(String id, String username, String password, String fullName, String role) {
+    public User(String id, String username, String password, String fullName) {
         super(id);
         this.username = username;
         this.password = password;
         this.fullName = fullName;
-        this.role = role;
     }
     public String getUsername() {
         return username;
@@ -38,15 +34,5 @@ public abstract class User extends Entity implements Serializable {
         return fullName;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
 }
 
