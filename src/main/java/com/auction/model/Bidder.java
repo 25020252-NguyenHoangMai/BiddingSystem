@@ -1,19 +1,16 @@
 package com.auction.model;
 
-import java.io.Serializable;
-
-public class Bidder extends User implements Serializable {
+public class Bidder extends User {
     private static final long serialVersionUID = 1L;
     private boolean sellerEnabled;
     private double balance;
     public Bidder() {
         super();
-        this.setRole("BIDDER");
         this.sellerEnabled = false;
     }
 
     public Bidder(String id, String username, String password, String fullName, double balance) {
-        super(id, username, password, fullName, "BIDDER");
+        super(id, username, password, fullName);
         this.balance = balance;
     }
 
