@@ -14,15 +14,6 @@ public class RegisterController {
     @FXML private TextField UsernameTextField;
     @FXML private PasswordField setPasswordField;
     @FXML private PasswordField confirmPasswordField;
-    @FXML private ChoiceBox<String> roleChoiceBox;
-
-    @FXML
-    public void initialize() {
-        roleChoiceBox.getItems().addAll("BIDDER", "SELLER");
-
-        roleChoiceBox.setValue("BIDDER");
-
-    }
 
     @FXML
     private void handleRegister(ActionEvent event) {
@@ -30,7 +21,6 @@ public class RegisterController {
         String username = UsernameTextField.getText();
         String password = setPasswordField.getText();
         String confirmPassword = confirmPasswordField.getText();
-        String role = roleChoiceBox.getValue();
 
         if (fullName == null || fullName.isBlank()) {
             showError("Please enter full name.");
@@ -57,11 +47,6 @@ public class RegisterController {
             return;
         }
 
-        if (role == null || role.isBlank()) {
-            showError("Please select role.");
-            return;
-        }
-
         try {
             ClientSocket clientSocket = ClientSocket.getInstance();
             clientSocket.connect();
@@ -70,8 +55,7 @@ public class RegisterController {
                     fullName,
                     username,
                     password,
-                    confirmPassword,
-                    role
+                    confirmPassword
             );
 
             clientSocket.sendRequest(request);

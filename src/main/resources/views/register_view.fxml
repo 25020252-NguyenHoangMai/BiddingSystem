@@ -15,39 +15,33 @@
             </Label>
          </children>
       </AnchorPane>
-      <Label layoutX="37.0" layoutY="106.0" text="Full Name">
+      <Label layoutX="36.0" layoutY="122.0" text="Full Name">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <TextField fx:id="fullNameTextField" layoutX="37.0" layoutY="132.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="442.0" promptText="Full Name" />
-      <Label layoutX="37.0" layoutY="167.0" text="Username">
+      <TextField fx:id="fullNameTextField" layoutX="37.0" layoutY="152.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="442.0" promptText="Full Name" />
+      <Label layoutX="37.0" layoutY="197.0" text="Username">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <TextField fx:id="UsernameTextField" layoutX="37.0" layoutY="193.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="442.0" promptText="Username" />
-      <Label layoutX="37.0" layoutY="231.0" text="Password">
+      <TextField fx:id="UsernameTextField" layoutX="37.0" layoutY="223.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="442.0" promptText="Username" />
+      <Label layoutX="39.0" layoutY="269.0" text="Password">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <PasswordField fx:id="setPasswordField" layoutX="37.0" layoutY="257.0" onAction="#handleRegister" prefHeight="18.0" prefWidth="442.0" promptText="Password" />
-      <Label layoutX="37.0" layoutY="296.0" text="Confirm Password">
+      <PasswordField fx:id="setPasswordField" layoutX="37.0" layoutY="297.0" onAction="#handleRegister" prefHeight="18.0" prefWidth="442.0" promptText="Password" />
+      <Label layoutX="41.0" layoutY="341.0" text="Confirm Password">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <PasswordField fx:id="confirmPasswordField" layoutX="39.0" layoutY="321.0" onAction="#handleRegister" prefHeight="18.0" prefWidth="442.0" promptText="Confirm Password" />
+      <PasswordField fx:id="confirmPasswordField" layoutX="39.0" layoutY="366.0" onAction="#handleRegister" prefHeight="18.0" prefWidth="442.0" promptText="Confirm Password" />
       <Button fx:id="registerButton" layoutX="156.0" layoutY="434.0" mnemonicParsing="false" onAction="#handleRegister" prefHeight="26.0" prefWidth="204.0" style="-fx-background-color: #36454F;" text="Register" textFill="WHITE">
          <font>
             <Font name="Segoe UI Bold" size="14.0" />
          </font></Button>
-      <ChoiceBox fx:id="roleChoiceBox" layoutX="82.0" layoutY="378.0" prefHeight="26.0" prefWidth="92.0" />
-      <Label layoutX="39.0" layoutY="382.0" text="Role">
-         <font>
-            <Font name="Segoe UI Bold" size="14.0" />
-         </font>
-      </Label>
    </children>
 </AnchorPane>
