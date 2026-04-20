@@ -2,13 +2,12 @@
 Bài tập lớn Nhóm 14 
 
 ##  1. Phân công nhiệm vụ nhóm
-* **Quỳnh :** Thiết kế cấu trúc Thực thể (Model), hệ thống xử lý Ngoại lệ (Exception), viết Unit Test (JUnit 5).
+* **Quỳnh :** Thiết kế cấu trúc Thực thể (Model), hệ thống xử lý Ngoại lệ (Exception) và viết Unit Test (JUnit 5).
 * **Mai:** Phụ trách Tầng truy cập dữ liệu (DAO Layer), thiết kế và tương tác trực tiếp với cơ sở dữ liệu SQL Server, quy hoạch kiến trúc dự án.
 * **Chi:** Phụ trách Tầng nghiệp vụ (Service Layer), kiểm duyệt dữ liệu (Validation), xử lý logic Đăng ký, Đăng nhập và mã hóa bảo mật BCrypt.
 * **Hưng:** Xây dựng Giao diện người dùng bằng JavaFX (Client MVC) và xử lý luồng kết nối Socket phía người dùng.
 
 ---
-
 ##  2. Cấu trúc thư mục dự án
 
 
