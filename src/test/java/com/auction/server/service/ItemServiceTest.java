@@ -14,7 +14,7 @@ public class ItemServiceTest {
     @Test
     void testAddItem_GiaKhoiDiemAm_PhaiNemLoi() {
         ItemService service = new ItemService();
-        Seller seller = new Seller("U01", "seller1", "123", "Ông Bán Hàng", "Cửa hàng A");
+        Seller seller = new Seller("U01", "seller1", "123", "Ông Bán Hàng");
         //tivi -500
         Electronics tiviLoi = new Electronics("I01", "Tivi Sony", "Mô tả", seller.getId(), -500000, "Sony");
 
@@ -27,7 +27,7 @@ public class ItemServiceTest {
     @Test
     void testAddItem_TenSanPhamRong_PhaiNemLoi() {
         ItemService service = new ItemService();
-        Seller seller = new Seller("U01", "seller1", "123", "Ông Bán Hàng", "Cửa hàng A");
+        Seller seller = new Seller("U01", "seller1", "123", "Ông Bán Hàng");
 
         //cố tình để trống tên
         Electronics tiviLoi = new Electronics("I02", "", "Mô tả", seller.getId(), 1000000, "Sony");

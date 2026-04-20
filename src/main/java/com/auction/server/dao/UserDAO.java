@@ -18,7 +18,6 @@ public class UserDAO {
         data.setFullName(rs.getString("fullName"));
         data.setRole(rs.getString("role"));
         data.setBalance(rs.getDouble("balance"));
-        data.setStoreName(rs.getString("storeName"));
         return data;
     }
 
@@ -54,9 +53,7 @@ public class UserDAO {
 
             if (user instanceof Bidder bidder) {
                 ps.setNull(6, Types.NVARCHAR);
-            } else if (user instanceof Seller seller) {
-                ps.setString(6, seller.getStoreName());
-            } else {
+            } else if (user instanceof Admin admin) {
                 ps.setNull(6, Types.NVARCHAR);
             }
             ps.executeUpdate();
@@ -182,10 +179,7 @@ public class UserDAO {
             if (user instanceof Bidder bidder) {
                 ps.setNull(3, java.sql.Types.NVARCHAR);
             }
-            else if (user instanceof Seller seller) {
-                ps.setString(3, seller.getStoreName());
-            }
-            else {
+            else if (user instanceof Admin admin) {
                 ps.setNull(3, java.sql.Types.NVARCHAR);
             }
             ps.setString(4, user.getId());

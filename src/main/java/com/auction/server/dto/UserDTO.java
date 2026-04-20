@@ -7,7 +7,6 @@ public class UserDTO {
     private String fullName;
     private String role;
     private double balance;
-    private String storeName;
 
     public String getId() {
         return id;
@@ -57,11 +56,4 @@ public class UserDTO {
         this.balance = balance;
     }
 
-    public String getStoreName() {
-        return storeName;
-    }
-
-    public void setStoreName(String storeName) {
-        this.storeName = storeName;
-    }
 }

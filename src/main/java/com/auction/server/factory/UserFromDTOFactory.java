@@ -15,7 +15,7 @@ public class UserFromDTOFactory {
             case "BIDDER" ->
                     new Bidder(data.getId(), data.getUsername(), data.getPassword(), data.getFullName(), data.getBalance());
             case "SELLER" ->
-                    new Seller(data.getId(), data.getUsername(), data.getPassword(), data.getFullName(), data.getStoreName());
+                    new Seller(data.getId(), data.getUsername(), data.getPassword(), data.getFullName());
             default -> throw new RuntimeException("Role không hợp lệ: " + data.getRole());
         };
     }

@@ -16,7 +16,6 @@ public class UserRegistrationFactory {
                     throw new IllegalArgumentException("Tên cửa hàng không được để trống!");
                 }
                 Seller seller = new Seller();
-                seller.setStoreName(request.getStoreName());
                 seller.setRole("SELLER");
                 return seller;
 
