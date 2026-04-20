@@ -42,4 +42,5 @@ BiddingSystem/
 │   └── com/auction/server/      # Test logic tầng Service và kết nối DAO
 │
 └── pom.xml                      # Cấu hình Maven (Quản lý thư viện BCrypt, JUnit, JavaFX)
+\
 ```

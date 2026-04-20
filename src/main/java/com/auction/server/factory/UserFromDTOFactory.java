@@ -2,7 +2,6 @@ package com.auction.server.factory;
 
 import com.auction.model.Admin;
 import com.auction.model.Bidder;
-import com.auction.model.Seller;
 import com.auction.model.User;
 import com.auction.server.dto.UserDTO;
 

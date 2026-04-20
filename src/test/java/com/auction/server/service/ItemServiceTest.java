@@ -3,7 +3,6 @@ package com.auction.server.service;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ItemNotFoundException;
 import com.auction.model.Electronics;
-import com.auction.model.Seller;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
