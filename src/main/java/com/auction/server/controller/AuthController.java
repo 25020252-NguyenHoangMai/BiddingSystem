@@ -2,14 +2,13 @@ package com.auction.server.controller;
 
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
-import com.auction.model.Bidder;
-import com.auction.model.Seller;
 import com.auction.model.User;
 import com.auction.request.LoginRequest;
 import com.auction.request.RegisterRequest;
 import com.auction.response.LoginResponse;
 import com.auction.response.RegisterResponse;
 import com.auction.server.service.UserService;
+import com.auction.server.factory.UserRegistrationFactory;
 
 public class AuthController {
     private final UserService userService;
@@ -71,27 +70,7 @@ public class AuthController {
                 return new RegisterResponse(false, "Role is required!");
             }
 
-            User user;
-
-            if ("SELLER".equalsIgnoreCase(request.getRole())) {
-                if (request.getStoreName() == null || request.getStoreName().isBlank()) {
-                    return new RegisterResponse(false, "Store name is required for seller!");
-                }
-
-                Seller seller = new Seller();
-                seller.setStoreName(request.getStoreName());
-                seller.setRole("SELLER");
-                user = seller;
-
-            } else if ("BIDDER".equalsIgnoreCase(request.getRole())) {
-                Bidder bidder = new Bidder();
-                bidder.setBalance(0.0);
-                bidder.setRole("BIDDER");
-                user = bidder;
-
-            } else {
-                return new RegisterResponse(false, "Invalid role!");
-            }
+            User user = UserRegistrationFactory.fromRequest(request);
 
             user.setFullName(request.getFullName());
             user.setUsername(request.getUsername());
