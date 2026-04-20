@@ -3,7 +3,7 @@ package com.auction.server.service;
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.UserNotFoundException;
-import com.auction.server.factory.UserFactory;
+import com.auction.server.factory.UserFromDTOFactory;
 import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.dto.UserDTO;
@@ -50,7 +50,7 @@ public class UserService {
         if (!BCrypt.checkpw(password, dto.getPassword())) {
             throw new AuthenticationException("Sai mật khẩu!");
         }
-        User user = UserFactory.createUser(dto);
+        User user = UserFromDTOFactory.fromDTO(dto);
         //xóa mật khẩu để đảm bảo bảo mật trước khi trả ra ngoài
         user.setPassword(null);
         return user;
