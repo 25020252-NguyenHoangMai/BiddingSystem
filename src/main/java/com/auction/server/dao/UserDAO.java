@@ -12,13 +12,13 @@ public class UserDAO {
 
     private UserDTO mapToDTO(ResultSet rs) throws SQLException {
         UserDTO data = new UserDTO();
-        data.id = rs.getString("id");
-        data.username = rs.getString("username");
-        data.password = rs.getString("password");
-        data.fullName = rs.getString("fullName");
-        data.role = rs.getString("role");
-        data.balance = rs.getDouble("balance");
-        data.storeName = rs.getString("storeName");
+        data.setId(rs.getString("id"));
+        data.setUsername(rs.getString("username"));
+        data.setPassword(rs.getString("password"));
+        data.setFullName(rs.getString("fullName"));
+        data.setRole(rs.getString("role"));
+        data.setBalance(rs.getDouble("balance"));
+        data.setStoreName(rs.getString("storeName"));
         return data;
     }
 
@@ -40,9 +40,9 @@ public class UserDAO {
     }
 
     //============== đăng ký - thêm user ==============
-    public void register(User user) {
+    public void insertUser(User user) {
 
-        String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, storeName) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (id, username, password, fullName, role, storeName) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -53,14 +53,11 @@ public class UserDAO {
             ps.setString(5, user.getRole());
 
             if (user instanceof Bidder bidder) {
-                ps.setDouble(6, bidder.getBalance());
-                ps.setNull(7, Types.NVARCHAR);
+                ps.setNull(6, Types.NVARCHAR);
             } else if (user instanceof Seller seller) {
-                ps.setDouble(6, 0.0);
-                ps.setString(7, seller.getStoreName());
+                ps.setString(6, seller.getStoreName());
             } else {
-                ps.setDouble(6, 0.0);
-                ps.setNull(7, Types.NVARCHAR);
+                ps.setNull(6, Types.NVARCHAR);
             }
             ps.executeUpdate();
         }
@@ -173,7 +170,7 @@ public class UserDAO {
 
 
     //=============== thay đổi thông tin của user ===============
-    public void updateProfile(User user) {
+    public void updateUser(User user) {
 
         String sql = "UPDATE Users SET username = ?, fullName = ?, storeName = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();

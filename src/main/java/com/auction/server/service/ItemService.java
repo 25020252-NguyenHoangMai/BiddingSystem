@@ -23,18 +23,18 @@ public class ItemService {
         item.setId(id);
 
         //thiết lập chủ sở hữu cho item
-        item.setSellerID(user.getId());
+        item.setSellerId(user.getId());
 
-        itemDAO.addItem(item);
+        itemDAO.insertItem(item);
     }
 
     //=============== cập nhật thông tin sản phẩm ===============
-    public void updateItemInfo(Item item) {
+    public void updateItem(Item item) {
         ItemDTO existing = itemDAO.getItemById(item.getId());
         if (existing == null) {
             throw new ItemNotFoundException("Không tồn tại!");
         }
-        itemDAO.updateItemInfo(item);
+        itemDAO.updateItem(item);
     }
 
     public List<Item> getAllItems() {
@@ -83,7 +83,7 @@ public class ItemService {
 
 
     //=============== xóa sản phẩm ===============
-    public void deleteItem(String id) {
+    public void removeItem(String id) {
         ItemDTO dto = itemDAO.getItemById(id);
 
         if (dto == null) {
