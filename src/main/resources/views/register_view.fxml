@@ -49,11 +49,5 @@
             <Font name="Segoe UI Bold" size="14.0" />
          </font>
       </Label>
-      <Label fx:id="storeNameLabel" layoutX="197.0" layoutY="382.0" text="Store Name">
-         <font>
-            <Font name="Segoe UI Bold" size="14.0" />
-         </font>
-      </Label>
-      <TextField fx:id="storeNameField" layoutX="285.0" layoutY="378.0" onAction="#handleRegister" prefHeight="26.0" prefWidth="195.0" promptText="Store Name" />
    </children>
 </AnchorPane>
