@@ -12,9 +12,6 @@ public class UserRegistrationFactory {
 
         switch (role) {
             case "SELLER":
-                if (request.getStoreName() == null || request.getStoreName().isBlank()) {
-                    throw new IllegalArgumentException("Tên cửa hàng không được để trống!");
-                }
                 Seller seller = new Seller();
                 seller.setRole("SELLER");
                 return seller;
