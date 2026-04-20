@@ -31,13 +31,13 @@
             <columns>
                 <TableColumn fx:id="colName" prefWidth="250" text="Product Name" />
                 <TableColumn fx:id="colPrice" prefWidth="150" text="Current Price ($)" />
-                <TableColumn fx:id="colSeller" prefWidth="150" text="Seller ID" />
+                <TableColumn fx:id="colSeller" prefWidth="150" text="Seller" />
                 <TableColumn fx:id="colTime" prefWidth="150" text="Time Left" />
             </columns>
         </TableView>
 
         <HBox alignment="CENTER_RIGHT" spacing="15">
-            <Button fx:id="addBtn" onAction="#handleAddProduct" prefHeight="35.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Add Product" visible="true" managed="true" />
+            <Button fx:id="addBtn" managed="true" onAction="#handleAddProduct" prefHeight="35.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Add Product" visible="true" />
 
             <Button onAction="#handleRefresh" prefHeight="35.0" prefWidth="120.0" style="-fx-cursor: hand;" text="Refresh List" />
         </HBox>

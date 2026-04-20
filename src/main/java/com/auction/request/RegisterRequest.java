@@ -6,15 +6,13 @@ public class RegisterRequest extends Request {
     private String password;
     private String confirmPassword;
     private String role;
-    private String storeName;
 
-    public RegisterRequest(String fullName, String username, String password, String confirmPassword, String role, String storeName) {
+    public RegisterRequest(String fullName, String username, String password, String confirmPassword, String role) {
         this.fullName = fullName;
         this.username = username;
         this.password = password;
         this.confirmPassword = confirmPassword;
         this.role = role;
-        this.storeName = storeName;
     }
 
     public String getFullName() {
@@ -37,10 +35,6 @@ public class RegisterRequest extends Request {
         return role;
     }
 
-    public String getStoreName() {
-        return storeName;
-    }
-
     public void setFullName (String newFullname) {
         this.fullName = newFullname;
     }
@@ -59,9 +53,5 @@ public class RegisterRequest extends Request {
 
     public void setRole(String role) {
         this.role = role;
-    }
-
-    public void setStoreName(String storeName) {
-        this.storeName = storeName;
     }
 }

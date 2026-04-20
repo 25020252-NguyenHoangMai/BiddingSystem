@@ -16,5 +16,5 @@ public class MainController {
     @FXML private TableView<ItemDTO> productTable;
     @FXML private TableColumn<ItemDTO, String> colName;
     @FXML private TableColumn<ItemDTO, Double> colPrice;
-
+    @FXML private TableColumn<ItemDTO, String> colSeller;
 }

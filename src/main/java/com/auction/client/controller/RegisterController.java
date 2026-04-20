@@ -15,8 +15,6 @@ public class RegisterController {
     @FXML private PasswordField setPasswordField;
     @FXML private PasswordField confirmPasswordField;
     @FXML private ChoiceBox<String> roleChoiceBox;
-    @FXML private Label storeNameLabel;
-    @FXML private TextField storeNameField;
 
     @FXML
     public void initialize() {
@@ -24,25 +22,6 @@ public class RegisterController {
 
         roleChoiceBox.setValue("BIDDER");
 
-        storeNameLabel.setVisible(false);
-        storeNameField.setVisible(false);
-        storeNameLabel.setManaged(false);
-        storeNameField.setManaged(false);
-
-        // Chỉ hiện ra Store Name khi là Seller
-        roleChoiceBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            boolean isSeller = "SELLER".equals(newVal);
-
-            storeNameLabel.setVisible(isSeller);
-            storeNameField.setVisible(isSeller);
-
-            storeNameLabel.setManaged(isSeller);
-            storeNameField.setManaged(isSeller);
-
-            if (!isSeller) {
-                storeNameField.clear();
-            }
-        });
     }
 
     @FXML
@@ -52,7 +31,6 @@ public class RegisterController {
         String password = setPasswordField.getText();
         String confirmPassword = confirmPasswordField.getText();
         String role = roleChoiceBox.getValue();
-        String storeName = storeNameField.getText();
 
         if (fullName == null || fullName.isBlank()) {
             showError("Please enter full name.");
@@ -84,15 +62,6 @@ public class RegisterController {
             return;
         }
 
-        if ("SELLER".equalsIgnoreCase(role) && (storeName == null || storeName.isBlank())) {
-            showError("Please enter store name for seller.");
-            return;
-        }
-
-        if ("BIDDER".equalsIgnoreCase(role)) {
-            storeName = null;
-        }
-
         try {
             ClientSocket clientSocket = ClientSocket.getInstance();
             clientSocket.connect();
@@ -102,8 +71,7 @@ public class RegisterController {
                     username,
                     password,
                     confirmPassword,
-                    role,
-                    storeName
+                    role
             );
 
             clientSocket.sendRequest(request);
