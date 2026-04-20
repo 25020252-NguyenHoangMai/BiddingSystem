@@ -9,8 +9,6 @@ import com.auction.server.service.BiddingService;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
 
-import com.auction.server.network.SocketServer;
-
 public class MainServer {
     public static void main(String[] args) {
         UserService userService = new UserService();

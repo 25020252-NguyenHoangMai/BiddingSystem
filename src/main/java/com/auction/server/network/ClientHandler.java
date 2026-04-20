@@ -24,13 +24,6 @@ public class ClientHandler extends Thread {
     public ClientHandler(Socket socket, AuctionController auctionController) {
         this.socket = socket;
         this.auctionController = auctionController;
-
-        try {
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -41,7 +34,7 @@ public class ClientHandler extends Thread {
 
             in = new ObjectInputStream(socket.getInputStream());
             while (true) {
-                Object obj = in.readObject();
+                Object obj;
 
                 try {
                     obj = in.readObject();
