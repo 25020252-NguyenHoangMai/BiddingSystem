@@ -8,19 +8,19 @@ import com.auction.server.service.UserService;
 
 public class AuctionController {
 
-    private UserService userService;
+    private final AuthController authController;
 
     public AuctionController() {
-        this.userService = new UserService();
+        this.authController = new AuthController();
     }
 
     public Response handleRequest(Request request) {
         if (request instanceof LoginRequest loginRequest) {
-            return userService.login(loginRequest);
+            return authController.login(loginRequest);
         }
 
         if (request instanceof RegisterRequest registerRequest) {
-            return userService.register(registerRequest);
+            return authController.register(registerRequest);
         }
         return new Response(false, "Unknown request") {};
     }
