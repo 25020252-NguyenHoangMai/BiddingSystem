@@ -66,10 +66,6 @@ public class AuthController {
                 return new RegisterResponse(false, "Passwords do not match!");
             }
 
-            if (request.getRole() == null || request.getRole().isBlank()) {
-                return new RegisterResponse(false, "Role is required!");
-            }
-
             User user = UserRegistrationFactory.fromRequest(request);
 
             user.setFullName(request.getFullName());
