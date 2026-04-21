@@ -36,6 +36,7 @@ public class MainController {
     @FXML private Label welcomeLabel;
     @FXML private Label balanceLabel;
     @FXML private Button addBtn;
+    @FXML private TextField searchField;
 
     @FXML private TableView<ItemDTO> tableAuctions;
     @FXML private TableColumn<ItemDTO, String> colProductName;
