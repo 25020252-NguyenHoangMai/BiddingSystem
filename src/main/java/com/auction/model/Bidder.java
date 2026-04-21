@@ -9,8 +9,8 @@ public class Bidder extends User {
         this.sellerEnabled = false;
     }
 
-    public Bidder(String id, String username, String password, String fullName, double balance) {
-        super(id, username, password, fullName);
+    public Bidder(String id, String username, String password, String fullName, String role, double balance) {
+        super(id, username, password, fullName, role);
         this.balance = balance;
     }
 
