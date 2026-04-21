@@ -15,13 +15,14 @@ public class ItemDTO implements Serializable {
     private String sellerId;
     private String sellerUsername;
     private double startingPrice;
+    private double currentPrice;
     private String model;
     private String engineType;
     private int mileage;
     private String brand;
     private String artist;
 
-    private final BooleanProperty selected = new SimpleBooleanProperty(false);
+    private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public String getId() {
         return id;
@@ -119,9 +120,23 @@ public class ItemDTO implements Serializable {
         this.artist = artist;
     }
 
+    public double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public void setCurrentPrice(double currentPrice) {
+        this.currentPrice = currentPrice;
+    }
+
+    public BooleanProperty selectedProperty() {
+        // Nếu null (do vừa bay qua mạng về), thì khởi tạo mới
+        if (selected == null) {
+            selected = new SimpleBooleanProperty(false);
+        }
+        return selected;
+    }
+
     public boolean isSelected() {return selected.get();}
 
     public void setSelected(boolean selected) { this.selected.set(selected);}
-
-    public BooleanProperty selectedProperty() { return selected;}
 }

@@ -12,7 +12,7 @@ public class UserSessionDTO implements Serializable {
     private double balance;
     private boolean sellerEnabled;
 
-    private BooleanProperty selected = new SimpleBooleanProperty(false);
+    private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public String getId() {
         return id;
@@ -58,7 +58,13 @@ public class UserSessionDTO implements Serializable {
 
     public void setSellerEnabled(boolean sellerEnabled) {this.sellerEnabled = sellerEnabled;}
 
-    public BooleanProperty selectedProperty() { return selected;}
+    public BooleanProperty selectedProperty() {
+        // Nếu null (do vừa bay qua mạng về), thì khởi tạo mới
+        if (selected == null) {
+            selected = new SimpleBooleanProperty(false);
+        }
+        return selected;
+    }
 
     public boolean isSelected() { return selected.get();}
 
