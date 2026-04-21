@@ -1,6 +1,8 @@
 package com.auction.dto;
 
 import java.io.Serializable;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
 public class UserSessionDTO implements Serializable {
     private String id;
@@ -9,6 +11,8 @@ public class UserSessionDTO implements Serializable {
     private String role;
     private double balance;
     private boolean sellerEnabled;
+
+    private BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public String getId() {
         return id;
@@ -53,4 +57,10 @@ public class UserSessionDTO implements Serializable {
     public boolean isSellerEnabled() {return sellerEnabled;}
 
     public void setSellerEnabled(boolean sellerEnabled) {this.sellerEnabled = sellerEnabled;}
+
+    public BooleanProperty selectedProperty() { return selected;}
+
+    public boolean isSelected() { return selected.get();}
+
+    public void setSelected(boolean value) {selected.set(value);}
 }

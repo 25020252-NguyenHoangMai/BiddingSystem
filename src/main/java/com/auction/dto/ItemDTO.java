@@ -1,5 +1,8 @@
 package com.auction.dto;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+
 public class ItemDTO {
     private String id;
     private String name;
@@ -13,6 +16,8 @@ public class ItemDTO {
     private int mileage;
     private String brand;
     private String artist;
+
+    private final BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public String getId() {
         return id;
@@ -109,4 +114,10 @@ public class ItemDTO {
     public void setArtist(String artist) {
         this.artist = artist;
     }
+
+    public boolean isSelected() {return selected.get();}
+
+    public void setSelected(boolean selected) { this.selected.set(selected);}
+
+    public BooleanProperty selectedProperty() { return selected;}
 }
