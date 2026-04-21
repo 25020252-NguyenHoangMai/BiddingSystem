@@ -21,6 +21,7 @@ public class ItemDTO implements Serializable {
     private int mileage;
     private String brand;
     private String artist;
+    private long endTimeMillis;
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
@@ -139,4 +140,19 @@ public class ItemDTO implements Serializable {
     public boolean isSelected() {return selected.get();}
 
     public void setSelected(boolean selected) { this.selected.set(selected);}
+
+    public long getEndTimeMillis() { return endTimeMillis; }
+
+    public String calculateTimeLeft() {
+        long now = System.currentTimeMillis();
+        long diff = endTimeMillis - now;
+
+        if (diff <= 0) return "Đã kết thúc";
+
+        long seconds = (diff / 1000) % 60;
+        long minutes = (diff / (1000 * 60)) % 60;
+        long hours = (diff / (1000 * 60 * 60));
+
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
 }
