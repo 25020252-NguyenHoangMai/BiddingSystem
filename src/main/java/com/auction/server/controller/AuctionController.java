@@ -3,6 +3,7 @@ package com.auction.server.controller;
 import com.auction.request.LoginRequest;
 import com.auction.request.RegisterRequest;
 import com.auction.request.Request;
+import com.auction.response.ErrorResponse;
 import com.auction.response.Response;
 import com.auction.server.service.UserService;
 
@@ -22,6 +23,6 @@ public class AuctionController {
         if (request instanceof RegisterRequest registerRequest) {
             return authController.register(registerRequest);
         }
-        return new Response(false, "Unknown request") {};
+        return new ErrorResponse("Unknown request");
     }
 }
