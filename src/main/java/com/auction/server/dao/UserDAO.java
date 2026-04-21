@@ -50,7 +50,7 @@ public class UserDAO {
     //============== đăng ký - thêm user ==============
     public void insertUser(User user) {
 
-        String sql = "INSERT INTO Users (id, username, password, fullName, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (id, username, password, fullName) VALUES (?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -58,15 +58,6 @@ public class UserDAO {
             ps.setString(2, user.getUsername());
             ps.setString(3, user.getPassword());
             ps.setString(4, user.getFullName());
-            ps.setString(5, user.getRole());
-
-            if (user instanceof Bidder b) {
-                ps.setBoolean(6, b.isSellerEnabled());
-                ps.setDouble(7, b.getBalance());
-            } else if (user instanceof Admin) {
-                ps.setBoolean(6, false);
-                ps.setDouble(7, 0);
-            }
 
             ps.executeUpdate();
         }

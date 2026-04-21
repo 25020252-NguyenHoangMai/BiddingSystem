@@ -10,7 +10,7 @@ public class DatabaseManager {
     private static final String SERVER_NAME = "localhost";
     private static final String DB_NAME = "BiddingSystem";
     private static final String USER = "sa";
-    private static final String PASS = "123456";
+    private static final String PASS = "88888888";
 
     private static final String CONNECTION_URL =
             "jdbc:sqlserver://" + SERVER_NAME + ":1433;" +

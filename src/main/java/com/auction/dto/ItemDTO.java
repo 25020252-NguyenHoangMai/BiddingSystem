@@ -6,6 +6,7 @@ public class ItemDTO {
     private String description;
     private String itemType;
     private String sellerId;
+    private String sellerUsername;
     private double startingPrice;
     private String model;
     private String engineType;
@@ -51,6 +52,14 @@ public class ItemDTO {
 
     public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
+    }
+
+    public String getSellerUsername() {
+        return sellerUsername;
+    }
+
+    public void setSellerUsername(String sellerUsername) {
+        this.sellerUsername = sellerUsername;
     }
 
     public double getStartingPrice() {
