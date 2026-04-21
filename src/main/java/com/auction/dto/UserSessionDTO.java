@@ -1,6 +1,8 @@
 package com.auction.dto;
 
-public class UserSessionDTO {
+import java.io.Serializable;
+
+public class UserSessionDTO implements Serializable {
     private String id;
     private String username;
     private String fullName;
