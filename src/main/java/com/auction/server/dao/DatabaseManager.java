@@ -7,7 +7,7 @@ import java.sql.SQLException;
 public class DatabaseManager {
     private static volatile DatabaseManager instance;
 
-    private static final String SERVER_NAME = "192.168.50.105";
+    private static final String SERVER_NAME = "192.168.50.105\\SQLEXPRESS";
     private static final String DB_NAME = "BiddingSystem";
     private static final String USER = "sa";
     private static final String PASS = "88888888";
