@@ -19,7 +19,7 @@ public class UserDAO {
 
         if ("ADMIN".equalsIgnoreCase(role)) {
             return new Admin(id, username, password, fullName);
-        } else if ("ADMIN".equalsIgnoreCase(role)) {
+        } else if ("BIDDER".equalsIgnoreCase(role)) {
             double balance = rs.getDouble("balance");
             boolean sellerEnabled = rs.getBoolean("sellerEnabled");
 
@@ -50,7 +50,7 @@ public class UserDAO {
     //============== đăng ký - thêm user ==============
     public void insertUser(User user) {
 
-        String sql = "INSERT INTO Users (id, username, password, fullName) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (id, username, password, fullName, role) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -58,6 +58,7 @@ public class UserDAO {
             ps.setString(2, user.getUsername());
             ps.setString(3, user.getPassword());
             ps.setString(4, user.getFullName());
+            ps.setString(5, user.getRole());
 
             ps.executeUpdate();
         }
