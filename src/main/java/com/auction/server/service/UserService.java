@@ -3,10 +3,10 @@ package com.auction.server.service;
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.UserNotFoundException;
-import com.auction.server.factory.UserFromDTOFactory;
+//import com.auction.server.factory.UserFromDTOFactory;
 import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
-import com.auction.dto.UserDTO;
+//import com.auction.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.List;
@@ -19,15 +19,15 @@ public class UserService {
 
     //=============== đăng ký ===============
     public void register(User user) {
-        UserDTO existing = userDAO.getUserByUsername(user.getUsername());
+        User existing = userDAO.getUserByUsername(user.getUsername());
 
         if (existing != null) {
             throw new AuctionException("Username đã tồn tại!");
         }
 
         //tạo id ngẫu nhiên
-        String id = java.util.UUID.randomUUID().toString();
-        user.setId(id);
+        String userId = java.util.UUID.randomUUID().toString();
+        user.setId(userId);
 
         //băm password instead of plain text for security
         String hashed = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
@@ -41,16 +41,16 @@ public class UserService {
 
     //=============== đăng nhập ===============
     public User login(String username, String password) {
-        UserDTO dto = userDAO.getUserByUsername(username);
+        User user = userDAO.getUserByUsername(username);
 
-        if (dto == null) {
+        if (user == null) {
             throw new AuthenticationException("Username không tồn tại!");
         }
 
-        if (!BCrypt.checkpw(password, dto.getPassword())) {
+        if (!BCrypt.checkpw(password, user.getPassword())) {
             throw new AuthenticationException("Sai mật khẩu!");
         }
-        User user = UserFromDTOFactory.fromDTO(dto);
+//        User user = UserFromDTOFactory.fromDTO(dto);
         //xóa mật khẩu để đảm bảo bảo mật trước khi trả ra ngoài
         user.setPassword(null);
         return user;
@@ -60,11 +60,11 @@ public class UserService {
 
 
     //=============== đổi mật khẩu ===============
-    public void changePassword(String id, String newPassword) {
+    public void changePassword(String userId, String newPassword) {
 
         //băm password
         String hashed = BCrypt.hashpw(newPassword, BCrypt.gensalt());
-        userDAO.updatePassword(id, hashed);
+        userDAO.updatePassword(userId, hashed);
     }
 
 
@@ -72,7 +72,7 @@ public class UserService {
 
     //=============== cập nhật thông tin người dùng ===============
     public void updateProfile(User user) {
-        UserDTO existing = userDAO.getUserByUsername(user.getUsername());
+        User existing = userDAO.getUserByUsername(user.getUsername());
 
         if (existing != null && !existing.getId().equals(user.getId())) {
             throw new AuctionException("Username đã tồn tại!");
@@ -84,7 +84,7 @@ public class UserService {
 
 
     //=============== hiển thị toàn bộ thông tin người dùng ===============
-    public List<UserDTO> getAllUsers() {
+    public List<User> getAllUsers() {
         return userDAO.getAllUsers();
     }
 
@@ -92,26 +92,26 @@ public class UserService {
 
 
     //=============== hiển thị người dùng (qua id) ===============
-    public UserDTO getUserById(String id) {
-        UserDTO dto = userDAO.getUserById(id);
+    public User getUserById(String userId) {
+        User user = userDAO.getUserById(userId);
 
-        if (dto == null) {
+        if (user == null) {
             throw new UserNotFoundException("ID không tồn tại!");
         }
-        return dto;
+        return user;
     }
 
 
 
 
     //=============== hiển thị người dùng (qua username) ===============
-    public UserDTO getUserByUsername(String username) {
-        UserDTO dto = userDAO.getUserByUsername(username);
+    public User getUserByUsername(String username) {
+        User user = userDAO.getUserByUsername(username);
 
-        if (dto == null) {
+        if (user == null) {
             throw new UserNotFoundException("Username không tồn tại!");
         }
-        return dto;
+        return user;
     }
 
 

@@ -2,7 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
 import com.auction.model.*;
-import com.auction.dto.UserDTO;
+//import com.auction.dto.UserDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,16 +10,24 @@ import java.util.List;
 
 public class UserDAO {
 
-    private UserDTO mapToDTO(ResultSet rs) throws SQLException {
-        UserDTO data = new UserDTO();
-        data.setId(rs.getString("id"));
-        data.setUsername(rs.getString("username"));
-        data.setPassword(rs.getString("password"));
-        data.setFullName(rs.getString("fullName"));
-        data.setRole(rs.getString("role"));
-        data.setBalance(rs.getDouble("balance"));
-        data.setSellerEnabled(rs.getBoolean("sellerEnabled"));
-        return data;
+    private User mapToUser(ResultSet rs) throws SQLException {
+        String id = rs.getString("id");
+        String username = rs.getString("username");
+        String password = rs.getString("password");
+        String fullName = rs.getString("fullName");
+        String role = rs.getString("role");
+
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            return new Admin(id, username, password, fullName);
+        } else if ("ADMIN".equalsIgnoreCase(role)) {
+            double balance = rs.getDouble("balance");
+            boolean sellerEnabled = rs.getBoolean("sellerEnabled");
+
+            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance);
+            bidder.setSellerEnabled(sellerEnabled);
+            return bidder;
+        }
+        return null;
     }
 
     //=============== kiểm tra trùng lặp username ===============
@@ -42,7 +50,7 @@ public class UserDAO {
     //============== đăng ký - thêm user ==============
     public void insertUser(User user) {
 
-        String sql = "INSERT INTO Users (id, username, password, fullName) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (id, username, password, fullName, role) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -50,6 +58,15 @@ public class UserDAO {
             ps.setString(2, user.getUsername());
             ps.setString(3, user.getPassword());
             ps.setString(4, user.getFullName());
+            ps.setString(5, user.getRole());
+
+            if (user instanceof Bidder b) {
+                ps.setBoolean(6, b.isSellerEnabled());
+                ps.setDouble(7, b.getBalance());
+            } else if (user instanceof Admin) {
+                ps.setBoolean(6, false);
+                ps.setDouble(7, 0);
+            }
 
             ps.executeUpdate();
         }
@@ -81,7 +98,7 @@ public class UserDAO {
      * 2. Khi người dùng đã đăng nhập và thực hiện các thao tác tiếp theo
      * Server chỉ cần dùng ID trong Session để lấy lại trạng thái mới nhất của User đó từ DB )
      */
-    public UserDTO getUserById(String userId) {
+    public User getUserById(String userId) {
         String sql = "SELECT * FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -89,7 +106,7 @@ public class UserDAO {
             ps.setString(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapToDTO(rs);
+                    return mapToUser(rs);
                 }
             }
         } catch (SQLException e) {
@@ -99,7 +116,7 @@ public class UserDAO {
     }
 
     //=============== tìm user theo username ===============
-    public UserDTO getUserByUsername(String username) {
+    public User getUserByUsername(String username) {
         String sql = "SELECT * FROM Users WHERE username = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -107,7 +124,7 @@ public class UserDAO {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapToDTO(rs);
+                    return mapToUser(rs);
                 }
             }
         } catch (SQLException e) {
@@ -125,15 +142,15 @@ public class UserDAO {
      * ;cho phép Admin xóa user)
      *
      */
-    public List<UserDTO> getAllUsers() {
-        List<UserDTO> list = new ArrayList<>();
+    public List<User> getAllUsers() {
+        List<User> list = new ArrayList<>();
         String sql = "SELECT * FROM Users";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                list.add(mapToDTO(rs));
+                list.add(mapToUser(rs));
             }
 
         } catch (SQLException e) {
@@ -168,7 +185,7 @@ public class UserDAO {
 
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getFullName());
-            ps.setString(4, user.getId());
+            ps.setString(3, user.getId());
 
             ps.executeUpdate();
         }
