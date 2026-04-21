@@ -5,7 +5,7 @@ import com.auction.model.Item;
 import com.auction.model.User;
 import com.auction.server.dao.ItemDAO;
 import com.auction.dto.ItemDTO;
-import com.auction.server.factory.ItemFactory;
+import com.auction.server.factory.ItemFromDTOFactory;
 
 
 import java.util.List;
@@ -40,7 +40,7 @@ public class ItemService {
     public List<Item> getAllItems() {
         return itemDAO.getAllItems()
                 .stream()
-                .map(ItemFactory::createItem)
+                .map(ItemFromDTOFactory::createItem)
                 .collect(Collectors.toList());
     }
 
@@ -52,7 +52,7 @@ public class ItemService {
         if (dto == null) {
             throw new ItemNotFoundException("Sản phẩm không tồn tại!");
         }
-        return ItemFactory.createItem(dto);
+        return ItemFromDTOFactory.createItem(dto);
     }
 
 
@@ -64,7 +64,7 @@ public class ItemService {
             throw new ItemNotFoundException("Sản phẩm không tồn tại!");
         }
         return list.stream()
-                .map(ItemFactory::createItem)
+                .map(ItemFromDTOFactory::createItem)
                 .collect(Collectors.toList());
     }
 
@@ -77,7 +77,7 @@ public class ItemService {
             throw new ItemNotFoundException("Sản phẩm không tồn tại!");
         }
         return list.stream()
-                .map(ItemFactory::createItem)
+                .map(ItemFromDTOFactory::createItem)
                 .collect(Collectors.toList());
     }
 

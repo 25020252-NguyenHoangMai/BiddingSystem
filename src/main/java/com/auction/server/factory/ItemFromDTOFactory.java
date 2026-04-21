@@ -3,7 +3,7 @@ package com.auction.server.factory;
 import com.auction.model.*;
 import com.auction.dto.ItemDTO;
 
-public class ItemFactory {
+public class ItemFromDTOFactory {
     public static Item createItem(ItemDTO data) {
         return switch (data.getItemType() == null ? "" : data.getItemType().toUpperCase()) {
             case "VEHICLE" ->
