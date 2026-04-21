@@ -10,7 +10,7 @@ import com.auction.request.RegisterRequest;
 import com.auction.response.LoginResponse;
 import com.auction.response.RegisterResponse;
 import com.auction.server.service.UserService;
-import com.auction.server.factory.UserRegistrationFactory;
+//import com.auction.server.factory.UserRegistrationFactory;
 
 public class AuthController {
     private final UserService userService;
@@ -69,8 +69,12 @@ public class AuthController {
                 return new RegisterResponse(false, "Passwords do not match!");
             }
 
-            User user = UserRegistrationFactory.fromRequest(request);
+            Bidder bidder = new Bidder();
+            bidder.setRole("BIDDER");
+            bidder.setBalance(0.0);
+            bidder.setSellerEnabled(false);
 
+            User user = bidder;
             user.setFullName(request.getFullName());
             user.setUsername(request.getUsername());
             user.setPassword(request.getPassword());
