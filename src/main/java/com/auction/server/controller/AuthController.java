@@ -2,7 +2,9 @@ package com.auction.server.controller;
 
 import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
+import com.auction.model.Bidder;
 import com.auction.model.User;
+import com.auction.dto.UserSessionDTO;
 import com.auction.request.LoginRequest;
 import com.auction.request.RegisterRequest;
 import com.auction.response.LoginResponse;
@@ -28,11 +30,12 @@ public class AuthController {
             }
 
             User user = userService.login(request.getUsername(), request.getPassword());
+            UserSessionDTO userSession = toUserSessionDTO(user);
 
             return new LoginResponse(
                     true,
                     "Dang nhap thanh cong!",
-                    user
+                    userSession
             );
 
         } catch (AuthenticationException e) {
@@ -83,5 +86,21 @@ public class AuthController {
             e.printStackTrace();
             return new RegisterResponse(false, "Register failed!");
         }
+    }
+
+    private UserSessionDTO toUserSessionDTO(User user) {
+        UserSessionDTO dto = new UserSessionDTO();
+
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setFullName(user.getFullName());
+        dto.setRole(user.getRole());
+
+        if (user instanceof Bidder bidder) {
+            dto.setBalance(bidder.getBalance());
+            dto.setSellerEnabled(bidder.isSellerEnabled());
+        }
+
+        return dto;
     }
 }

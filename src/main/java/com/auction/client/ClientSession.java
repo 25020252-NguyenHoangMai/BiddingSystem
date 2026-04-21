@@ -1,15 +1,15 @@
 package com.auction.client;
 
-import com.auction.dto.UserDTO;
+import com.auction.dto.UserSessionDTO;
 
 public class ClientSession {
-    private static UserDTO currentUser;
+    private static UserSessionDTO currentUser;
 
-    public static UserDTO getCurrentUser() {
+    public static UserSessionDTO getCurrentUser() {
         return currentUser;
     }
 
-    public static void setCurrentUser(UserDTO user) {
+    public static void setCurrentUser(UserSessionDTO user) {
         currentUser = user;
     }
 

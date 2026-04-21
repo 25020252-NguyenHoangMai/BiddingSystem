@@ -7,21 +7,12 @@ import com.auction.request.RegisterRequest;
 
 public class UserRegistrationFactory {
     public static User fromRequest(RegisterRequest request) {
-        String role = request.getRole().toUpperCase();
+        Bidder bidder = new Bidder();
 
-        switch (role) {
-            case "SELLER":
-                Seller seller = new Seller();
-                seller.setRole("SELLER");
-                return seller;
+        bidder.setRole("BIDDER");
+        bidder.setBalance(0.0);
+        bidder.setSellerEnabled(false);
 
-            case "BIDDER":
-                Bidder bidder = new Bidder();
-                bidder.setRole("BIDDER");
-                return bidder;
-
-            default:
-                throw new IllegalArgumentException("Vai trò không hợp lệ!");
-        }
+        return bidder;
     }
 }
