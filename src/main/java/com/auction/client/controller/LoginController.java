@@ -85,7 +85,7 @@ public class LoginController implements Initializable {
 
                     com.auction.client.util.SceneUtil.changeScene(
                             event,
-                            "/views/main_view.fxml",
+                            "/views/main.fxml",
                             "Auction Dashboard"
                     );
                 } else {
