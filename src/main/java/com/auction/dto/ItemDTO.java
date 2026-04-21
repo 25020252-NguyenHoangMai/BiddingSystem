@@ -3,7 +3,11 @@ package com.auction.dto;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
-public class ItemDTO {
+import java.io.Serializable;
+
+public class ItemDTO implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String id;
     private String name;
     private String description;

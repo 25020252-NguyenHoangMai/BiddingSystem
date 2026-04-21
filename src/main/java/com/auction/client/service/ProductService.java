@@ -7,25 +7,33 @@ import java.util.List;
 
 public class ProductService {
 
-    public List<ItemDTO> getAllProducts() {
-        ClientSocket socket = ClientSocket.getInstance();
+    private static final ProductService INSTANCE = new ProductService();
+    private static final String GET_ALL_PRODUCTS = "GET_ALL_PRODUCTS";
 
-        socket.sendRequest("GET_ALL_PRODUCTS");
-        Object res = socket.receiveResponse();
+    private ProductService() {}
 
-        if (!(res instanceof List<?> rawList)) {
-            throw new RuntimeException("Invalid response");
-        }
-
-        return rawList.stream()
-                .filter(ItemDTO.class::isInstance)
-                .map(ItemDTO.class::cast)
-                .toList();
+    public static ProductService getInstance() {
+        return INSTANCE;
     }
 
-    private static ProductService instance;
-    public static ProductService getInstance() {
-        if (instance == null) instance = new ProductService();
-        return instance;
+    public List<ItemDTO> getAllProducts() {
+        try {
+            ClientSocket socket = ClientSocket.getInstance();
+
+            socket.sendRequest(GET_ALL_PRODUCTS);
+            Object response = socket.receiveResponse();
+
+            if (!(response instanceof List<?> list)) {
+                throw new RuntimeException("Dữ liệu trả về không đúng định dạng danh sách");
+            }
+
+            return list.stream()
+                    .filter(ItemDTO.class::isInstance)
+                    .map(ItemDTO.class::cast)
+                    .toList();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể tải danh sách sản phẩm: " + e.getMessage(), e);
+        }
     }
 }
