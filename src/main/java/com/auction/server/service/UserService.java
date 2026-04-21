@@ -6,7 +6,7 @@ import com.auction.exception.UserNotFoundException;
 import com.auction.server.factory.UserFromDTOFactory;
 import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
-import com.auction.server.dto.UserDTO;
+import com.auction.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.List;

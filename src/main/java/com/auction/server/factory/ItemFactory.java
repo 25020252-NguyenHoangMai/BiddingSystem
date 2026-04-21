@@ -1,7 +1,7 @@
 package com.auction.server.factory;
 
 import com.auction.model.*;
-import com.auction.server.dto.ItemDTO;
+import com.auction.dto.ItemDTO;
 
 public class ItemFactory {
     public static Item createItem(ItemDTO data) {

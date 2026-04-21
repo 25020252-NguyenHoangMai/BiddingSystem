@@ -4,7 +4,7 @@ import com.auction.exception.ItemNotFoundException;
 import com.auction.model.Item;
 import com.auction.model.User;
 import com.auction.server.dao.ItemDAO;
-import com.auction.server.dto.ItemDTO;
+import com.auction.dto.ItemDTO;
 import com.auction.server.factory.ItemFactory;
 
 

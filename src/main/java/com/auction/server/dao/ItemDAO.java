@@ -2,7 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
 import com.auction.model.*;
-import com.auction.server.dto.ItemDTO;
+import com.auction.dto.ItemDTO;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

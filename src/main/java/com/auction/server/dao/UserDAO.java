@@ -2,7 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
 import com.auction.model.*;
-import com.auction.server.dto.UserDTO;
+import com.auction.dto.UserDTO;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,6 +18,7 @@ public class UserDAO {
         data.setFullName(rs.getString("fullName"));
         data.setRole(rs.getString("role"));
         data.setBalance(rs.getDouble("balance"));
+        data.setSellerEnabled(rs.getBoolean("sellerEnabled"));
         return data;
     }
 
@@ -41,7 +42,7 @@ public class UserDAO {
     //============== đăng ký - thêm user ==============
     public void insertUser(User user) {
 
-        String sql = "INSERT INTO Users (id, username, password, fullName, role, storeName) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (id, username, password, fullName) VALUES (?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -49,18 +50,28 @@ public class UserDAO {
             ps.setString(2, user.getUsername());
             ps.setString(3, user.getPassword());
             ps.setString(4, user.getFullName());
-            ps.setString(5, user.getRole());
 
-            if (user instanceof Bidder bidder) {
-                ps.setNull(6, Types.NVARCHAR);
-            } else if (user instanceof Admin admin) {
-                ps.setNull(6, Types.NVARCHAR);
-            }
             ps.executeUpdate();
         }
         catch (SQLException e) {
             // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
             throw new AuctionException("Lỗi hệ thống khi đăng ký: " + e.getMessage());
+        }
+    }
+
+
+    //=============== bật chế độ SELLER ===============
+    public void enableSeller(int userId) {
+        String sql = "UPDATE Users SET sellerEnabled = 1 WHERE id = ?";
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -70,12 +81,12 @@ public class UserDAO {
      * 2. Khi người dùng đã đăng nhập và thực hiện các thao tác tiếp theo
      * Server chỉ cần dùng ID trong Session để lấy lại trạng thái mới nhất của User đó từ DB )
      */
-    public UserDTO getUserById(String id) {
+    public UserDTO getUserById(String userId) {
         String sql = "SELECT * FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, id);
+            ps.setString(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapToDTO(rs);
@@ -94,24 +105,6 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, username);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapToDTO(rs);
-                }
-            }
-        } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi tìm người dùng theo username: " + e.getMessage());
-        }
-        return null;
-    }
-
-    //=============== tìm user theo role ===============
-    public UserDTO getUserByRole(String role) {
-        String sql = "SELECT * FROM Users WHERE username = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, role);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapToDTO(rs);
@@ -169,19 +162,12 @@ public class UserDAO {
     //=============== thay đổi thông tin của user ===============
     public void updateUser(User user) {
 
-        String sql = "UPDATE Users SET username = ?, fullName = ?, storeName = ? WHERE id = ?";
+        String sql = "UPDATE Users SET username = ?, fullName = ? WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getFullName());
-
-            if (user instanceof Bidder bidder) {
-                ps.setNull(3, java.sql.Types.NVARCHAR);
-            }
-            else if (user instanceof Admin admin) {
-                ps.setNull(3, java.sql.Types.NVARCHAR);
-            }
             ps.setString(4, user.getId());
 
             ps.executeUpdate();
@@ -192,14 +178,14 @@ public class UserDAO {
     }
 
     //=============== dành cho chức năng đổi mật khẩu hoặc quên mật khẩu ===============
-    public void updatePassword(String id, String newPassword) {
+    public void updatePassword(String userId, String newPassword) {
         String sql = "UPDATE Users SET password = ? WHERE id = ?";
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, newPassword);
-            ps.setString(2, id);
+            ps.setString(2, userId);
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
@@ -212,7 +198,7 @@ public class UserDAO {
     }
 
     //=============== cập nhật balance ===============
-    public void updateBalance(String id, double amount) {
+    public void updateBalance(String userId, double amount) {
         //cập nhật số dư bằng cách cộng/trừ trực tiếp trong SQL
         String sql = "UPDATE Users SET balance = balance + ? WHERE id = ? AND (balance + ? >= 0)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
@@ -220,13 +206,13 @@ public class UserDAO {
 
             //amount - số tiền thay đổi (dương - cộng vào, âm - trừ đi)
             ps.setDouble(1, amount);
-            ps.setString(2, id);
+            ps.setString(2, userId);
             ps.setDouble(3, amount);
 
             int rowsAffected = ps.executeUpdate();
 
             if (rowsAffected == 0) {
-                throw new AuctionException("Không tìm thấy người dùng với ID hoặc số dư không đủ: " + id);
+                throw new AuctionException("Không tìm thấy người dùng với ID hoặc số dư không đủ: " + userId);
             }
         } catch (SQLException e) {
             throw new AuctionException("Lỗi khi cập nhật số dư: " + e.getMessage());
@@ -234,11 +220,11 @@ public class UserDAO {
     }
 
     //=============== xóa user ===============
-    public void deleteUser(String id) {
+    public void deleteUser(String userId) {
         String sql = "DELETE FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, id);
+            ps.setString(1, userId);
             ps.executeUpdate();
         }
 

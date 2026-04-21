@@ -1,6 +1,6 @@
 package com.auction.client;
 
-import com.auction.server.dto.UserDTO;
+import com.auction.dto.UserDTO;
 
 public class ClientSession {
     private static UserDTO currentUser;

@@ -1,4 +1,4 @@
-package com.auction.server.dto;
+package com.auction.dto;
 
 public class ItemDTO {
     private String id;

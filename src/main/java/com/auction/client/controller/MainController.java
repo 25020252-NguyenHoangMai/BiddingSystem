@@ -1,6 +1,6 @@
 package com.auction.client.controller;
 
-import com.auction.server.dto.ItemDTO;
+import com.auction.dto.ItemDTO;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;

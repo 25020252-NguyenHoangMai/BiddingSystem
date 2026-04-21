@@ -1,4 +1,4 @@
-package com.auction.server.dto;
+package com.auction.dto;
 
 public class UserDTO {
     private String id;
@@ -7,6 +7,7 @@ public class UserDTO {
     private String fullName;
     private String role;
     private double balance;
+    private boolean sellerEnabled;
 
     public String getId() {
         return id;
@@ -56,4 +57,7 @@ public class UserDTO {
         this.balance = balance;
     }
 
+    public boolean isSellerEnabled() {return sellerEnabled;}
+
+    public void setSellerEnabled(boolean sellerEnabled) {this.sellerEnabled = sellerEnabled;}
 }
