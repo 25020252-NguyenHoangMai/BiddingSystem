@@ -15,9 +15,7 @@ public class BiddingService { // Xử lí đặt giá
     }
 
     public boolean placeBid(String sessionId, String bidderId, double bidAmount) {
-        if (bidderId == null || bidderId.isBlank()) {
-            throw new IllegalArgumentException("Bidder id must not be empty");
-        }
+        validateBidInput(sessionId, bidderId, bidAmount);
 
         AuctionSession session = sessionService.getSession(sessionId);
 
@@ -25,7 +23,7 @@ public class BiddingService { // Xử lí đặt giá
             throw new IllegalArgumentException("Auction session not found: " + sessionId);
         }
 
-        synchronized (session) {
+        synchronized (session) { // tránh race condition giữa các bidder
             sessionService.refreshSessionStatus(sessionId);
 
             if (!isSessionCurrentlyBiddable(session)) {
@@ -33,7 +31,7 @@ public class BiddingService { // Xử lí đặt giá
             }
 
             if (bidAmount <= session.getCurrentPrice()) {
-                return false;
+                return false; //controller sau này trả response
             }
 
             session.setCurrentPrice(bidAmount);
@@ -41,6 +39,21 @@ public class BiddingService { // Xử lí đặt giá
             return true;
         }
     }
+
+    private void validateBidInput(String sessionId, String bidderId, double bidAmount) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("Session id must not be empty");
+        }
+
+        if (bidderId == null || bidderId.isBlank()) {
+            throw new IllegalArgumentException("Bidder id must not be empty");
+        }
+
+        if (bidAmount <= 0) {
+            throw new IllegalArgumentException("Bid amount must be positive");
+        }
+    }
+
 
     private boolean isSessionCurrentlyBiddable(AuctionSession session) {
         LocalDateTime now = LocalDateTime.now();
