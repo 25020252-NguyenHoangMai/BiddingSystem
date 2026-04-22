@@ -5,8 +5,6 @@ import com.auction.server.controller.AuthController;
 import com.auction.server.network.SocketServer;
 import com.auction.server.service.AntiSnipingService;
 import com.auction.server.service.AutoBiddingService;
-import com.auction.server.service.BiddingService;
-import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
 
 public class MainServer {

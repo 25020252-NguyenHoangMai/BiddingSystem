@@ -35,7 +35,7 @@ public class ItemServiceTest {
         Electronics tiviLoi = new Electronics("I01", "Tivi Sony", "Mô tả", seller.getId(), -500000, "Sony");
 
         assertThrows(AuctionException.class, () -> {
-            service.addItem(tiviLoi, seller);
+            service.addItem(tiviLoi);
         }, "Lỗi:giá sản phẩm âm!");
     }
 
@@ -49,7 +49,7 @@ public class ItemServiceTest {
         Electronics tiviLoi = new Electronics("I02", "", "Mô tả", seller.getId(), 1000000, "Sony");
 
         assertThrows(AuctionException.class, () -> {
-            service.addItem(tiviLoi, seller);
+            service.addItem(tiviLoi);
         }, "Lỗi:sản phẩm phải có tên");
     }
 

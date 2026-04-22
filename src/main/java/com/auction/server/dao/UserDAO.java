@@ -70,18 +70,19 @@ public class UserDAO {
 
 
     //=============== bật chế độ SELLER ===============
-    public void enableSeller(int userId) {
+    public User enableSeller(String userId) {
         String sql = "UPDATE Users SET sellerEnabled = 1 WHERE id = ?";
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, userId);
+            ps.setString(1, userId);
             ps.executeUpdate();
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     /**

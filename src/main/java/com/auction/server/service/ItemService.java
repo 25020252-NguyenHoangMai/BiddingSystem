@@ -1,5 +1,6 @@
 package com.auction.server.service;
 
+import com.auction.exception.AuctionException;
 import com.auction.exception.ItemNotFoundException;
 import com.auction.model.Item;
 import com.auction.model.User;
@@ -20,14 +21,17 @@ public class ItemService {
     }
 
     //=============== thêm item đấu giá ===============
-    public void addItem(Item item, User user) {
+    public void addItem(Item item) {
+        if (item.getStartingPrice() < 0) {
+            throw new AuctionException("Giá khởi điểm không được âm!");
+        }
+        else if (item.getName() == null || item.getName().trim().isEmpty()) {
+            throw new AuctionException("Tên sản phẩm không được để trống!");
+        }
 
         //tạo id ngẫu nhiên
         String id = java.util.UUID.randomUUID().toString();
         item.setId(id);
-
-        //thiết lập chủ sở hữu cho item
-        item.setSellerId(user.getId());
 
         itemDAO.insertItem(item);
     }

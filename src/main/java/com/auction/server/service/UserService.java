@@ -5,10 +5,14 @@ import com.auction.exception.AuthenticationException;
 import com.auction.exception.UserNotFoundException;
 //import com.auction.server.factory.UserFromDTOFactory;
 import com.auction.model.User;
+import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.UserDAO;
 //import com.auction.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.List;
 
 
@@ -127,6 +131,12 @@ public class UserService {
     //=============== hiển thị số dư tài khoản ===============
     public double getBalance(String userId) {
         return userDAO.getBalance(userId);
+    }
+
+
+    //=============== bật chế độ SELLER ===============
+    public User enableSeller(String userId) {
+        return userDAO.enableSeller(userId);
     }
 
 }

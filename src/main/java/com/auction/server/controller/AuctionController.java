@@ -5,7 +5,6 @@ import com.auction.request.RegisterRequest;
 import com.auction.request.Request;
 import com.auction.response.ErrorResponse;
 import com.auction.response.Response;
-import com.auction.server.service.UserService;
 
 public class AuctionController {
 
