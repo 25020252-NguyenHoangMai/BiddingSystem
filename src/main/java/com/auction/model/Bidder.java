@@ -9,9 +9,17 @@ public class Bidder extends User {
         this.sellerEnabled = false;
     }
 
+
+
     public Bidder(String id, String username, String password, String fullName, String role, double balance) {
         super(id, username, password, fullName, role);
         this.balance = balance;
+    }
+
+
+    public void enableSelling() {
+        this.sellerEnabled = true;
+        this.setRole("SELLER");
     }
 
     public double getBalance() {
