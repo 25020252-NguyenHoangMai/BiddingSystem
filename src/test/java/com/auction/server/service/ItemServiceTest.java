@@ -28,7 +28,7 @@ public class ItemServiceTest {
     // giá khởi điểm âm
     @Test
     void testAddItem_GiaKhoiDiemAm_PhaiNemLoi() {
-        // Đã xóa dòng new ItemService() cũ đi
+
         Bidder seller = new Bidder("U01", "seller1", "123", "Ông Bán Hàng", "BIDDER", 0);
         seller.enableSelling();
 
@@ -42,7 +42,6 @@ public class ItemServiceTest {
     // tên sp trống
     @Test
     void testAddItem_TenSanPhamRong_PhaiNemLoi() {
-        // Đã xóa dòng new ItemService() cũ đi
         Bidder seller = new Bidder("U01", "seller1", "123", "Ông Bán Hàng", "BIDDER", 0);
         seller.enableSelling();
 
@@ -57,9 +56,8 @@ public class ItemServiceTest {
     // tìm ID không tồn tại
     @Test
     void testGetItemById_KhongTonTai_PhaiNemLoi() {
-        // Đã xóa dòng new ItemService() cũ đi
 
-        // Dặn robot Thủ kho giả: ai hỏi ID này thì bảo là không tìm thấy (null)
+
         when(itemDAO.getItemById("ID_MA_QUY_12345")).thenReturn(null);
 
         assertThrows(ItemNotFoundException.class, () -> {
