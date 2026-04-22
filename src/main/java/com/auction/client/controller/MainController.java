@@ -44,8 +44,6 @@ public class MainController {
     @FXML private TableColumn<ItemDTO, String> colSeller; // Kiểu String cho tên người bán
     @FXML private TableColumn<ItemDTO, String> colTime;
 
-    private Timeline timer;
-
     // ===== DATA =====
     private final ObservableList<ItemDTO> auctionList = FXCollections.observableArrayList();
 
@@ -64,9 +62,6 @@ public class MainController {
 
         // Tải dữ liệu
         loadProductsAsync();
-
-        // Đếm ngưc thời gian
-        startCountdown();
     }
 
     // ===== USER INFO =====
@@ -97,6 +92,37 @@ public class MainController {
         colSeller.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().getSellerUsername())));
 
         colTime.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().calculateTimeLeft())));
+
+        colTime.setCellFactory(column -> new TableCell<>() {
+
+            private final Timeline timeline = new Timeline(
+                    new KeyFrame(Duration.seconds(1), e -> updateTime())
+            );
+
+            {
+                timeline.setCycleCount(Animation.INDEFINITE);
+            }
+
+            private void updateTime() {
+                ItemDTO item = getTableRow().getItem();
+                if (item != null) {
+                    setText(safe(item.calculateTimeLeft()));
+                }
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty || getTableRow().getItem() == null) {
+                    setText(null);
+                    timeline.stop();
+                } else {
+                    updateTime();
+                    timeline.play();
+                }
+            }
+        });
     }
 
     // ===== LOAD DATA (ASYNC) =====
@@ -122,7 +148,7 @@ public class MainController {
         thread.start();
     }
 
-    // ===== ACTIONS (Khớp với onAction trong FXML) =====
+    // ===== ACTIONS =====
     @FXML
     private void handleRefresh() {
         tableAuctions.setPlaceholder(new Label("Đang làm mới..."));
@@ -132,7 +158,6 @@ public class MainController {
     @FXML
     private void handleLogout() {
         ClientSession.clear();
-        // Sửa lại đường dẫn scene cho đúng với cấu trúc dự án của bạn
         switchScene("/com/auction/client/view/login.fxml");
     }
 
@@ -174,15 +199,27 @@ public class MainController {
         });
     }
 
-    private void startCountdown() {
-        if (timer != null) timer.stop();
+    @FXML
+    private void handleViewProfile() {
+        switchScene("/com/auction/client/view/profile.fxml");
+    }
 
-        timer = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            // Cứ mỗi giây, lệnh chạy một lần
-            tableAuctions.refresh();
-        }));
+    @FXML
+    private void handleSearch() {
+        String keyword = searchField.getText();
 
-        timer.setCycleCount(Animation.INDEFINITE); // Chạy vô hạn
-        timer.play();
+        if (keyword == null || keyword.isBlank()) {
+            tableAuctions.setItems(auctionList);
+            return;
+        }
+
+        ObservableList<ItemDTO> filteredList = FXCollections.observableArrayList(
+                auctionList.stream()
+                        .filter(item -> item.getName() != null &&
+                                item.getName().toLowerCase().contains(keyword.toLowerCase()))
+                        .toList()
+        );
+
+        tableAuctions.setItems(filteredList);
     }
 }
