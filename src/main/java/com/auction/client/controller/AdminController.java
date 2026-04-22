@@ -4,6 +4,8 @@ import com.auction.client.service.ProductService;
 import com.auction.client.service.UserClientService;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -23,7 +25,7 @@ public class AdminController {
     @FXML
     private TableView<ItemDTO> itemTable;
     @FXML private TableColumn<ItemDTO, Boolean> colItemSelect;
-    @FXML private TableColumn<ItemDTO, Integer> colItemId;
+    @FXML private TableColumn<ItemDTO, String> colItemId;
     @FXML private TableColumn<ItemDTO, String> colItemName;
     @FXML private TableColumn<ItemDTO, String> colItemSeller;
     private final ProductService productService = ProductService.getInstance();
@@ -36,7 +38,7 @@ public class AdminController {
     // --- PHẦN QUẢN LÝ NGƯỜI DÙNG ---
     @FXML private TableView<UserSessionDTO> userTable;
     @FXML private TableColumn<UserSessionDTO, Boolean> colUserSelect;
-    @FXML private TableColumn<UserSessionDTO, Integer> colUserId;
+    @FXML private TableColumn<UserSessionDTO, String> colUserId;
     @FXML private TableColumn<UserSessionDTO, String> colUsername;
     private final UserClientService userService = UserClientService.getInstance();
 
@@ -51,16 +53,18 @@ public class AdminController {
     @FXML
     public void initialize() {
         // Cấu hình bảng Item
-        colItemId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colItemName.setCellValueFactory(new PropertyValueFactory<>("name"));
-        colItemSeller.setCellValueFactory(new PropertyValueFactory<>("sellerUsername"));
+        // Lùng Lambda để báo lỗi viết sai tên hàm
+        colItemId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId())); //(new PropertyValueFactory<>("id"));
+        colItemName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName())); //(new PropertyValueFactory<>("name"));
+        colItemSeller.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSellerUsername()));//(new PropertyValueFactory<>("sellerUsername"));
         colItemSelect.setCellValueFactory(cellData -> cellData.getValue().selectedProperty());
         colItemSelect.setCellFactory(CheckBoxTableCell.forTableColumn(colItemSelect));
         itemTable.setEditable(true);
 
         // Cấu hình bảng User
-        colUserId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colUsername.setCellValueFactory(new PropertyValueFactory<>("username"));
+        // Dùng Lambda để báo lỗi viết sai tên hàm
+        colUserId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId())); //(new PropertyValueFactory<>("id"));
+        colUsername.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getUsername())); //(new PropertyValueFactory<>("username"));
         colUserSelect.setCellValueFactory(cellData -> cellData.getValue().selectedProperty());
         colUserSelect.setCellFactory(CheckBoxTableCell.forTableColumn(colUserSelect));
         userTable.setEditable(true);
