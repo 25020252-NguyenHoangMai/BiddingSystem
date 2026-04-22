@@ -18,6 +18,9 @@ public class SessionService { // Quản lí phiên đấu giá
     public static final String STATUS_CANCELED = "CANCELED";
 
     private final ConcurrentMap<String, AuctionSession> sessions = new ConcurrentHashMap<>();
+    //key = sessionId
+    // value = AuctionSession
+    // ConcurrentHashMap: an toàn trong môi trường nhiều thread
 
     public AuctionSession createSession(Item item, LocalDateTime start, LocalDateTime end) {
         if (item == null) {
@@ -32,7 +35,9 @@ public class SessionService { // Quản lí phiên đấu giá
             throw new IllegalArgumentException("End time must be after start time");
         }
 
+        //tạo sessionId ngẫu nhiên
         String sessionId = UUID.randomUUID().toString();
+        //tạo AuctionSession
         AuctionSession session = new AuctionSession(sessionId, item, start, end);
 
         sessions.put(sessionId, session);
@@ -44,7 +49,7 @@ public class SessionService { // Quản lí phiên đấu giá
             return null;
         }
 
-        return sessions.get(sessionId);
+        return sessions.get(sessionId); // nhận sessionId, tìm map, trả AuctionSession
     }
 
     public List<AuctionSession> getRunningSessions() {
@@ -63,19 +68,25 @@ public class SessionService { // Quản lí phiên đấu giá
         return runningSessions;
     }
 
-    public void startSession(String sessionId) {
+    public void startSession(String sessionId) { //method bắt đầu phiên đấu giá
         AuctionSession session = requireSession(sessionId);
 
+        //nếu là open -> hợp lệ -> set running
         synchronized (session) {
             if (!STATUS_OPEN.equals(session.getStatus())) {
                 throw new IllegalStateException("Only OPEN session can be started");
             }
 
             LocalDateTime now = LocalDateTime.now();
+            // có thể dùng updateStatusByTime nhưng nó có thể auto đổi status trước cả startSession rồi
 
             if (!now.isBefore(session.getEndTime())) {
                 session.setStatus(STATUS_FINISHED);
                 throw new IllegalStateException("Cannot start an expired session");
+            }
+
+            if (now.isBefore(session.getStartTime())) {
+                throw new IllegalStateException("Cannot start before start time");
             }
 
             session.setStatus(STATUS_RUNNING);
@@ -129,6 +140,7 @@ public class SessionService { // Quản lí phiên đấu giá
     }
 
     public void refreshSessionStatus(String sessionId) {
+        //method public vì updateStatusByTime là private
         AuctionSession session = requireSession(sessionId);
 
         synchronized (session) {
@@ -136,7 +148,7 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
-    private AuctionSession requireSession(String sessionId) {
+    private AuctionSession requireSession(String sessionId) { // helper method
         AuctionSession session = getSession(sessionId);
 
         if (session == null) {
@@ -154,11 +166,13 @@ public class SessionService { // Quản lí phiên đấu giá
                 && now.isBefore(session.getEndTime())) {
             session.setStatus(STATUS_RUNNING);
         }
+        //status = open, >= startTime và < endTime => status = running
 
         if ((STATUS_OPEN.equals(session.getStatus()) || STATUS_RUNNING.equals(session.getStatus()))
                 && !now.isBefore(session.getEndTime())) {
             session.setStatus(STATUS_FINISHED);
         }
+        //status = open/=running, >= endTime => status = finished
     }
 
 }
