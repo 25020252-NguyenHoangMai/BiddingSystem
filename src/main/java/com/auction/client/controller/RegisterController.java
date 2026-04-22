@@ -62,7 +62,7 @@ public class RegisterController {
             Object obj = clientSocket.receiveResponse();
 
             if (obj == null) {
-                showError("No response from server.");
+                showError("Server không phản hồi");
                 return;
             }
 
@@ -79,12 +79,12 @@ public class RegisterController {
                     showError(response.getMessage());
                 }
             } else {
-                showError("Invalid response from server.");
+                showError("Server phản hồi không hợp lệ");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            showError("Server connection error!");
+            showError("Lỗi kết nối Server!");
         }
     }
 
