@@ -34,7 +34,9 @@ public class UserDAO {
     public boolean isUsernameExist(String username) {
         String sql = "SELECT 1 FROM Users WHERE username = ?";
 
+        //sử dụng try-with-resources để đảm bảo tự động đóng Connection và PreparedStatement giúp tránh rò rỉ tài nguyên (memory leak) cho SQL Server
         try (Connection conn = DatabaseManager.getInstance().getConnection();
+             //chuẩn bị câu lệnh SQL: giúp ngăn chặn SQL Injection và tối ưu hiệu suất truy vấn
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, username);
