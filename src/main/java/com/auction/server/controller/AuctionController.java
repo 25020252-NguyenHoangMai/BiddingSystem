@@ -16,7 +16,7 @@ public class AuctionController {
     }
 
     public Response handleRequest(Request request) {
-        if (request instanceof LoginRequest loginRequest) {
+        if (request instanceof LoginRequest loginRequest) { // Pattern matching for instanceof: kiểm tra + gán biến + ép kiểu
             return authController.login(loginRequest);
         }
 
