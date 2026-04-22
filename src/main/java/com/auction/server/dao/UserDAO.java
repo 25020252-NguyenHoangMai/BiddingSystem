@@ -10,6 +10,7 @@ import java.util.List;
 
 public class UserDAO {
 
+    //chuyển đổi dữ liệu từ dạng hàng và cột của SQL Server thành một đối tượng
     private User mapToUser(ResultSet rs) throws SQLException {
         String id = rs.getString("id");
         String username = rs.getString("username");

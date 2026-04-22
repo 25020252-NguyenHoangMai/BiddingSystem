@@ -13,6 +13,7 @@ import java.util.List;
 
 public class ItemDAO {
 
+    //chuyển đổi dữ liệu từ dòng kết quả SQL (ResultSet) thành đối tượng DTO để truyền tải an toàn và hiển thị lên giao diện
     private ItemDTO mapToDTO(ResultSet rs) throws SQLException {
         ItemDTO data = new ItemDTO();
         data.setId(rs.getString("id"));
