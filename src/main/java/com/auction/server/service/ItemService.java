@@ -13,7 +13,11 @@ import java.util.stream.Collectors;
 
 
 public class ItemService {
-    private final ItemDAO itemDAO = new ItemDAO();
+    private ItemDAO itemDAO ;
+
+    public ItemService() {
+        this.itemDAO = new ItemDAO();
+    }
 
     //=============== thêm item đấu giá ===============
     public void addItem(Item item, User user) {
