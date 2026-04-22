@@ -13,8 +13,15 @@ import java.util.List;
 
 
 public class UserService {
-    private final UserDAO userDAO = new UserDAO();
+    private  UserDAO userDAO;
 
+    public UserService() {
+        this.userDAO = new UserDAO();
+    }
+
+    public UserService(UserDAO mockDAO) {
+        this.userDAO = mockDAO;
+    }
 
 
     //=============== đăng ký ===============

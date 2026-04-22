@@ -53,7 +53,7 @@ public class AdminController {
     @FXML
     public void initialize() {
         // Cấu hình bảng Item
-        // Lùng Lambda để báo lỗi viết sai tên hàm
+        // Lùng Lambda để báo lỗi viết sai tên hàm 
         colItemId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId())); //(new PropertyValueFactory<>("id"));
         colItemName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName())); //(new PropertyValueFactory<>("name"));
         colItemSeller.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSellerUsername()));//(new PropertyValueFactory<>("sellerUsername"));

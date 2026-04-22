@@ -72,7 +72,7 @@ public class LoginController implements Initializable {
             Object obj = clientSocket.receiveResponse();
 
             if (obj == null) {
-                loginMessageLabel.setText("No response from server.");
+                loginMessageLabel.setText("Server không phản hồi");
                 loginMessageLabel.setVisible(true);
                 return;
             }
@@ -93,13 +93,13 @@ public class LoginController implements Initializable {
                     loginMessageLabel.setVisible(true);
                 }
             } else {
-                loginMessageLabel.setText("Invalid response from server.");
+                loginMessageLabel.setText("Server phản hồi không hợp lệ");
                 loginMessageLabel.setVisible(true);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            loginMessageLabel.setText("Server connection error!");
+            loginMessageLabel.setText("Lỗi kết nối Server!");
             loginMessageLabel.setVisible(true);
         }
     }
