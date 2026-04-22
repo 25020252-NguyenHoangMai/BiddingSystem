@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AddProductController">
+
+    <content>
+        <VBox prefWidth="520" spacing="20" style="-fx-padding: 25; -fx-background-color: #ffffff;">
+
+            <!-- HEADER -->
+            <VBox spacing="5">
+                <Label style="-fx-font-size: 22; -fx-font-weight: bold;" text="New Item" />
+
+                <Label style="-fx-text-fill: #7f8c8d;" text="Fill in product details to start auction" />
+            </VBox>
+
+            <!-- FORM -->
+            <GridPane hgap="15" vgap="15">
+
+                <columnConstraints>
+                    <!-- FIX lỗi bị cắt chữ -->
+                    <ColumnConstraints prefWidth="250" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <!-- NAME -->
+                <Label text="Product Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                <TextField fx:id="txtName" promptText="Enter product name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                <!-- DESCRIPTION -->
+                <Label text="Description:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                <TextArea fx:id="txtDescription" prefHeight="90" promptText="Max 2000 words" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                <!-- PRICE -->
+                <Label text="Starting Price ($):" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                <TextField fx:id="txtPrice" promptText="e.g. 100.00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                <!-- CATEGORY -->
+                <Label text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                <ComboBox fx:id="cbCategory" onAction="#handleCategoryChange" prefWidth="220" promptText="Select category" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <rowConstraints>
+               <RowConstraints />
+               <RowConstraints />
+               <RowConstraints />
+               <RowConstraints />
+            </rowConstraints>
+            </GridPane>
+
+            <!-- DYNAMIC FIELDS -->
+            <VBox fx:id="dynamicFields" managed="false" spacing="10" style="-fx-background-color: #f4f6f7;                          -fx-padding: 15;                          -fx-background-radius: 10;" visible="false" />
+
+            <!-- ERROR -->
+            <Label fx:id="errorLabel" textFill="red" visible="false" />
+
+            <!-- ACTIONS -->
+            <HBox alignment="CENTER_RIGHT" spacing="12">
+
+                <Button onAction="#handleCancel" prefWidth="110" style="-fx-background-color: #bdc3c7;                                -fx-text-fill: white;                                -fx-cursor: hand;" text="Cancel" />
+
+                <Button fx:id="btnSubmit" onAction="#handleAddAndStart" prefWidth="150" style="-fx-background-color: #27ae60;                                -fx-text-fill: white;                                -fx-font-weight: bold;                                -fx-cursor: hand;" text="Post Auction" />
+            </HBox>
+
+        </VBox>
+    </content>
+</ScrollPane>
