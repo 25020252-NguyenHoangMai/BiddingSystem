@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.service.AuthService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -9,12 +10,9 @@ import javafx.scene.image.ImageView;
 import javafx.event.ActionEvent;
 import javafx.scene.control.Label;
 
-import com.auction.client.network.ClientSocket;
 import com.auction.client.ClientSession;
-import com.auction.request.LoginRequest;
 import com.auction.response.LoginResponse;
 
-import java.io.File;
 import java.util.ResourceBundle;
 
 import java.net.URL;
@@ -32,14 +30,17 @@ public class LoginController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        File brandingFile = new File("src/main/resources/images/welcome.png");
-        Image brandingImage = new Image(brandingFile.toURI().toString());
+        Image brandingImage = new Image(
+                getClass().getResource("/images/welcome.png").toExternalForm()
+        );
         brandingImageView.setImage(brandingImage);
 
         Platform.runLater(() -> enterUsernameField.requestFocus());
 
         loginMessageLabel.setVisible(false);
     }
+
+    private final AuthService authService = new AuthService();
 
     @FXML
     public void loginButtonOnAction(ActionEvent event) {
@@ -49,57 +50,46 @@ public class LoginController implements Initializable {
         loginMessageLabel.setVisible(false);
 
         if (username == null || username.isBlank()) {
-            loginMessageLabel.setText("Please enter username.");
-            loginMessageLabel.setVisible(true);
+            showError("Please enter username.");
             return;
         }
 
         if (password == null || password.isBlank()) {
-            loginMessageLabel.setText("Please enter password.");
-            loginMessageLabel.setVisible(true);
+            showError("Please enter password.");
             return;
         }
 
         try {
-            ClientSocket clientSocket = ClientSocket.getInstance();
-            clientSocket.connect();
+            LoginResponse response = authService.login(username, password);
 
-            LoginRequest request = new LoginRequest(username, password);
-            clientSocket.sendRequest(request);
-
-            Object obj = clientSocket.receiveResponse();
-
-            if (obj == null) {
-                loginMessageLabel.setText("Server không phản hồi");
-                loginMessageLabel.setVisible(true);
+            if (response == null) {
+                showError("Server không phản hồi");
                 return;
             }
 
-            if (obj instanceof LoginResponse response) {
-                if (response.isSuccess()) {
-                    System.out.println("Đăng nhập thành công!");
+            if (response.isSuccess()) {
+                System.out.println("Đăng nhập thành công!");
 
-                    ClientSession.setCurrentUser(response.getUser());
+                ClientSession.setCurrentUser(response.getUser());
 
-                    com.auction.client.util.SceneUtil.changeScene(
-                            event,
-                            "/views/main.fxml",
-                            "Auction Dashboard"
-                    );
-                } else {
-                    loginMessageLabel.setText(response.getMessage());
-                    loginMessageLabel.setVisible(true);
-                }
+                com.auction.client.util.SceneUtil.changeScene(
+                        event,
+                        "/views/main.fxml",
+                        "Auction Dashboard"
+                );
             } else {
-                loginMessageLabel.setText("Server phản hồi không hợp lệ");
-                loginMessageLabel.setVisible(true);
+                showError(response.getMessage());
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            loginMessageLabel.setText("Lỗi kết nối Server!");
-            loginMessageLabel.setVisible(true);
+            showError("Lỗi kết nối Server!");
         }
+    }
+
+    private void showError(String message) {
+        loginMessageLabel.setText(message);
+        loginMessageLabel.setVisible(true);
     }
 
     @FXML
