@@ -15,5 +15,20 @@ public class PlaceBidResponse extends Response {
         this.status = status;
     }
 
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public String getCurrentWinnerId() {
+        return currentWinnerId;
+    }
+
+    public Double getCurrentPrice() {
+        return currentPrice;
+    }
+
+    public String getStatus() {
+        return status;
+    }
 
 }
