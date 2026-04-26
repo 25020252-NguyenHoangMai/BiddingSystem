@@ -33,7 +33,7 @@ public class UserService {
         User existing = userDAO.getUserByUsername(user.getUsername());
 
         if (existing != null) {
-            throw new AuctionException("Username đã tồn tại!");
+            throw new AuctionException("This username has already existed!");
         }
 
         //tạo id ngẫu nhiên
@@ -55,11 +55,11 @@ public class UserService {
         User user = userDAO.getUserByUsername(username);
 
         if (user == null) {
-            throw new AuthenticationException("Username không tồn tại!");
+            throw new AuthenticationException("Username does not exist!");
         }
 
         if (!BCrypt.checkpw(password, user.getPassword())) {
-            throw new AuthenticationException("Sai mật khẩu!");
+            throw new AuthenticationException("Incorrect password!");
         }
 //        User user = UserFromDTOFactory.fromDTO(dto);
         //xóa mật khẩu để đảm bảo bảo mật trước khi trả ra ngoài
@@ -86,7 +86,7 @@ public class UserService {
         User existing = userDAO.getUserByUsername(user.getUsername());
 
         if (existing != null && !existing.getId().equals(user.getId())) {
-            throw new AuctionException("Username đã tồn tại!");
+            throw new AuctionException("This username has already existed!");
         }
         userDAO.updateUser(user);
     }
@@ -107,7 +107,7 @@ public class UserService {
         User user = userDAO.getUserById(userId);
 
         if (user == null) {
-            throw new UserNotFoundException("ID không tồn tại!");
+            throw new UserNotFoundException("ID does not exist");
         }
         return user;
     }
@@ -120,7 +120,7 @@ public class UserService {
         User user = userDAO.getUserByUsername(username);
 
         if (user == null) {
-            throw new UserNotFoundException("Username không tồn tại!");
+            throw new UserNotFoundException("Username does not exist!");
         }
         return user;
     }

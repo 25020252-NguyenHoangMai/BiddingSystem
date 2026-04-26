@@ -72,7 +72,7 @@ public class SessionDAO {
             ps.executeUpdate();
         }
         catch (SQLException e) {
-            throw new AuctionException("An error occurred while inserting the session: " + e.getMessage());
+            throw new AuctionException("An error occurred while inserting session: " + e.getMessage());
         }
     }
 
@@ -89,7 +89,7 @@ public class SessionDAO {
             }
             return null;
         } catch (SQLException e) {
-            throw new AuctionException("An error occurred while getting the session by id: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting session by id: " + e.getMessage());
         }
     }
 

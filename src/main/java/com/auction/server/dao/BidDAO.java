@@ -34,7 +34,7 @@ public class BidDAO {
             ps.executeUpdate();
         }
         catch (SQLException e) {
-            throw new AuctionException("An error occurred while placing the bid: " + e.getMessage());
+            throw new AuctionException("An error occurred while placing bid: " + e.getMessage());
         }
     }
 
@@ -56,7 +56,7 @@ public class BidDAO {
             }
             return null;
         } catch (SQLException e) {
-            throw new AuctionException("An error occurred while getting the highest bid: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting highest bid: " + e.getMessage());
         }
     }
 
@@ -81,7 +81,7 @@ public class BidDAO {
             }
 
         } catch (SQLException e) {
-            throw new AuctionException("An error occurred while getting the bids by session: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting bids by session: " + e.getMessage());
         }
         return list;
     }
@@ -108,7 +108,7 @@ public class BidDAO {
             }
 
         } catch (SQLException e) {
-            throw new AuctionException("An error occurred while getting the bids by bidder: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting bids by bidder: " + e.getMessage());
         }
 
         return list;
