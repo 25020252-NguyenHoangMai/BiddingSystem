@@ -1,0 +1,19 @@
+package com.auction.response;
+
+public class PlaceBidResponse extends Response {
+    private String sessionId;
+    private double currentPrice;
+    private String currentWinnerId;
+    private String status;
+
+    public PlaceBidResponse(boolean success, String message, String sessionId, double currentPrice,
+                            String currentWinnerId, String status) {
+        super(success, message);
+        this.sessionId = sessionId;
+        this.currentPrice = currentPrice;
+        this.currentWinnerId = currentWinnerId;
+        this.status = status;
+    }
+
+
+}
