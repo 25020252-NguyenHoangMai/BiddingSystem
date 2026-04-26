@@ -2,6 +2,8 @@ package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
 import com.auction.dto.ItemDTO;
+import com.auction.request.GetAllItemsRequest;
+import com.auction.response.GetAllItemsResponse;
 
 import java.util.List;
 
