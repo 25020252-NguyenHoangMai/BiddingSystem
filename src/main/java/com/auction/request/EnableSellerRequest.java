@@ -1,4 +1,4 @@
 package com.auction.request;
 
-public class EnableSellerRequest {
+public class EnableSellerRequest extends Request{
 }
