@@ -6,7 +6,7 @@ public class PlaceBidResponse extends Response {
     private String currentWinnerId;
     private String status;
 
-    public PlaceBidResponse(boolean success, String message, String sessionId, double currentPrice,
+    public PlaceBidResponse(boolean success, String message, String sessionId, Double currentPrice,
                             String currentWinnerId, String status) {
         super(success, message);
         this.sessionId = sessionId;
