@@ -35,7 +35,7 @@ public class BiddingService { // Xử lí đặt giá
             if (bidAmount <= session.getCurrentPrice()) {
                 return new BidResult(false,
                 "Bid failed: bid amount must be greater than current price (" + session.getCurrentPrice() + ").",
-                        session.getId(), session.getCurrentPrice(), session.getCurrentWinnerId(), session.getStatus()); //controller sau này trả response
+                        session.getId(), session.getCurrentPrice(), session.getCurrentWinnerId(), session.getStatus());
             }
 
             session.setCurrentPrice(bidAmount);
