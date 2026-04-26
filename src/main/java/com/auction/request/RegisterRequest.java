@@ -29,8 +29,8 @@ public class RegisterRequest extends Request {
         return confirmPassword;
     }
 
-    public void setFullName (String newFullname) {
-        this.fullName = newFullname;
+    public void setFullName (String newFullName) {
+        this.fullName = newFullName;
     }
 
     public void setUsername(String newUsername) {
