@@ -1,17 +1,26 @@
 package com.auction.server.service;
 
 import com.auction.model.AuctionSession;
+import com.auction.model.BidTransaction;
+import com.auction.server.dao.BidDAO;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class BiddingService { // Xử lí đặt giá
     private final SessionService sessionService;
+    private final BidDAO bidDAO;
 
-    public BiddingService(SessionService sessionService) {
+    public BiddingService(SessionService sessionService, BidDAO bidDAO) {
         if (sessionService == null) {
             throw new IllegalArgumentException("SessionService must not be null");
         }
+        if (bidDAO == null) {
+            throw new IllegalArgumentException("BidDAO must not be null");
+        }
 
         this.sessionService = sessionService;
+        this.bidDAO = bidDAO;
     }
 
     public BidResult placeBid(String sessionId, String bidderId, double bidAmount) {
@@ -23,27 +32,53 @@ public class BiddingService { // Xử lí đặt giá
             return new BidResult(false, "Auction session not found: " + sessionId, sessionId,
                     0.0, null, null);
         }
-
-        synchronized (session) { // tránh race condition giữa các bidder
-            sessionService.refreshSessionStatus(sessionId);
-
-            if (!isSessionCurrentlyBiddable(session)) {
-                return new BidResult(false, buildNotBiddableMessage(session), session.getId(),
-                        session.getCurrentPrice(), session.getCurrentWinnerId(), session.getStatus());
-            }
-
-            if (bidAmount <= session.getCurrentPrice()) {
-                return new BidResult(false,
-                "Bid failed: bid amount must be greater than current price (" + session.getCurrentPrice() + ").",
-                        session.getId(), session.getCurrentPrice(), session.getCurrentWinnerId(), session.getStatus());
-            }
-
-            session.setCurrentPrice(bidAmount);
-            session.setCurrentWinnerId(bidderId);
-
-            return new BidResult(true, "Bid placed successfully", session.getId(),
+        sessionService.refreshSessionStatus(sessionId);
+        session = sessionService.getSession(sessionId);
+        if (session == null) {
+            return new BidResult(false, "Auction session not found after refresh: " + sessionId, sessionId,
+                    0.0, null, null);
+        }
+        if (!isSessionCurrentlyBiddable(session)) {
+            return new BidResult(false, buildNotBiddableMessage(session), session.getId(),
                     session.getCurrentPrice(), session.getCurrentWinnerId(), session.getStatus());
         }
+
+        if (bidAmount <= session.getCurrentPrice()) {
+            return new BidResult(false,
+            "Bid failed: bid amount must be greater than current price (" + session.getCurrentPrice() + ").",
+                    session.getId(), session.getCurrentPrice(), session.getCurrentWinnerId(), session.getStatus());
+        }
+
+        boolean updated = sessionService.updateCurrentBid(sessionId, bidAmount, bidderId);
+
+        if (!updated) {
+            AuctionSession latestSession = sessionService.getSession(sessionId);
+
+            return new BidResult(false,
+                    "Bid failed: session is closed or another higher bid was placed.", sessionId,
+                    latestSession != null ? latestSession.getCurrentPrice() : 0.0,
+                    latestSession != null ? latestSession.getCurrentWinnerId() : null,
+                    latestSession != null ? latestSession.getStatus() : null);
+        }
+
+        BidTransaction bidTransaction = new BidTransaction(UUID.randomUUID().toString(),
+                sessionId, bidderId, bidAmount);
+        bidDAO.insertBid(bidTransaction);
+
+        AuctionSession updatedSession = sessionService.getSession(sessionId);
+        if (updatedSession == null) {
+            return new BidResult(true, "Bid placed successfully but failed to reload updated session",
+                    sessionId, bidAmount, bidderId, null);
+        }
+
+        return new BidResult(
+                true,
+                "Bid placed successfully",
+                updatedSession.getId(),
+                updatedSession.getCurrentPrice(),
+                updatedSession.getCurrentWinnerId(),
+                updatedSession.getStatus()
+        );
     }
 
     private void validateBidInput(String sessionId, String bidderId, double bidAmount) {

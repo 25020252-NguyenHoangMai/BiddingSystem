@@ -4,6 +4,7 @@ import com.auction.server.controller.AuctionController;
 import com.auction.server.controller.AuthController;
 import com.auction.server.controller.BiddingController;
 import com.auction.server.controller.ItemController;
+import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.ItemDAO;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.network.SocketServer;
@@ -14,9 +15,11 @@ public class MainServer {
         UserService userService = new UserService();
         ItemService itemService = new ItemService();
         ItemDAO itemDAO = new ItemDAO();
+        BidDAO bidDAO = new BidDAO();
+
         SessionDAO sessionDAO = new SessionDAO(itemDAO);
         SessionService sessionService = new SessionService(sessionDAO);
-        BiddingService biddingService = new BiddingService(sessionService);
+        BiddingService biddingService = new BiddingService(sessionService, bidDAO);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService);
