@@ -128,6 +128,31 @@ public class SessionDAO {
         }
     }
 
+    public void updateEndTime(String sessionId, LocalDateTime newEndTime) {
+
+        String sql = """
+        UPDATE AuctionSession
+        SET endTime = ?
+        WHERE id = ?
+    """;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setTimestamp(1, Timestamp.valueOf(newEndTime));
+            ps.setString(2, sessionId);
+
+            int updated = ps.executeUpdate();
+
+            if (updated == 0) {
+                throw new AuctionException("Auction session is not found to update end time.");
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while updating end time: " + e.getMessage());
+        }
+    }
+
     public List<AuctionSession> getAllSessions() {
         String sql = "SELECT * FROM AuctionSession";
         List<AuctionSession> list = new ArrayList<>();
