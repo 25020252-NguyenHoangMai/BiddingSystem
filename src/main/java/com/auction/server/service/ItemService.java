@@ -52,6 +52,9 @@ public class ItemService {
                 .collect(Collectors.toList());
     }
 
+    public List<ItemDTO> getAllItemDTOS() {
+        return itemDAO.getAllItems();
+    }
 
     //=============== hiển thị sản phẩm (qua id) ===============
     public Item getItemById(String id) {

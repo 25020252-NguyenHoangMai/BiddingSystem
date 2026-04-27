@@ -1,6 +1,7 @@
 package com.auction.server.controller;
 
 import com.auction.model.Item;
+import com.auction.dto.ItemDTO;
 import com.auction.request.GetAllItemsRequest;
 import com.auction.response.GetAllItemsResponse;
 import com.auction.server.service.ItemService;
@@ -19,7 +20,8 @@ public class ItemController {
                 return new GetAllItemsResponse(false, "Request cannot be null", null);
             }
 
-            List<Item> items = itemService.getAllItems();
+            List<ItemDTO> items = itemService.getAllItemDTOS();
+
             return new GetAllItemsResponse(true, "Get all items successfully", items);
 
         } catch (Exception e) {

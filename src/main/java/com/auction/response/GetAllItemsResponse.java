@@ -1,17 +1,17 @@
 package com.auction.response;
 
-import com.auction.model.Item;
+import com.auction.dto.ItemDTO;
 import java.util.List;
 
 public class GetAllItemsResponse extends Response {
-    private List<Item> items;
+    private List<ItemDTO> items;
 
-    public GetAllItemsResponse(boolean success, String message, List<Item> items) {
+    public GetAllItemsResponse(boolean success, String message, List<ItemDTO> items) {
         super(success, message);
         this.items = items;
     }
 
-    public List<Item> getItems() {
+    public List<ItemDTO> getItems() {
         return items;
     }
 }
