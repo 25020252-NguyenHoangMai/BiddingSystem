@@ -2,7 +2,7 @@ package com.auction.response;
 
 public class PlaceBidResponse extends Response {
     private String sessionId;
-    private double currentPrice;
+    private Double currentPrice;
     private String currentWinnerId;
     private String status;
 
