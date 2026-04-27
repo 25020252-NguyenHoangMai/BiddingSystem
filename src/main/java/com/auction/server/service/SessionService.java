@@ -2,6 +2,8 @@ package com.auction.server.service;
 
 import com.auction.model.AuctionSession;
 import com.auction.model.Item;
+import com.auction.server.dao.SessionDAO;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,10 +19,18 @@ public class SessionService { // Quản lí phiên đấu giá
     public static final String STATUS_PAID = "PAID";
     public static final String STATUS_CANCELED = "CANCELED";
 
-    private final ConcurrentMap<String, AuctionSession> sessions = new ConcurrentHashMap<>();
+    //private final ConcurrentMap<String, AuctionSession> sessions = new ConcurrentHashMap<>();
     //key = sessionId
     // value = AuctionSession
     // ConcurrentHashMap: an toàn trong môi trường nhiều thread
+    private final SessionDAO sessionDAO;
+
+    public SessionService(SessionDAO sessionDAO) {
+        if (sessionDAO == null) {
+            throw new IllegalArgumentException("sessionDAO cannot be null");
+        }
+        this.sessionDAO = sessionDAO;
+    }
 
     public AuctionSession createSession(Item item, LocalDateTime start, LocalDateTime end) {
         if (item == null) {
@@ -40,22 +50,22 @@ public class SessionService { // Quản lí phiên đấu giá
         //tạo AuctionSession
         AuctionSession session = new AuctionSession(sessionId, item, start, end);
 
-        sessions.put(sessionId, session);
+        sessionDAO.insertSession(session, item);
         return session;
     }
 
     public AuctionSession getSession(String sessionId) {
-        if (sessionId == null) {
+        if (sessionId == null || sessionId.isBlank()) {
             return null;
         }
 
-        return sessions.get(sessionId); // nhận sessionId, tìm map, trả AuctionSession
+        return sessionDAO.getSessionById(sessionId); // nhận sessionId, trả AuctionSession
     }
 
     public List<AuctionSession> getRunningSessions() {
         List<AuctionSession> runningSessions = new ArrayList<>();
 
-        for (AuctionSession session : sessions.values()) {
+        for (AuctionSession session : sessionDAO.getAllSessions()) {
             synchronized (session) {
                 updateStatusByTime(session);
 
@@ -90,6 +100,7 @@ public class SessionService { // Quản lí phiên đấu giá
             }
 
             session.setStatus(STATUS_RUNNING);
+            sessionDAO.updateStatus(sessionId, STATUS_RUNNING);
         }
     }
 
@@ -102,6 +113,7 @@ public class SessionService { // Quản lí phiên đấu giá
             }
 
             session.setStatus(STATUS_FINISHED);
+            sessionDAO.updateStatus(sessionId, STATUS_FINISHED);
         }
     }
 
@@ -165,14 +177,48 @@ public class SessionService { // Quản lí phiên đấu giá
                 && !now.isBefore(session.getStartTime())
                 && now.isBefore(session.getEndTime())) {
             session.setStatus(STATUS_RUNNING);
+            sessionDAO.updateStatus(session.getId(), STATUS_RUNNING);
         }
         //status = open, >= startTime và < endTime => status = running
 
         if ((STATUS_OPEN.equals(session.getStatus()) || STATUS_RUNNING.equals(session.getStatus()))
                 && !now.isBefore(session.getEndTime())) {
             session.setStatus(STATUS_FINISHED);
+            sessionDAO.updateStatus(session.getId(), STATUS_FINISHED);
         }
         //status = open/=running, >= endTime => status = finished
+    }
+
+    public boolean updateCurrentBid(String sessionId, double newPrice, String bidderId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("Auction session not found: " + sessionId);
+        }
+
+        if (bidderId == null || bidderId.isBlank()) {
+            throw new IllegalArgumentException("Bidder id must not be empty");
+        }
+        if (newPrice <= 0) {
+            throw new IllegalArgumentException("Bid amount must be positive");
+        }
+
+        AuctionSession session = requireSession(sessionId);
+        refreshSessionStatus(sessionId);
+        session = requireSession(sessionId);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!STATUS_RUNNING.equals(session.getStatus())
+                || now.isBefore(session.getStartTime())
+                || !now.isBefore(session.getEndTime())) {
+            return false;
+        }
+
+        if (newPrice <= session.getCurrentPrice()) {
+            return false;
+        }
+
+        return sessionDAO.updateCurrentBid(sessionId, newPrice, bidderId);
+
     }
 
 }
