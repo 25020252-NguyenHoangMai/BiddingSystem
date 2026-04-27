@@ -64,12 +64,12 @@ public class ItemDAO {
                 ps.setString(11, art.getArtist());
             }
             else {
-                throw new AuctionException("Loại sản phẩm không hợp lệ");
+                throw new AuctionException("Invalid item type.");
             }
             ps.executeUpdate();
         }
         catch (SQLException e) {
-            throw new AuctionException("Lỗi hệ thống khi thêm sản phẩm: " + e.getMessage());
+            throw new AuctionException("An error occurred while inserting item: " + e.getMessage());
         }
     }
 
@@ -83,11 +83,11 @@ public class ItemDAO {
             ps.setString(1, id);
             int rows = ps.executeUpdate();
             if (rows == 0) {
-                throw new AuctionException("Không xóa được sản phẩm");
+                throw new AuctionException("The item cannot be deleted.");
             }
         }
         catch (SQLException e) {
-            throw new AuctionException("Lỗi khi xóa thông tin: " + e.getMessage());
+            throw new AuctionException("An error occurred while deleting item: " + e.getMessage());
         }
     }
 
@@ -127,13 +127,13 @@ public class ItemDAO {
                 ps.setString(9, art.getArtist());
             }
             else {
-                throw new AuctionException("Loại sản phẩm không hợp lệ");
+                throw new AuctionException("Inavlid item type.");
             }
             ps.setString(10, item.getId());
             ps.executeUpdate();
         }
         catch (SQLException e) {
-            throw new AuctionException("Lỗi khi cập nhật thông tin: " + e.getMessage());
+            throw new AuctionException("An error occurred while updating item information: " + e.getMessage());
         }
     }
 
@@ -150,7 +150,7 @@ public class ItemDAO {
             }
 
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi lấy danh sách sản phẩm.");
+            throw new AuctionException("An error occurred while getting all items: " + e.getMessage());
         }
         return list;
     }
@@ -169,7 +169,7 @@ public class ItemDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi tìm sản phẩm theo ID: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting item by id: " + e.getMessage());
         }
         return null;
     }
@@ -190,7 +190,7 @@ public class ItemDAO {
             }
         }
         catch (SQLException e) {
-            throw new AuctionException("Lỗi khi tìm sản phẩm theo tên.");
+            throw new AuctionException("An error occurred while getting items by name: " + e.getMessage());
         }
         return list;
     }
@@ -212,7 +212,7 @@ public class ItemDAO {
             }
 
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi tìm sản phẩm theo danh mục");
+            throw new AuctionException("An error occurred while getting items by item type: " + e.getMessage());
         }
 
         return list;

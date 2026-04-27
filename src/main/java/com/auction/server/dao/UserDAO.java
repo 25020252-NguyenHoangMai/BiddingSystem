@@ -46,7 +46,7 @@ public class UserDAO {
                 return rs.next();
             }
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi kiểm tra username: " + e.getMessage());
+            throw new AuctionException("An error occurred while checking for username duplication: " + e.getMessage());
         }
     }
 
@@ -67,7 +67,7 @@ public class UserDAO {
         }
         catch (SQLException e) {
             // Có thể check mã lỗi SQL để ném message chuẩn hơn (ví dụ trùng username)
-            throw new AuctionException("Lỗi hệ thống khi đăng ký: " + e.getMessage());
+            throw new AuctionException("An error occurred during registration: " + e.getMessage());
         }
     }
 
@@ -83,7 +83,7 @@ public class UserDAO {
             ps.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new AuctionException("An error occurred while enabling selling: " + e.getMessage());
         }
         return null;
     }
@@ -106,7 +106,7 @@ public class UserDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi tìm người dùng theo ID: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting user by id: " + e.getMessage());
         }
         return null;
     }
@@ -124,7 +124,7 @@ public class UserDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi tìm người dùng theo username: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting user by username: " + e.getMessage());
         }
         return null;
     }
@@ -150,7 +150,7 @@ public class UserDAO {
             }
 
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi lấy danh sách người dùng.");
+            throw new AuctionException("An error occurred while getting all users: " + e.getMessage());
         }
         return list;
     }
@@ -165,9 +165,9 @@ public class UserDAO {
                 if (rs.next()) return rs.getDouble("balance");
             }
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi hệ thống khi truy vấn số dư.");
+            throw new AuctionException("An error occurred while getting balance: " + e.getMessage());
         }
-        throw new AuctionException("Không tìm thấy user để lấy số dư");
+        throw new AuctionException("User is not found.");
     }
 
 
@@ -186,7 +186,7 @@ public class UserDAO {
             ps.executeUpdate();
         }
         catch (SQLException e) {
-            throw new AuctionException("Lỗi khi cập nhật thông tin: " + e.getMessage());
+            throw new AuctionException("An error occurred while updating user information: " + e.getMessage());
         }
     }
 
@@ -202,11 +202,11 @@ public class UserDAO {
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
-                throw new AuctionException("Không tìm thấy người dùng để cập nhật mật khẩu.");
+                throw new AuctionException("User is not found.");
             }
         }
         catch (SQLException e) {
-            throw new AuctionException("Lỗi hệ thống khi cập nhật mật khẩu: " + e.getMessage());
+            throw new AuctionException("An error occurred while updating password: " + e.getMessage());
         }
     }
 
@@ -225,10 +225,10 @@ public class UserDAO {
             int rowsAffected = ps.executeUpdate();
 
             if (rowsAffected == 0) {
-                throw new AuctionException("Không tìm thấy người dùng với ID hoặc số dư không đủ: " + userId);
+                throw new AuctionException("User is not found.");
             }
         } catch (SQLException e) {
-            throw new AuctionException("Lỗi khi cập nhật số dư: " + e.getMessage());
+            throw new AuctionException("An error occurred while updating balance: " + e.getMessage());
         }
     }
 
@@ -242,7 +242,7 @@ public class UserDAO {
         }
 
         catch (SQLException e) {
-            throw new AuctionException("Lỗi khi xóa người dùng: " + e.getMessage());
+            throw new AuctionException("An error occurred while deleting user: " + e.getMessage());
         }
     }
 

@@ -3,26 +3,26 @@ package com.auction.model;
 import java.time.LocalDateTime;
 
 public class BidTransaction extends Entity {
-    private String auctionId;
+    private String sessionId;
     private String bidderId;
     private double bidAmount;
     private LocalDateTime bidTime;
 
     public BidTransaction() { super(); }
 
-    public BidTransaction(String id, String auctionId, String bidderId, double bidAmount) {
+    public BidTransaction(String id, String sessionId, String bidderId, double bidAmount) {
         super(id);
-        this.auctionId = auctionId;
+        this.sessionId = sessionId;
         this.bidderId = bidderId;
         this.bidAmount = bidAmount;
         this.bidTime = LocalDateTime.now();
     }
 
-    public String getAuctionId() {
-        return auctionId;
+    public String getSessionId() {
+        return sessionId;
     }
-    public void setAuctionId(String auctionId) {
-        this.auctionId = auctionId;
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
     }
 
     public String getBidderId() {

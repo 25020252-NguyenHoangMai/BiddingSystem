@@ -23,10 +23,10 @@ public class ItemService {
     //=============== thêm item đấu giá ===============
     public void addItem(Item item) {
         if (item.getStartingPrice() < 0) {
-            throw new AuctionException("Giá khởi điểm không được âm!");
+            throw new AuctionException("Starting price cannot be negative!");
         }
         else if (item.getName() == null || item.getName().trim().isEmpty()) {
-            throw new AuctionException("Tên sản phẩm không được để trống!");
+            throw new AuctionException("Product name cannot be empty!");
         }
 
         //tạo id ngẫu nhiên
@@ -40,7 +40,7 @@ public class ItemService {
     public void updateItem(Item item) {
         ItemDTO existing = itemDAO.getItemById(item.getId());
         if (existing == null) {
-            throw new ItemNotFoundException("Không tồn tại!");
+            throw new ItemNotFoundException("Item is not found!");
         }
         itemDAO.updateItem(item);
     }
@@ -61,7 +61,7 @@ public class ItemService {
         ItemDTO dto = itemDAO.getItemById(id);
 
         if (dto == null) {
-            throw new ItemNotFoundException("Sản phẩm không tồn tại!");
+            throw new ItemNotFoundException("Item is not found!");
         }
         return ItemFromDTOFactory.createItem(dto);
     }
@@ -72,7 +72,7 @@ public class ItemService {
         List<ItemDTO> list = itemDAO.getItemByName(name);
 
         if (list.isEmpty()) {
-            throw new ItemNotFoundException("Sản phẩm không tồn tại!");
+            throw new ItemNotFoundException("Item is not found!");
         }
         return list.stream()
                 .map(ItemFromDTOFactory::createItem)
@@ -85,7 +85,7 @@ public class ItemService {
         List<ItemDTO> list = itemDAO.getItemByItemType(itemType);
 
         if (list.isEmpty()) {
-            throw new ItemNotFoundException("Sản phẩm không tồn tại!");
+            throw new ItemNotFoundException("Item is not found!");
         }
         return list.stream()
                 .map(ItemFromDTOFactory::createItem)
@@ -98,7 +98,7 @@ public class ItemService {
         ItemDTO dto = itemDAO.getItemById(id);
 
         if (dto == null) {
-            throw new ItemNotFoundException("Sản phẩm không tồn tại!");
+            throw new ItemNotFoundException("Item is not found!");
         }
         itemDAO.deleteItem(id);
     }
