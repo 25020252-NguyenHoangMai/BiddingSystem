@@ -2,6 +2,7 @@ package com.auction.server.network;
 
 import com.auction.request.Request;
 import com.auction.response.Response;
+import com.auction.response.ErrorResponse;
 import com.auction.server.controller.AuctionController;
 
 import java.io.EOFException;
@@ -43,26 +44,26 @@ public class ClientHandler extends Thread {
                     break;
                 } catch (StreamCorruptedException e) {
                     System.out.println("Corrupted stream from client: " + socket);
-                    safeSendResponse(new Response(false, "Corrupted request stream") {});
+                    safeSendResponse(new ErrorResponse("Corrupted request stream"));
                     break;
                 } catch (InvalidClassException e) {
                     System.out.println("Invalid class sent by client: " + socket);
-                    safeSendResponse(new Response(false, "Invalid request class") {});
+                    safeSendResponse(new ErrorResponse("Invalid request class"));
                     break;
                 } catch (OptionalDataException e) {
                     System.out.println("Unexpected raw data from client: " + socket);
-                    safeSendResponse(new Response(false, "Unexpected data format") {});
+                    safeSendResponse(new ErrorResponse("Unexpected data format"));
                     break;
                 } catch (ClassNotFoundException e) {
                     System.out.println("Unknown class from client: " + socket);
-                    safeSendResponse(new Response(false, "Unknown request type") {});
+                    safeSendResponse(new ErrorResponse("Unknown request type"));
                     break;
                 }
 
 
                 if (!(obj instanceof Request request)) {
                     System.out.println("Received non-request object from client: " + socket);
-                    safeSendResponse(new Response(false, "Invalid request object") {});
+                    safeSendResponse(new ErrorResponse("Invalid request object"));
                     break;
                 }
 
@@ -73,12 +74,12 @@ public class ClientHandler extends Thread {
                     response = auctionController.handleRequest(request);
 
                     if (response == null) {
-                        response = new Response(false, "Server returned null response") {};
+                        response = new ErrorResponse("Server returned null response");
                     }
                 } catch (Exception e) {
                     System.out.println("Unexpected server error while handling request");
                     e.printStackTrace();
-                    response = new Response(false, "Internal server error") {};
+                    response = new ErrorResponse("Internal server error");
                 }
 
                 safeSendResponse(response);
