@@ -22,7 +22,7 @@ public class MainServer {
         AutoBiddingService autoBiddingService = new AutoBiddingService();
         AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO);
-        BiddingService biddingService = new BiddingService(sessionService, bidDAO, antiSnipingService);
+        BiddingService biddingService = new BiddingService(sessionService, bidDAO, antiSnipingService, userService);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService);

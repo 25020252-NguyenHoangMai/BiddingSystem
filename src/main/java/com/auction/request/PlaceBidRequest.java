@@ -2,12 +2,12 @@ package com.auction.request;
 
 public class PlaceBidRequest extends Request {
     private String sessionId;
-    private String username;
+    private String bidderId;
     private double amount;
 
-    public  PlaceBidRequest(String sessionId, String username, double amount) {
+    public  PlaceBidRequest(String sessionId, String bidderId, double amount) {
         this.sessionId = sessionId;
-        this.username = username;
+        this.bidderId = bidderId;
         this.amount = amount;
     }
 
@@ -15,8 +15,8 @@ public class PlaceBidRequest extends Request {
         return sessionId;
     }
 
-    public String getUsername() {
-        return username;
+    public String getBidderId() {
+        return bidderId;
     }
 
     public double getAmount() {
