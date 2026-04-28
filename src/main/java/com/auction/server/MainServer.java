@@ -16,19 +16,16 @@ public class MainServer {
         ItemService itemService = new ItemService();
         ItemDAO itemDAO = new ItemDAO();
         BidDAO bidDAO = new BidDAO();
-
         SessionDAO sessionDAO = new SessionDAO(itemDAO);
+
+        AutoBiddingService autoBiddingService = new AutoBiddingService();
+        AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO);
-        BiddingService biddingService = new BiddingService(sessionService, bidDAO);
+        BiddingService biddingService = new BiddingService(sessionService, bidDAO, antiSnipingService);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService);
         BiddingController biddingController = new BiddingController(biddingService);
-
-        //SessionService sessionService = new SessionService();
-        AutoBiddingService autoBiddingService = new AutoBiddingService();
-        AntiSnipingService antiSnipingService = new AntiSnipingService();
-        //BiddingService biddingService = new BiddingService(sessionService, autoBiddingService, antiSnipingService);
 
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController);
 
