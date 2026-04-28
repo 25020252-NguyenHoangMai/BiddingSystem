@@ -12,11 +12,12 @@ import com.auction.server.service.*;
 
 public class MainServer {
     public static void main(String[] args) {
-        UserService userService = new UserService();
-        ItemService itemService = new ItemService();
         ItemDAO itemDAO = new ItemDAO();
         BidDAO bidDAO = new BidDAO();
         SessionDAO sessionDAO = new SessionDAO(itemDAO);
+
+        UserService userService = new UserService();
+        ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
 
         AutoBiddingService autoBiddingService = new AutoBiddingService();
         AntiSnipingService antiSnipingService = new AntiSnipingService();
