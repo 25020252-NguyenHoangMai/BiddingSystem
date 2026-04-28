@@ -147,7 +147,9 @@ public class SessionService { // Quản lí phiên đấu giá
                 throw new IllegalStateException("Only RUNNING session can be extended");
             }
 
-            session.setEndTime(session.getEndTime().plus(extraTime));
+            LocalDateTime newEndTime = session.getEndTime().plus(extraTime);
+            sessionDAO.updateEndTime(sessionId, newEndTime);
+            session.setEndTime(newEndTime);
         }
     }
 

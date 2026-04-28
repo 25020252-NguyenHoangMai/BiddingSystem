@@ -8,19 +8,24 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class BiddingService { // Xử lí đặt giá
+    private final AntiSnipingService antiSnipingService;
     private final SessionService sessionService;
     private final BidDAO bidDAO;
 
-    public BiddingService(SessionService sessionService, BidDAO bidDAO) {
+    public BiddingService(SessionService sessionService, BidDAO bidDAO, AntiSnipingService antiSnipingService) {
         if (sessionService == null) {
             throw new IllegalArgumentException("SessionService must not be null");
         }
         if (bidDAO == null) {
             throw new IllegalArgumentException("BidDAO must not be null");
         }
+        if (antiSnipingService == null) {
+            throw new IllegalArgumentException("AntiSnipingService must not be null");
+        }
 
         this.sessionService = sessionService;
         this.bidDAO = bidDAO;
+        this.antiSnipingService = antiSnipingService;
     }
 
     public BidResult placeBid(String sessionId, String bidderId, double bidAmount) {
@@ -71,9 +76,21 @@ public class BiddingService { // Xử lí đặt giá
                     sessionId, bidAmount, bidderId, null);
         }
 
+        //AntiSniping check
+        boolean extended = false;
+        if (antiSnipingService.shouldExtend(updatedSession)) {
+            sessionService.extendSession(sessionId, antiSnipingService.getExtendTime());
+            extended = true;
+
+            updatedSession = sessionService.getSession(sessionId); //reload sau khi extend
+        }
+
+        String successMessage = extended ? "Bid placed successfully. Auction time extended due to anti-sniping."
+                : "Bid placed successfully";
+
         return new BidResult(
                 true,
-                "Bid placed successfully",
+                successMessage,
                 updatedSession.getId(),
                 updatedSession.getCurrentPrice(),
                 updatedSession.getCurrentWinnerId(),

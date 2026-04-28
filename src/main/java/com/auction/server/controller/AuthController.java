@@ -21,14 +21,6 @@ public class AuthController {
 
     public LoginResponse login(LoginRequest request) {
         try {
-            if (request.getUsername() == null || request.getUsername().isBlank()) {
-                return new LoginResponse(false, "Username is required!", null);
-            }
-
-            if (request.getPassword() == null || request.getPassword().isBlank()) {
-                return new LoginResponse(false, "Password is required!", null);
-            }
-
             User user = userService.login(request.getUsername(), request.getPassword());
             UserSessionDTO userSession = toUserSessionDTO(user);
 
@@ -49,20 +41,12 @@ public class AuthController {
 
     public RegisterResponse register(RegisterRequest request) {
         try {
-            if (request.getFullName() == null || request.getFullName().isBlank()) {
-                return new RegisterResponse(false, "Full name is required!");
-            }
-
-            if (request.getUsername() == null || request.getUsername().isBlank()) {
-                return new RegisterResponse(false, "Username is required!");
-            }
-
-            if (request.getPassword() == null || request.getPassword().isBlank()) {
-                return new RegisterResponse(false, "Password is required!");
-            }
-
             if (request.getConfirmPassword() == null || request.getConfirmPassword().isBlank()) {
                 return new RegisterResponse(false, "Confirm password is required!");
+            }
+
+            if (request.getPassword() == null) {
+                return new RegisterResponse(false, "Password is required!");
             }
 
             if (!request.getPassword().equals(request.getConfirmPassword())) {
