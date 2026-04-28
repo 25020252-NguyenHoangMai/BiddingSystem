@@ -4,7 +4,6 @@ import com.auction.client.service.ProductService;
 import com.auction.client.service.UserClientService;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,7 +14,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -54,17 +52,17 @@ public class AdminController {
     public void initialize() {
         // Cấu hình bảng Item
         // Lùng Lambda để báo lỗi viết sai tên hàm 
-        colItemId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId())); //(new PropertyValueFactory<>("id"));
-        colItemName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName())); //(new PropertyValueFactory<>("name"));
-        colItemSeller.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSellerUsername()));//(new PropertyValueFactory<>("sellerUsername"));
+        colItemId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId()));
+        colItemName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
+        colItemSeller.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSellerUsername()));
         colItemSelect.setCellValueFactory(cellData -> cellData.getValue().selectedProperty());
         colItemSelect.setCellFactory(CheckBoxTableCell.forTableColumn(colItemSelect));
         itemTable.setEditable(true);
 
         // Cấu hình bảng User
         // Dùng Lambda để báo lỗi viết sai tên hàm
-        colUserId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId())); //(new PropertyValueFactory<>("id"));
-        colUsername.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getUsername())); //(new PropertyValueFactory<>("username"));
+        colUserId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId()));
+        colUsername.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getUsername()));
         colUserSelect.setCellValueFactory(cellData -> cellData.getValue().selectedProperty());
         colUserSelect.setCellFactory(CheckBoxTableCell.forTableColumn(colUserSelect));
         userTable.setEditable(true);

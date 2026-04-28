@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.service.AuthService;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.event.ActionEvent;
@@ -48,43 +49,28 @@ public class RegisterController {
         }
 
         try {
-            ClientSocket clientSocket = ClientSocket.getInstance();
-            clientSocket.connect();
+            RegisterResponse result = AuthService.getInstance().register(fullName, username, password, confirmPassword);
 
-            RegisterRequest request = new RegisterRequest(
-                    fullName,
-                    username,
-                    password,
-                    confirmPassword
-            );
-
-            clientSocket.sendRequest(request);
-            Object obj = clientSocket.receiveResponse();
-
-            if (obj == null) {
+            if (result == null) {
                 showError("Server không phản hồi");
                 return;
             }
 
-            if (obj instanceof RegisterResponse response) {
-                if (response.isSuccess()) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Success");
-                    alert.setHeaderText(null);
-                    alert.setContentText(response.getMessage());
-                    alert.showAndWait();
+            if (result.isSuccess()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Success");
+                alert.setHeaderText(null);
+                alert.setContentText(result.getMessage());
+                alert.showAndWait();
 
-                    SceneUtil.changeScene(event, "/views/login_view.fxml", "Login");
-                } else {
-                    showError(response.getMessage());
-                }
+                SceneUtil.changeScene(event, "/views/login_view.fxml", "Login");
             } else {
-                showError("Server phản hồi không hợp lệ");
+                showError(result.getMessage());
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            showError("Lỗi kết nối Server!");
+            showError("Lỗi kết nối Server: " + e.getMessage());
         }
     }
 
