@@ -122,7 +122,11 @@ public class SessionDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setString(2, sessionId);
-            ps.executeUpdate();
+            int updated = ps.executeUpdate();
+
+            if (updated == 0) {
+                throw new AuctionException("Auction session is not found to update status.");
+            }
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while updating status: " + e.getMessage());
         }
