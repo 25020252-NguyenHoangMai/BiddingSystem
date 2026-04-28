@@ -157,6 +157,80 @@ public class SessionDAO {
         }
     }
 
+    public boolean existsSessionByItemId(String itemId) {
+        if (itemId == null || itemId.trim().isEmpty()) {
+            throw new IllegalArgumentException("itemId must not be null or empty");
+        }
+
+        String sql = "SELECT TOP 1 1 FROM AuctionSession WHERE itemId = ?";
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, itemId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while checking session existence by itemId: " + e.getMessage());
+        }
+    }
+
+    public boolean existsActiveSessionByItemId(String itemId) {
+        if (itemId == null || itemId.trim().isEmpty()) {
+            throw new IllegalArgumentException("itemId must not be null or empty");
+        }
+
+        String sql = """
+        SELECT TOP 1 1
+        FROM AuctionSession
+        WHERE itemId = ?
+          AND status IN ('OPEN', 'RUNNING')
+        """;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, itemId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while checking active session by itemId: " + e.getMessage());
+        }
+    }
+
+    public List<AuctionSession> getSessionsByItemId(String itemId) {
+        if (itemId == null || itemId.trim().isEmpty()) {
+            throw new IllegalArgumentException("itemId must not be null or empty");
+        }
+
+        String sql = "SELECT * FROM AuctionSession WHERE itemId = ?";
+
+        List<AuctionSession> sessions = new ArrayList<>();
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, itemId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sessions.add(mapToSession(rs));
+                }
+            }
+
+            return sessions;
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting sessions by itemId: " + e.getMessage());
+        }
+    }
+
     public List<AuctionSession> getAllSessions() {
         String sql = "SELECT * FROM AuctionSession";
         List<AuctionSession> list = new ArrayList<>();
