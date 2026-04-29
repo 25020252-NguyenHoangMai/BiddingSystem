@@ -37,12 +37,20 @@ public class SessionService { // Quản lí phiên đấu giá
             throw new IllegalArgumentException("Item must not be null");
         }
 
+        if (item.getId() == null || item.getId().isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+
         if (start == null || end == null) {
             throw new IllegalArgumentException("Start time and end time must not be null");
         }
 
         if (!end.isAfter(start)) {
             throw new IllegalArgumentException("End time must be after start time");
+        }
+
+        if (sessionDAO.existsActiveSessionByItemId(item.getId())) {
+            throw new IllegalArgumentException("This item already has an OPEN or RUNNING auction session");
         }
 
         //tạo sessionId ngẫu nhiên
@@ -92,6 +100,7 @@ public class SessionService { // Quản lí phiên đấu giá
 
             if (!now.isBefore(session.getEndTime())) {
                 session.setStatus(STATUS_FINISHED);
+                sessionDAO.updateStatus(sessionId, STATUS_FINISHED);
                 throw new IllegalStateException("Cannot start an expired session");
             }
 

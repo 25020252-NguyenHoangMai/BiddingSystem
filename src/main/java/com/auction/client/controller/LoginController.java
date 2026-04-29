@@ -40,8 +40,6 @@ public class LoginController implements Initializable {
         loginMessageLabel.setVisible(false);
     }
 
-    private final AuthService authService = new AuthService();
-
     @FXML
     public void loginButtonOnAction(ActionEvent event) {
         String username = enterUsernameField.getText();
@@ -60,7 +58,7 @@ public class LoginController implements Initializable {
         }
 
         try {
-            LoginResponse response = authService.login(username, password);
+            LoginResponse response = AuthService.getInstance().login(username, password);
 
             if (response == null) {
                 showError("Server không phản hồi");
