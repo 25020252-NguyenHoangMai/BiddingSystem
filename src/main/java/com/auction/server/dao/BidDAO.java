@@ -43,7 +43,7 @@ public class BidDAO {
         SELECT TOP 1 id, sessionId, bidderId, bidAmount, bidTime
         FROM BidTransaction
         WHERE sessionId = ?
-        ORDER BY bidAmount DESC
+        ORDER BY bidAmount DESC, bidTime DESC;
     """;
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
