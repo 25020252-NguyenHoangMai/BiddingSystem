@@ -1,0 +1,37 @@
+name: Java CI với Maven
+
+on:
+  push:
+    branches: [ "main" ] # Chạy khi bạn push lên nhánh main
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # GitHub sẽ cho bạn mượn 1 máy ảo Ubuntu
+
+    steps:
+      - name: Bước 1 - Lấy code về máy ảo
+        uses: actions/checkout@v4
+
+      - name: Bước 2 - Cài đặt Java (JDK 25)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Bước 3 - Build và chạy Unit Test
+        # Lệnh này tương đương với việc bạn bấm 'Clean' và 'Install' trong Maven
+        run: mvn clean install
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+
+      - name: Bước 4 - Lưu file .jar (Artifact)
+        # Bước này giúp bạn tải file .jar về sau khi build thành công
+        uses: actions/upload-artifact@v4
+        with:
+          name: auction-app-file
+          path: target/*.jar
