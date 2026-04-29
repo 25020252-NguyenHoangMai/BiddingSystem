@@ -188,7 +188,6 @@ public class UserServiceTest {
     void testGetUserByUsername_ThanhCong() {
         when(userDAO.getUserByUsername("quynh_admin")).thenReturn(testUserInDB);
 
-        // Đổi từ UserDTO sang User
         User result = userService.getUserByUsername("quynh_admin");
         assertNotNull(result);
         assertEquals("quynh_admin", result.getUsername());
