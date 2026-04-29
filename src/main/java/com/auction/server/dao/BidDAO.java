@@ -15,13 +15,21 @@ public class BidDAO {
         String sessionId = rs.getString("sessionId");
         String bidderId = rs.getString("bidderId");
         double bidAmount = rs.getDouble("bidAmount");
+        Timestamp ts = rs.getTimestamp("bidTime");
 
-        return new BidTransaction(id, sessionId, bidderId, bidAmount);
+        BidTransaction bid = new BidTransaction(id, sessionId, bidderId, bidAmount);
+        bid.setBidTime(ts != null ? ts.toLocalDateTime() : null);
+
+        return bid;
     }
 
     public void insertBid(BidTransaction bid) {
 
         String sql = "INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime) VALUES (?, ?, ?, ?, ?)";
+//        String sql = """
+//            INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
+//            VALUES (?, ?, ?, ?, SYSDATETIME())
+//        """;
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -113,4 +121,92 @@ public class BidDAO {
 
         return list;
     }
+
+//    public boolean placeBidAtomically(String sessionId, String bidderId, double bidAmount) {
+//
+//        String selectSessionForUpdate = """
+//        SELECT currentPrice, currentWinnerId, status
+//        FROM AuctionSession WITH (UPDLOCK, ROWLOCK)
+//        WHERE id = ?
+//    """;
+//
+//        String updateSession = """
+//        UPDATE AuctionSession
+//        SET currentPrice = ?, currentWinnerId = ?
+//        WHERE id = ?
+//    """;
+//
+////        String insertBid = """
+////        INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
+////        VALUES (?, ?, ?, ?, ?)
+////    """;
+//
+//        String insertBid = """
+//            INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
+//            VALUES (?, ?, ?, ?, SYSDATETIME())
+//        """;
+//
+//        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+//
+//            conn.setAutoCommit(false);
+//
+//            try (
+//                    PreparedStatement psSelect = conn.prepareStatement(selectSessionForUpdate);
+//                    PreparedStatement psUpdate = conn.prepareStatement(updateSession);
+//                    PreparedStatement psInsert = conn.prepareStatement(insertBid)
+//            ) {
+//
+//                //lock row
+//                psSelect.setString(1, sessionId);
+//                ResultSet rs = psSelect.executeQuery();
+//
+//                if (!rs.next()) {
+//                    throw new AuctionException("Auction session not found");
+//                }
+//
+//                double currentPrice = rs.getDouble("currentPrice");
+//                String currentWinnerId = rs.getString("currentWinnerId");
+//                String status = rs.getString("status");
+//
+//                if (!"RUNNING".equalsIgnoreCase(status)) return false;
+//                if (bidAmount <= currentPrice) return false;
+//                if (bidderId.equals(currentWinnerId)) return false;
+//
+//                psUpdate.setDouble(1, bidAmount);
+//                psUpdate.setString(2, bidderId);
+//                psUpdate.setString(3, sessionId);
+//
+//                int updated = psUpdate.executeUpdate();
+//                if (updated == 0) {
+//                    throw new AuctionException("Failed to update session.");
+//                }
+//
+//                BidTransaction bid = new BidTransaction(
+//                        java.util.UUID.randomUUID().toString(),
+//                        sessionId,
+//                        bidderId,
+//                        bidAmount
+//                );
+////                bid.setBidTime(LocalDateTime.now());
+//
+//                psInsert.setString(1, bid.getId());
+//                psInsert.setString(2, bid.getSessionId());
+//                psInsert.setString(3, bid.getBidderId());
+//                psInsert.setDouble(4, bid.getBidAmount());
+////                psInsert.setTimestamp(5, Timestamp.valueOf(bid.getBidTime()));
+//
+//                psInsert.executeUpdate();
+//
+//                conn.commit();
+//                return true;
+//
+//            } catch (Exception e) {
+//                conn.rollback();
+//                throw e;
+//            }
+//
+//        } catch (SQLException e) {
+//            throw new AuctionException("Atomic bid placement failed: " + e.getMessage());
+//        }
+//    }
 }
