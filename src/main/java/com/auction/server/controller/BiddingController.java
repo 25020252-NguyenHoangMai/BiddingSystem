@@ -1,6 +1,7 @@
 package com.auction.server.controller;
 
 import com.auction.exception.InsufficientBalanceException;
+import com.auction.exception.InvalidBidException;
 import com.auction.request.PlaceBidRequest;
 import com.auction.response.PlaceBidResponse;
 import com.auction.server.service.BiddingService;
@@ -41,7 +42,7 @@ public class BiddingController {
             return new PlaceBidResponse(false, e.getMessage(),
                     request.getSessionId(), null, null, null, null);
 
-        } catch (IllegalArgumentException e) {
+        } catch (InvalidBidException | IllegalArgumentException e) {
             return new PlaceBidResponse(false, e.getMessage(),
                     request.getSessionId(), null, null, null, null);
 
