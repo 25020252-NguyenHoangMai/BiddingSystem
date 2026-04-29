@@ -1,5 +1,6 @@
 package com.auction.server.controller;
 
+import com.auction.exception.InsufficientBalanceException;
 import com.auction.request.PlaceBidRequest;
 import com.auction.response.PlaceBidResponse;
 import com.auction.server.service.BiddingService;
@@ -36,9 +37,14 @@ public class BiddingController {
                     result.getCurrentPrice(), result.getCurrentWinnerId(),
                     result.getCurrentWinnerUsername(), result.getStatus());
 
+        } catch (InsufficientBalanceException e) {
+            return new PlaceBidResponse(false, e.getMessage(),
+                    request.getSessionId(), null, null, null, null);
+
         } catch (IllegalArgumentException e) {
             return new PlaceBidResponse(false, e.getMessage(),
                     request.getSessionId(), null, null, null, null);
+
         } catch (Exception e) {
             e.printStackTrace();
             return new PlaceBidResponse(false, "Bid failed: unexpected server error!", null,

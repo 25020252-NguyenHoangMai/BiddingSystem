@@ -1,5 +1,6 @@
 package com.auction.server.service;
 
+import com.auction.exception.InsufficientBalanceException;
 import com.auction.exception.UserNotFoundException;
 import com.auction.model.AuctionSession;
 import com.auction.model.BidTransaction;
@@ -39,7 +40,7 @@ public class BiddingService { // Xử lí đặt giá
 
     public BidResult placeBid(String sessionId, String bidderId, double bidAmount) {
         validateBidInput(sessionId, bidderId, bidAmount);
-        requireBidder(bidderId);
+        Bidder bidder = requireBidder(bidderId);
 
         AuctionSession session = sessionService.getSession(sessionId);
 
@@ -65,6 +66,7 @@ public class BiddingService { // Xử lí đặt giá
                     session.getId(), session.getCurrentPrice(), session.getCurrentWinnerId(),
                     resolveWinnerUsername(session.getCurrentWinnerId()), session.getStatus());
         }
+        validateBidderBalance(bidder, bidAmount);
 
         boolean updated = sessionService.updateCurrentBid(sessionId, bidAmount, bidderId);
 
@@ -181,6 +183,16 @@ public class BiddingService { // Xử lí đặt giá
             return user.getUsername();
         } catch (UserNotFoundException e) {
             return null;
+        }
+    }
+
+    private void validateBidderBalance(Bidder bidder, double bidAmount) {
+        if (bidder == null) {
+            throw new IllegalArgumentException("Bidder must not be null");
+        }
+
+        if (bidAmount > bidder.getBalance()) {
+            throw new InsufficientBalanceException("Bid failed: Insufficient balance.");
         }
     }
 }
