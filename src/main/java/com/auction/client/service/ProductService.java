@@ -2,7 +2,9 @@ package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
 import com.auction.dto.ItemDTO;
+import com.auction.request.AddItemRequest;
 import com.auction.request.GetAllItemsRequest;
+import com.auction.response.AddItemResponse;
 import com.auction.response.GetAllItemsResponse;
 
 import java.util.ArrayList;
@@ -42,6 +44,36 @@ public class ProductService {
 
         } catch (Exception e) {
             throw new RuntimeException("Không thể tải danh sách sản phẩm: " + e.getMessage());
+        }
+    }
+
+    public boolean addProduct(ItemDTO item) {
+        try {
+            // 1. Lấy kết nối Socket
+            ClientSocket socket = ClientSocket.getInstance();
+            socket.connect();
+
+            // 2. Gửi gói tin AddItemRequest chứa đối tượng item
+            AddItemRequest request = new AddItemRequest(item);
+            socket.sendRequest(request);
+
+            // 3. Nhận phản hồi từ Server
+            Object response = socket.receiveResponse();
+
+            // 4. Kiểm tra xem Server trả về đúng kiểu AddItemResponse không
+            if (response instanceof AddItemResponse res) {
+                // Trả về true hoặc false tùy vào kết quả xử lý của Server
+                return res.isSuccess();
+            }
+
+            // Trường hợp Server trả về sai kiểu gói tin
+            System.err.println("Phản hồi từ Server không hợp lệ.");
+            return false;
+
+        } catch (Exception e) {
+            // Trường hợp bị mất mạng hoặc Server sập
+            e.printStackTrace();
+            return false;
         }
     }
 }

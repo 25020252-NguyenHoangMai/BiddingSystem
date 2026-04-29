@@ -1,15 +1,148 @@
 package com.auction.client.controller;
 
+import com.auction.client.ClientSession;
+import com.auction.client.service.ProductService;
+import com.auction.dto.ItemDTO;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class AddProductController {
-    @FXML private TextField txtName;
+
+    @FXML private TextField txtName, txtPrice;
     @FXML private TextArea txtDescription;
-    @FXML private TextField txtPrice;
     @FXML private ComboBox<String> cbCategory;
     @FXML private VBox dynamicFields;
     @FXML private Label errorLabel;
     @FXML private Button btnSubmit;
+
+    private final Map<String, TextField> fields = new LinkedHashMap<>();
+    private final ProductService service = ProductService.getInstance();
+
+    private final Map<String, String[]> categoryFields = Map.of(
+            "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
+            "Electronics", new String[]{"Brand"},
+            "Art", new String[]{"Artist"}
+    );
+
+    @FXML
+    public void initialize() {
+        cbCategory.getItems().addAll(categoryFields.keySet());
+    }
+
+    @FXML
+    private void handleCategoryChange(ActionEvent event) {
+        dynamicFields.getChildren().clear();
+        fields.clear();
+
+        String cat = cbCategory.getValue();
+        if (cat == null) return;
+
+        String[] fieldNames = categoryFields.get(cat);
+        if (fieldNames != null) addFields(fieldNames);
+    }
+
+    private void addFields(String... names) {
+        for (String n : names) {
+            TextField tf = new TextField();
+            tf.setPromptText("Nhập " + n.toLowerCase());
+
+            dynamicFields.getChildren().addAll(new Label(n + ":"), tf);
+            fields.put(n, tf);
+        }
+    }
+
+    @FXML
+    private void handleAddAndStart(ActionEvent event) {
+        errorLabel.setVisible(false);
+
+        try {
+            ItemDTO item = buildItem();
+
+            if (service.addProduct(item)) {
+                new Alert(Alert.AlertType.INFORMATION, "Đã thêm sản phẩm thành công!").showAndWait();
+                close();
+            } else {
+                throw new Exception("Không thể kết nối đến máy chủ!");
+            }
+
+        } catch (NumberFormatException e) {
+            errorLabel.setText("Giá hoặc Mileage phải là số hợp lệ!");
+            errorLabel.setVisible(true);
+        } catch (Exception e) {
+            errorLabel.setText(e.getMessage());
+            errorLabel.setVisible(true);
+        }
+    }
+
+    // Tách riêng logic build + validate
+    private ItemDTO buildItem() throws Exception {
+
+        var user = ClientSession.getCurrentUser();
+
+        if (user == null)
+            throw new Exception("Bạn chưa đăng nhập!");
+
+        if (txtName.getText().isBlank())
+            throw new Exception("Tên sản phẩm không được để trống!");
+
+        if (cbCategory.getValue() == null)
+            throw new Exception("Vui lòng chọn danh mục!");
+
+        double price = Double.parseDouble(txtPrice.getText());
+        if (price <= 0)
+            throw new Exception("Giá khởi điểm phải lớn hơn 0");
+
+        ItemDTO item = new ItemDTO();
+        item.setName(txtName.getText().trim());
+        item.setStartingPrice(price);
+        item.setSellerId(user.getId());
+        item.setItemType(cbCategory.getValue().toUpperCase());
+        item.setDescription(txtDescription.getText().trim());
+
+        // Xử lý dynamic fields
+        for (var entry : fields.entrySet()) {
+            String key = entry.getKey();
+            TextField field = entry.getValue();
+
+            String val = field.getText().trim();
+
+            if (val.isEmpty()) {
+                field.requestFocus();
+                throw new Exception("Vui lòng nhập " + key);
+            }
+
+            mapField(item, key, val);
+        }
+
+        return item;
+    }
+
+    private void mapField(ItemDTO item, String key, String val) throws Exception {
+        switch (key) {
+            case "Mileage" -> {
+                int m = Integer.parseInt(val);
+                if (m < 0) throw new Exception("Mileage không được âm");
+                item.setMileage(m);
+            }
+            case "Model" -> item.setModel(val);
+            case "EngineType" -> item.setEngineType(val);
+            case "Brand" -> item.setBrand(val);
+            case "Artist" -> item.setArtist(val);
+        }
+    }
+
+    @FXML
+    private void handleCancel(ActionEvent event) {
+        close();
+    }
+
+    private void close() {
+        ((Stage) btnSubmit.getScene().getWindow()).close();
+    }
 }
