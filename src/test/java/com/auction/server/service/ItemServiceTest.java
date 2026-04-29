@@ -5,6 +5,7 @@ import com.auction.exception.ItemNotFoundException;
 import com.auction.model.Bidder;
 import com.auction.model.Electronics;
 import com.auction.server.dao.ItemDAO;
+import com.auction.server.dao.SessionDAO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,9 +19,14 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class ItemServiceTest {
 
-
     @Mock
     private ItemDAO itemDAO;
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private SessionDAO sessionDAO;
 
     @InjectMocks
     private ItemService service;
@@ -28,36 +34,40 @@ public class ItemServiceTest {
     // giá khởi điểm âm
     @Test
     void testAddItem_GiaKhoiDiemAm_PhaiNemLoi() {
-
-        Bidder seller = new Bidder("U01", "seller1", "123", "Ông Bán Hàng", "BIDDER", 0);
+        String mockSellerId = "U01";
+        Bidder seller = new Bidder(mockSellerId, "seller1", "123", "Ông Bán Hàng", "BIDDER", 0);
         seller.enableSelling();
+
+        when(userService.getUserById(mockSellerId)).thenReturn(seller);
 
         Electronics tiviLoi = new Electronics("I01", "Tivi Sony", "Mô tả", seller.getId(), -500000, "Sony");
 
+
         assertThrows(AuctionException.class, () -> {
-            service.addItem(tiviLoi);
+            service.addItem(mockSellerId, tiviLoi);
         }, "Lỗi:giá sản phẩm âm!");
     }
 
     // tên sp trống
     @Test
     void testAddItem_TenSanPhamRong_PhaiNemLoi() {
-        Bidder seller = new Bidder("U01", "seller1", "123", "Ông Bán Hàng", "BIDDER", 0);
+        String mockSellerId = "U01";
+        Bidder seller = new Bidder(mockSellerId, "seller1", "123", "Ông Bán Hàng", "BIDDER", 0);
         seller.enableSelling();
+
+        when(userService.getUserById(mockSellerId)).thenReturn(seller);
 
         // cố tình để trống tên
         Electronics tiviLoi = new Electronics("I02", "", "Mô tả", seller.getId(), 1000000, "Sony");
 
         assertThrows(AuctionException.class, () -> {
-            service.addItem(tiviLoi);
+            service.addItem(mockSellerId, tiviLoi);
         }, "Lỗi:sản phẩm phải có tên");
     }
 
     // tìm ID không tồn tại
     @Test
     void testGetItemById_KhongTonTai_PhaiNemLoi() {
-
-
         when(itemDAO.getItemById("ID_MA_QUY_12345")).thenReturn(null);
 
         assertThrows(ItemNotFoundException.class, () -> {

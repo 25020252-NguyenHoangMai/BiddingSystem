@@ -44,3 +44,6 @@ BiddingSystem/
 └── pom.xml                      # Cấu hình Maven (Quản lý thư viện BCrypt, JUnit, JavaFX)
 \
 ```
+
+
+    

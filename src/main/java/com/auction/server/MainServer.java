@@ -10,7 +10,7 @@ import com.auction.server.dao.SessionDAO;
 import com.auction.server.network.SocketServer;
 import com.auction.server.service.*;
 
-public class MainServer {
+public class    MainServer {
     public static void main(String[] args) {
         ItemDAO itemDAO = new ItemDAO();
         BidDAO bidDAO = new BidDAO();
