@@ -19,10 +19,12 @@ public class MainServer {
         UserService userService = new UserService();
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
 
+        BidIncrementService bidIncrementService = new BidIncrementService();
         AutoBiddingService autoBiddingService = new AutoBiddingService();
         AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO);
-        BiddingService biddingService = new BiddingService(sessionService, bidDAO, antiSnipingService, userService);
+        BiddingService biddingService = new BiddingService(sessionService, bidDAO, antiSnipingService,
+                                            userService, bidIncrementService);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService);

@@ -1,6 +1,7 @@
 package com.auction.server.service;
 
 import com.auction.exception.InsufficientBalanceException;
+import com.auction.exception.InvalidBidException;
 import com.auction.exception.UserNotFoundException;
 import com.auction.model.AuctionSession;
 import com.auction.model.BidTransaction;
@@ -15,10 +16,11 @@ public class BiddingService { // Xử lí đặt giá
     private final AntiSnipingService antiSnipingService;
     private final SessionService sessionService;
     private final UserService userService;
+    private final BidIncrementService bidIncrementService;
     private final BidDAO bidDAO;
 
     public BiddingService(SessionService sessionService, BidDAO bidDAO, AntiSnipingService antiSnipingService
-                            , UserService userService) {
+                            , UserService userService, BidIncrementService bidIncrementService) {
         if (sessionService == null) {
             throw new IllegalArgumentException("SessionService must not be null");
         }
@@ -31,11 +33,15 @@ public class BiddingService { // Xử lí đặt giá
         if (userService == null) {
             throw new IllegalArgumentException("UserService must not be null");
         }
+        if (bidIncrementService == null) {
+            throw new IllegalArgumentException("BidIncrementService must not be null");
+        }
 
         this.sessionService = sessionService;
         this.bidDAO = bidDAO;
         this.antiSnipingService = antiSnipingService;
         this.userService = userService;
+        this.bidIncrementService = bidIncrementService;
     }
 
     public BidResult placeBid(String sessionId, String bidderId, double bidAmount) {
@@ -60,12 +66,7 @@ public class BiddingService { // Xử lí đặt giá
                     resolveWinnerUsername(session.getCurrentWinnerId()), session.getStatus());
         }
 
-        if (bidAmount <= session.getCurrentPrice()) {
-            return new BidResult(false,
-            "Bid failed: bid amount must be greater than current price (" + session.getCurrentPrice() + ").",
-                    session.getId(), session.getCurrentPrice(), session.getCurrentWinnerId(),
-                    resolveWinnerUsername(session.getCurrentWinnerId()), session.getStatus());
-        }
+        validateBidIncrement(session, bidAmount);
         validateBidderBalance(bidder, bidAmount);
 
         boolean updated = sessionService.updateCurrentBid(sessionId, bidAmount, bidderId);
@@ -193,6 +194,19 @@ public class BiddingService { // Xử lí đặt giá
 
         if (bidAmount > bidder.getBalance()) {
             throw new InsufficientBalanceException("Bid failed: Insufficient balance.");
+        }
+    }
+
+    private void validateBidIncrement(AuctionSession session, double bidAmount) {
+        if (session == null) {
+            throw new IllegalArgumentException("Session must not be null");
+        }
+
+        double currentPrice = session.getCurrentPrice();
+        double minimumNextBid = bidIncrementService.getMinimumNextBid(currentPrice);
+
+        if (bidAmount < minimumNextBid) {
+            throw new InvalidBidException("Bid failed: minimum next bid is " + minimumNextBid);
         }
     }
 }
