@@ -2,9 +2,9 @@ name: Java CI với Maven
 
 on:
   push:
-    branches: [ "main" ] # Chạy khi bạn push lên nhánh main
+    branches: [ "master" ] # Chạy khi bạn push lên nhánh main
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   build:
