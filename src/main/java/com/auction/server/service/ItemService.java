@@ -75,6 +75,21 @@ public class ItemService {
         itemDAO.insertItem(item);
     }
 
+    public ItemDTO addItem(String sellerId, ItemDTO itemDTO) {
+        if (itemDTO == null) {
+            throw new AuctionException("ItemDTO must not be null!");
+        }
+
+        Item item = ItemFromDTOFactory.createItem(itemDTO);
+        addItem(sellerId, item);
+
+        itemDTO.setId(item.getId());
+        itemDTO.setSellerId(item.getSellerId());
+        itemDTO.setItemType(item.getClass().getSimpleName().toUpperCase());
+
+        return itemDTO;
+    }
+
     //=============== cập nhật thông tin sản phẩm ===============
     public void updateItem(Item item) {
         if (item == null) {

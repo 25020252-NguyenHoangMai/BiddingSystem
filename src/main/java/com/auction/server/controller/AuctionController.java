@@ -28,6 +28,9 @@ public class AuctionController {
         if (request instanceof GetAllItemsRequest getAllItemsRequest) {
             return itemController.getAllItems(getAllItemsRequest);
         }
+        if (request instanceof AddItemRequest addItemRequest) {
+            return itemController.addItem(addItemRequest);
+        }
 
         if (request instanceof PlaceBidRequest placeBidRequest) {
             return biddingController.placeBid(placeBidRequest);
