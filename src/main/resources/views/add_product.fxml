@@ -19,7 +19,6 @@
             <GridPane hgap="15" vgap="15">
 
                 <columnConstraints>
-                    <!-- FIX lỗi bị cắt chữ -->
                     <ColumnConstraints prefWidth="250" />
                     <ColumnConstraints hgrow="ALWAYS" />
                 </columnConstraints>

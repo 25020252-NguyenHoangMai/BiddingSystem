@@ -62,19 +62,27 @@ public class AddProductController {
         errorLabel.setVisible(false);
 
         try {
+            // 1. Build đối tượng từ form UI
             ItemDTO item = buildItem();
 
-            if (service.addProduct(item)) {
-                new Alert(Alert.AlertType.INFORMATION, "Đã thêm sản phẩm thành công!").showAndWait();
-                close();
-            } else {
-                throw new Exception("Không thể kết nối đến máy chủ!");
+            // 2. Gọi service (nếu thất bại, service sẽ tự throw RuntimeException)
+            ItemDTO savedItem = service.addProduct(item);
+
+            // 3. Thông báo thành công
+            if (savedItem != null) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Thông báo");
+                alert.setHeaderText(null);
+                alert.setContentText("Đã thêm sản phẩm '" + savedItem.getName() + "' thành công!");
+                alert.showAndWait();
+                close(); // Đóng window hiện tại
             }
 
         } catch (NumberFormatException e) {
             errorLabel.setText("Giá hoặc Mileage phải là số hợp lệ!");
             errorLabel.setVisible(true);
         } catch (Exception e) {
+            // Hiển thị mọi lỗi từ kết nối, logic server,... lên UI
             errorLabel.setText(e.getMessage());
             errorLabel.setVisible(true);
         }

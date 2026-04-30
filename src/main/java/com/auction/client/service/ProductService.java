@@ -47,14 +47,14 @@ public class ProductService {
         }
     }
 
-    public boolean addProduct(ItemDTO item) {
+    public ItemDTO addProduct(ItemDTO item) {
         try {
             // 1. Lấy kết nối Socket
             ClientSocket socket = ClientSocket.getInstance();
             socket.connect();
 
             // 2. Gửi gói tin AddItemRequest chứa đối tượng item
-            AddItemRequest request = new AddItemRequest(item);
+            AddItemRequest request = new AddItemRequest(item.getSellerId(), item);
             socket.sendRequest(request);
 
             // 3. Nhận phản hồi từ Server
@@ -62,18 +62,21 @@ public class ProductService {
 
             // 4. Kiểm tra xem Server trả về đúng kiểu AddItemResponse không
             if (response instanceof AddItemResponse res) {
-                // Trả về true hoặc false tùy vào kết quả xử lý của Server
-                return res.isSuccess();
+                if (res.isSuccess()) {
+                    // Trả về item đã lưu (đã có ID từ Server)
+                    return res.getItemDTO();
+                } else {
+                    // Nếu Server báo lỗi (ví dụ: dữ liệu không hợp lệ), ném lỗi với message từ Server
+                    throw new RuntimeException(res.getMessage());
+                }
             }
 
-            // Trường hợp Server trả về sai kiểu gói tin
-            System.err.println("Phản hồi từ Server không hợp lệ.");
-            return false;
+            throw new Exception("Định dạng phản hồi từ Server không đúng (Expected AddItemResponse)");
 
         } catch (Exception e) {
-            // Trường hợp bị mất mạng hoặc Server sập
+            // Log lỗi và ném ra RuntimeException để UI xử lý
             e.printStackTrace();
-            return false;
+            throw new RuntimeException("Lỗi thêm sản phẩm: " + e.getMessage());
         }
     }
 }
