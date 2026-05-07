@@ -283,6 +283,23 @@ public class UserDAO {
         }
     }
 
+    public void updateReservedBalance(Connection conn, String userId, double amount) {
+        String sql = "UPDATE Users SET reservedBalance = ? WHERE id = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, amount);
+            ps.setString(2, userId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new AuctionException("User not found.");
+            }
+        }
+        catch (SQLException e) {
+            throw new AuctionException("An error occurred while updating reserved balance: " + e.getMessage());
+        }
+    }
+
     //release khi thua đấu giá
     public void releaseReservedBalance(String userId, double amount) {
         String sql = """
