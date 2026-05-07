@@ -2,6 +2,7 @@ package com.auction.server.dao;
 
 import com.auction.exception.AuctionException;
 import com.auction.model.*;
+import com.auction.server.service.UserBalance;
 //import com.auction.dto.UserDTO;
 
 import java.sql.*;

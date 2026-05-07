@@ -23,15 +23,14 @@ public class BidDAO {
         return bid;
     }
 
-    public void insertBid(BidTransaction bid) {
+    public void insertBid(Connection conn, BidTransaction bid) {
 
         String sql = "INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime) VALUES (?, ?, ?, ?, ?)";
 //        String sql = """
 //            INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
 //            VALUES (?, ?, ?, ?, SYSDATETIME())
 //        """;
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, bid.getId());
             ps.setString(2, bid.getSessionId());

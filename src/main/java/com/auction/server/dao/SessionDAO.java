@@ -109,15 +109,14 @@ public class SessionDAO {
         }
     }
 
-    public boolean updateCurrentBid(String sessionId, double newPrice, String bidderId) {
+    public boolean updateCurrentBid(Connection conn, String sessionId, double newPrice, String bidderId) {
         String sql = """
             UPDATE AuctionSession
             SET currentPrice = ?, currentWinnerId = ?
             WHERE id = ? AND currentPrice < ?
         """;
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, newPrice);
             ps.setString(2, bidderId);
             ps.setString(3, sessionId);
