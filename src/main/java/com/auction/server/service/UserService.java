@@ -16,11 +16,14 @@ public class UserService {
     private  UserDAO userDAO;
 
     public UserService() {
-        this.userDAO = new UserDAO();
+        this(new UserDAO());
     }
 
-    public UserService(UserDAO mockDAO) {
-        this.userDAO = mockDAO;
+    public UserService(UserDAO userDAO) {
+        if (userDAO == null) {
+            throw new IllegalArgumentException("UserDAO cannot be null");
+        }
+        this.userDAO = userDAO;
     }
 
 

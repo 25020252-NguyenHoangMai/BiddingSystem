@@ -1,5 +1,6 @@
 package com.auction.server.service;
 
+import com.auction.exception.AuctionException;
 import com.auction.exception.InsufficientBalanceException;
 import com.auction.exception.InvalidBidException;
 import com.auction.exception.UserNotFoundException;
@@ -8,7 +9,12 @@ import com.auction.model.BidTransaction;
 import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.server.dao.BidDAO;
+import com.auction.server.dao.DatabaseManager;
+import com.auction.server.dao.SessionDAO;
+import com.auction.server.dao.UserDAO;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,9 +24,12 @@ public class BiddingService { // Xử lí đặt giá
     private final UserService userService;
     private final BidIncrementService bidIncrementService;
     private final BidDAO bidDAO;
+    private final SessionDAO sessionDAO;
+    private final UserDAO userDAO;
 
-    public BiddingService(SessionService sessionService, BidDAO bidDAO, AntiSnipingService antiSnipingService
-                            , UserService userService, BidIncrementService bidIncrementService) {
+    public BiddingService(SessionService sessionService, BidDAO bidDAO, AntiSnipingService antiSnipingService,
+                            UserService userService, BidIncrementService bidIncrementService,
+                            SessionDAO sessionDAO, UserDAO userDAO) {
         if (sessionService == null) {
             throw new IllegalArgumentException("SessionService must not be null");
         }
@@ -36,72 +45,125 @@ public class BiddingService { // Xử lí đặt giá
         if (bidIncrementService == null) {
             throw new IllegalArgumentException("BidIncrementService must not be null");
         }
+        if (sessionDAO == null) {
+            throw new IllegalArgumentException("SessionDAO must not be null");
+        }
+        if (userDAO == null) {
+            throw new IllegalArgumentException("UserDAO must not be null");
+        }
 
         this.sessionService = sessionService;
         this.bidDAO = bidDAO;
         this.antiSnipingService = antiSnipingService;
         this.userService = userService;
         this.bidIncrementService = bidIncrementService;
+        this.sessionDAO = sessionDAO;
+        this.userDAO = userDAO;
     }
 
     public BidResult placeBid(String sessionId, String bidderId, double bidAmount) {
         validateBidInput(sessionId, bidderId, bidAmount);
-        Bidder bidder = requireBidder(bidderId);
+        requireBidder(bidderId);
 
-        AuctionSession session = sessionService.getSession(sessionId);
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false); // tắt autocommit để tự quản lý transaction
 
-        if (session == null) {
-            return new BidResult(false, "Auction session not found: " + sessionId, sessionId,
-                    0.0, null, null, null);
+            try {
+                AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, sessionId); //lock session (không request khác sửa cùng lúc)
+                if (session == null) {
+                    conn.rollback();
+                    return new BidResult(false, "Auction session not found: " + sessionId,
+                                        sessionId, 0.0,
+                                        null, null, null);
+                }
+
+                if (!isSessionCurrentlyBiddable(session)) {
+                    conn.rollback();
+                    return new BidResult(false, buildNotBiddableMessage(session), session.getId(),
+                                session.getCurrentPrice(), session.getCurrentWinnerId(),
+                                resolveWinnerUsername(session.getCurrentWinnerId()), session.getStatus());
+
+                }
+
+                validateBidIncrement(session, bidAmount);
+
+                double currentPrice = session.getCurrentPrice();
+                String oldWinnerId = session.getCurrentWinnerId();
+
+                double reserveChange;
+                if (oldWinnerId != null && oldWinnerId.equals(bidderId)) {
+                    reserveChange = bidAmount - currentPrice;
+                } else {
+                    reserveChange = bidAmount;
+                }
+                if (reserveChange <= 0) {
+                    conn.rollback();
+                    return new BidResult(false,
+                                "Bid failed: bid amount must be higher than current price.",
+                                        sessionId, currentPrice, oldWinnerId,
+                                        resolveWinnerUsername(oldWinnerId), session.getStatus());
+                }
+
+                UserBalance bidderBalance = userDAO.getBalanceForUpdate(conn, bidderId); //lock balance của bidder
+
+                if (reserveChange > bidderBalance.getAvailableBalance()) { //check available balance
+                    throw new InsufficientBalanceException("Bid failed: Insufficient available balance.");
+                }
+
+                if (oldWinnerId != null && !oldWinnerId.isBlank() && !oldWinnerId.equals(bidderId)) {
+                    userDAO.updateReservedBalance(conn, oldWinnerId, -currentPrice);
+                }
+                userDAO.updateReservedBalance(conn, bidderId, reserveChange);
+
+                boolean updated = sessionDAO.updateCurrentBid(conn, sessionId, bidAmount, bidderId); //update bid của session
+                if (!updated) {
+                    conn.rollback();
+                    return new BidResult(
+                            false,
+                            "Bid failed: session is closed or another higher bid was placed.",
+                            sessionId, currentPrice, oldWinnerId,
+                            resolveWinnerUsername(oldWinnerId), session.getStatus());
+                }
+
+                //insert bid transaction
+                BidTransaction bidTransaction = new BidTransaction(UUID.randomUUID().toString(), sessionId, bidderId,
+                                                bidAmount);
+                bidDAO.insertBid(conn, bidTransaction);
+                conn.commit();
+
+            } catch (Exception e) {
+                conn.rollback();
+                if (e instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                throw new AuctionException("Bid failed: transaction error: " + e.getMessage());
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("Bid failed: database error: " + e.getMessage());
         }
-        sessionService.refreshSessionStatus(sessionId);
-        session = sessionService.getSession(sessionId);
-        if (session == null) {
-            return new BidResult(false, "Auction session not found after refresh: " + sessionId, sessionId,
-                    0.0, null, null, null);
-        }
-        if (!isSessionCurrentlyBiddable(session)) {
-            return new BidResult(false, buildNotBiddableMessage(session), session.getId(),
-                    session.getCurrentPrice(), session.getCurrentWinnerId(),
-                    resolveWinnerUsername(session.getCurrentWinnerId()), session.getStatus());
-        }
 
-        validateBidIncrement(session, bidAmount);
-        validateBidderBalance(bidder, bidAmount);
-
-        boolean updated = sessionService.updateCurrentBid(sessionId, bidAmount, bidderId);
-
-        if (!updated) {
-            AuctionSession latestSession = sessionService.getSession(sessionId);
-
-            return new BidResult(false,
-                    "Bid failed: session is closed or another higher bid was placed.", sessionId,
-                    latestSession != null ? latestSession.getCurrentPrice() : 0.0,
-                    latestSession != null ? latestSession.getCurrentWinnerId() : null,
-                    latestSession != null ? resolveWinnerUsername(latestSession.getCurrentWinnerId()) : null,
-                    latestSession != null ? latestSession.getStatus() : null);
-        }
-
-        BidTransaction bidTransaction = new BidTransaction(UUID.randomUUID().toString(),
-                sessionId, bidderId, bidAmount);
-        bidDAO.insertBid(bidTransaction);
-
+        // sau transaction: reload session mới nhất
         AuctionSession updatedSession = sessionService.getSession(sessionId);
+
         if (updatedSession == null) {
-            return new BidResult(true, "Bid placed successfully but failed to reload updated session",
-                    sessionId, bidAmount, bidderId, resolveWinnerUsername(bidderId),null);
+            return new BidResult(true,"Bid placed successfully but failed to reload updated session",
+                            sessionId, bidAmount, bidderId, resolveWinnerUsername(bidderId),null);
         }
 
-        //AntiSniping check
+        //antisniping check
         boolean extended = false;
+
         if (antiSnipingService.shouldExtend(updatedSession)) {
             sessionService.extendSession(sessionId, antiSnipingService.getExtendTime());
             extended = true;
-
-            updatedSession = sessionService.getSession(sessionId); //reload sau khi extend
+            updatedSession = sessionService.getSession(sessionId);
         }
 
-        String successMessage = extended ? "Bid placed successfully. Auction time extended due to anti-sniping."
+        String successMessage = extended
+                ? "Bid placed successfully. Auction time extended due to anti-sniping."
                 : "Bid placed successfully";
 
         return new BidResult(
