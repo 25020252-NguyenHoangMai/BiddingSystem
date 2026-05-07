@@ -228,7 +228,13 @@ public class SessionService { // Quản lí phiên đấu giá
             return false;
         }
 
-        return sessionDAO.updateCurrentBid(sessionId, newPrice, bidderId);
+        //return sessionDAO.updateCurrentBid(sessionId, newPrice, bidderId); quỳnh xóa cái này sửa thành bên duới
+        try (java.sql.Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            return sessionDAO.updateCurrentBid(conn, sessionId, newPrice, bidderId);
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
 
     }
 

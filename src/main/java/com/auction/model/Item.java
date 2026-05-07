@@ -8,6 +8,7 @@ public abstract class Item extends Entity {
     private String sellerId;
     private double startingPrice;
 
+
     public Item() { super(); }
 
     public Item(String id, String name, String description, String itemType, String sellerId, double startingPrice) {
