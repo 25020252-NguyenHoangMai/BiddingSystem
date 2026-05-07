@@ -1,6 +1,7 @@
 package com.auction.model;
 
 public abstract class Item extends Entity {
+    private static final long serialVersionUID = 1L;
     private String name;
     private String description;
     private String itemType;

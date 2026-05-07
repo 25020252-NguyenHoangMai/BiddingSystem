@@ -1,6 +1,9 @@
 package com.auction.model;
 
 public class Electronics extends Item {
+
+    private static final long serialVersionUID = 1L;
+
     private String brand;
 
     public Electronics(String id, String name, String description, String sellerID, double startingPrice,  String brand) {

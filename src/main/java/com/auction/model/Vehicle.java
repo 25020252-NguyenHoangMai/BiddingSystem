@@ -1,6 +1,9 @@
 package com.auction.model;
 
 public class Vehicle extends Item {
+
+    private static final long serialVersionUID = 1L;
+
     private String model;      // Dòng xe (ví dụ: Civic, Vios)
     private String engineType; // Loại động cơ (Xăng, Điện)
     private int mileage;       // Số km đã đi

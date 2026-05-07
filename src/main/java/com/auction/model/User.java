@@ -17,6 +17,7 @@ public abstract class User extends Entity{
         this.password = password;
         this.fullName = fullName;
         this.role = role;
+
     }
     public String getUsername() {
         return username;
@@ -47,5 +48,6 @@ public abstract class User extends Entity{
     public void setRole(String role) {
         this.role = role;
     }
+
 }
 

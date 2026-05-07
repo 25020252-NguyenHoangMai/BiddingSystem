@@ -3,6 +3,9 @@ package com.auction.model;
 import java.time.LocalDateTime;
 
 public class BidTransaction extends Entity {
+
+    private static final long serialVersionUID = 1L;
+
     private String sessionId;
     private String bidderId;
     private double bidAmount;

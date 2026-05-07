@@ -3,6 +3,9 @@ package com.auction.model;
 import java.time.LocalDateTime;
 
 public class AuctionSession extends Entity {
+
+    private static final long serialVersionUID = 1L;
+
     private Item item;
     private double currentPrice;
     private String currentWinnerId;

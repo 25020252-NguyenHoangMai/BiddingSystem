@@ -1,6 +1,9 @@
 package com.auction.model;
 
 public class Art extends Item {
+
+    private static final long serialVersionUID = 1L;
+
     private String artist;
 
     public Art(String id, String name, String description, String sellerID, double startingPrice, String artist) {
