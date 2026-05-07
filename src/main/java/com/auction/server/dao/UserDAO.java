@@ -233,6 +233,83 @@ public class UserDAO {
         }
     }
 
+    public void reserveBalance(String userId, double amount) {
+        String sql = """
+        UPDATE Users
+        SET reservedBalance = reservedBalance + ?
+        WHERE id = ?
+        AND (balance - reservedBalance) >= ?
+    """;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDouble(1, amount);
+            ps.setString(2, userId);
+            ps.setDouble(3, amount);
+
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                throw new AuctionException("Insufficient available balance.");
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while reserving balance: " + e.getMessage());
+        }
+    }
+
+    //release khi thua đấu giá
+    public void releaseReservedBalance(String userId, double amount) {
+        String sql = """
+        UPDATE Users
+        SET reservedBalance = reservedBalance - ?
+        WHERE id = ?
+        AND reservedBalance >= ?
+    """;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDouble(1, amount);
+            ps.setString(2, userId);
+            ps.setDouble(3, amount);
+
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                throw new AuctionException("Invalid reserved balance.");
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while releasing reserved balance: " + e.getMessage());
+        }
+    }
+
+    //finalize khi thắng đấu giá
+    public void deductReservedBalance(String userId, double amount) {
+        String sql = """
+        UPDATE Users
+        SET 
+            reservedBalance = reservedBalance - ?,
+            balance = balance - ?
+        WHERE id = ?
+        AND reservedBalance >= ?
+    """;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setDouble(1, amount);
+            ps.setDouble(2, amount);
+            ps.setString(3, userId);
+            ps.setDouble(4, amount);
+
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                throw new AuctionException("Invalid reserved balance or user not found.");
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("Error finalizing payment: " + e.getMessage());
+        }
+    }
+
     //=============== xóa user ===============
     public void deleteUser(String userId) {
         String sql = "DELETE FROM Users WHERE id = ?";
