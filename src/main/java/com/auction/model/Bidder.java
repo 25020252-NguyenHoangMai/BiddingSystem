@@ -66,6 +66,10 @@ public class Bidder extends User {
         this.sellerEnabled = false;
     }
 
+    public void setSellerEnabled(boolean sellerEnabled) {
+        this.sellerEnabled = sellerEnabled;
+    }
+
     public String getUserDetails() {
         return "Bidder [" +
                 "Username=" + getUsername() +
