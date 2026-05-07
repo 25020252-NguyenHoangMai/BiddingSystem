@@ -180,6 +180,23 @@ public class UserDAO {
         throw new AuctionException("User not found.");
     }
 
+    public UserBalance getBalanceForUpdate(Connection conn, String userId) {
+        String sql = "SELECT balance, reservedBalance FROM Users WHERE id = ? FOR UPDATE";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    double balance = rs.getDouble("balance");
+                    double reserved = rs.getDouble("reservedBalance");
+                    return new UserBalance(balance, reserved);
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting balance for update: " + e.getMessage());
+        }
+        throw new AuctionException("User not found.");
+    }
+
 
 
     //=============== thay đổi thông tin của user ===============
