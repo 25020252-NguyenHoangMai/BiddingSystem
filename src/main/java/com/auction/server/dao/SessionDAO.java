@@ -93,6 +93,22 @@ public class SessionDAO {
         }
     }
 
+    public AuctionSession getSessionByIdForUpdate(Connection conn, String sessionId) {
+        String sql = "SELECT * FROM AuctionSession WHERE id = ? FOR UPDATE";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return mapToSession(rs);
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting session by id for update: " + e.getMessage());
+        }
+    }
+
     public boolean updateCurrentBid(String sessionId, double newPrice, String bidderId) {
         String sql = """
             UPDATE AuctionSession
