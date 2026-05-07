@@ -49,7 +49,7 @@
 //        this.role = role;
 //    }
 //
-//    public double getBalance() {
+//    public double getAvailableBalance() {
 //        return balance;
 //    }
 //

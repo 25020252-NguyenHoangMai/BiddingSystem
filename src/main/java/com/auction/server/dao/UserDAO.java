@@ -25,7 +25,7 @@ public class UserDAO {
             boolean sellerEnabled = rs.getBoolean("sellerEnabled");
             double reservedBalance = rs.getDouble("reservedBalance");
 
-            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance);
+            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance, reservedBalance);
             bidder.setSellerEnabled(sellerEnabled);
             return bidder;
         }
@@ -54,7 +54,7 @@ public class UserDAO {
     //============== đăng ký - thêm user ==============
     public void insertUser(User user) {
 
-        String sql = "INSERT INTO Users (id, username, password, fullName, role) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (id, username, password, fullName, role, balance, reservedBalance, sellerEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -63,6 +63,9 @@ public class UserDAO {
             ps.setString(3, user.getPassword());
             ps.setString(4, user.getFullName());
             ps.setString(5, user.getRole());
+            ps.setDouble(6, 0.0);
+            ps.setDouble(7, 0.0);
+            ps.setBoolean(8, false);
 
             ps.executeUpdate();
         }
@@ -81,12 +84,14 @@ public class UserDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, userId);
-            ps.executeUpdate();
-
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                throw new AuctionException("User not found.");
+            }
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while enabling selling: " + e.getMessage());
         }
-        return null;
+        return getUserById(userId);
     }
 
     /**
@@ -157,18 +162,22 @@ public class UserDAO {
     }
 
     //=============== kiểm tra số dư tài khoản trước khi đặt bid ===============
-    public double getBalance(String userId) {
-        String sql = "SELECT balance FROM Users WHERE id = ?";
+    public double getAvailableBalance(String userId) {
+        String sql = "SELECT balance, reservedBalance FROM Users WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getDouble("balance");
+                if (rs.next()) {
+                    double balance = rs.getDouble("balance");
+                    double reserved = rs.getDouble("reservedBalance");
+                    return balance - reserved;
+                }
             }
         } catch (SQLException e) {
-            throw new AuctionException("An error occurred while getting balance: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting available balance: " + e.getMessage());
         }
-        throw new AuctionException("User is not found.");
+        throw new AuctionException("User not found.");
     }
 
 
@@ -203,7 +212,7 @@ public class UserDAO {
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
-                throw new AuctionException("User is not found.");
+                throw new AuctionException("User not found.");
             }
         }
         catch (SQLException e) {
@@ -226,7 +235,7 @@ public class UserDAO {
             int rowsAffected = ps.executeUpdate();
 
             if (rowsAffected == 0) {
-                throw new AuctionException("User is not found.");
+                throw new AuctionException("Insufficient balance or user not found.");
             }
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while updating balance: " + e.getMessage());
