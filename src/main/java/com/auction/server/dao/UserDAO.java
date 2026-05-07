@@ -23,6 +23,7 @@ public class UserDAO {
         } else if ("BIDDER".equalsIgnoreCase(role)) {
             double balance = rs.getDouble("balance");
             boolean sellerEnabled = rs.getBoolean("sellerEnabled");
+            double reservedBalance = rs.getDouble("reservedBalance");
 
             Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance);
             bidder.setSellerEnabled(sellerEnabled);
