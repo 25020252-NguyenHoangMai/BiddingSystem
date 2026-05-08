@@ -191,6 +191,14 @@ public class UserService {
         return userDAO.getAvailableBalance(userId);
     }
 
+    public double getAvailableBalance(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new AuctionException("User id is required!");
+        }
+
+        return userDAO.getAvailableBalance(userId);
+    }
+
 
     //=============== bật chế độ SELLER ===============
     public User enableSeller(String userId) {

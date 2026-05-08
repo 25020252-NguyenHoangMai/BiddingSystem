@@ -64,6 +64,7 @@ public class BiddingService { // Xử lí đặt giá
     public BidResult placeBid(String sessionId, String bidderId, double bidAmount) {
         validateBidInput(sessionId, bidderId, bidAmount);
         requireBidder(bidderId);
+        sessionService.refreshSessionStatus(sessionId);
 
         try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             conn.setAutoCommit(false); // tắt autocommit để tự quản lý transaction
@@ -249,15 +250,16 @@ public class BiddingService { // Xử lí đặt giá
         }
     }
 
-    private void validateBidderBalance(Bidder bidder, double bidAmount) {
-        if (bidder == null) {
-            throw new IllegalArgumentException("Bidder must not be null");
-        }
-
-        if (bidAmount > bidder.getBalance()) {
-            throw new InsufficientBalanceException("Bid failed: Insufficient balance.");
-        }
-    }
+// không dùng method này nữa (logic cũ)
+//    private void validateBidderBalance(Bidder bidder, double bidAmount) {
+//        if (bidder == null) {
+//            throw new IllegalArgumentException("Bidder must not be null");
+//        }
+//
+//        if (bidAmount > bidder.getBalance()) {
+//            throw new InsufficientBalanceException("Bid failed: Insufficient balance.");
+//        }
+//    }
 
     private void validateBidIncrement(AuctionSession session, double bidAmount) {
         if (session == null) {

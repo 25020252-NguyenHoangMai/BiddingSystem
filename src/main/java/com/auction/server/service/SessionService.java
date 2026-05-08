@@ -200,6 +200,8 @@ public class SessionService { // Quản lí phiên đấu giá
         //status = open/=running, >= endTime => status = finished
     }
 
+
+    // không dùng method này cho đấu giá thật nữa, update bid đã ở trong phần atomic placebid() rồi
     public boolean updateCurrentBid(String sessionId, double newPrice, String bidderId) {
         if (sessionId == null || sessionId.isBlank()) {
             throw new IllegalArgumentException("Auction session not found: " + sessionId);
