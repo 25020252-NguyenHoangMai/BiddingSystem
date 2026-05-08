@@ -10,7 +10,6 @@ import com.auction.server.dao.UserDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -53,9 +52,9 @@ public class UserServiceTest {
     }
 
 
-    // ========================================================
-    // 1. TEST REGISTER
-    // ========================================================
+
+    //TEST REGISTER
+
 
     @Test
     void testRegister_UsernameDaTonTai_PhaiNemLoi() {
@@ -72,7 +71,7 @@ public class UserServiceTest {
 
     @Test
     void testRegister_ThanhCong() {
-        // TH2: Tên chưa ai dùng (trả về null)
+        // TH2: Tên chưa ai dùng trả về null
         when(userDAO.getUserByUsername("quynh_admin")).thenReturn(null);
 
         userService.register(testUser);
@@ -87,9 +86,9 @@ public class UserServiceTest {
     }
 
 
-    // ========================================================
+
     // 2. TEST LOGIN
-    // ========================================================
+
 
     @Test
     void testLogin_UsernameKhongTonTai_PhaiNemLoi() {
@@ -123,23 +122,23 @@ public class UserServiceTest {
     }
 
 
-    // ========================================================
-    // 3. TEST CHANGE PASSWORD
-    // ========================================================
+
+    //TEST CHANGE PASSWORD
+
 
     @Test
     void testChangePassword_ThanhCong() {
         userService.changePassword("U01", "new_password_xịn");
 
-        // Không test được kết quả trực tiếp, nên ta test xem UserService
+        // Không test được kết quả trực tiếp, nên test xem UserService
         // có gọi DAO để update mật khẩu (đã băm) thành công không
         verify(userDAO, times(1)).updatePassword(eq("U01"), anyString());
     }
 
 
-    // ========================================================
-    // 4. TEST UPDATE PROFILE
-    // ========================================================
+
+    //TEST UPDATE PROFILE
+
 
     @Test
     void testUpdateProfile_UsernameDaTonTaiCuaNguoiKhac_PhaiNemLoi() {
@@ -171,9 +170,9 @@ public class UserServiceTest {
     }
 
 
-    // ========================================================
-    // 5. TEST GET USER (BY ID & USERNAME)
-    // ========================================================
+
+    //TEST GET USER BY ID & USERNAME
+
 
     @Test
     void testGetUserById_KhongTonTai_PhaiNemLoi() {
