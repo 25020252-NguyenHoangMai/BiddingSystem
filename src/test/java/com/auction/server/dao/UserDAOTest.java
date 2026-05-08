@@ -1,4 +1,357 @@
 package com.auction.server.dao;
 
+import com.auction.exception.AuctionException;
+import com.auction.model.Admin;
+import com.auction.model.Bidder;
+import com.auction.model.User;
+import com.auction.server.service.UserBalance;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
 public class UserDAOTest {
+
+    private UserDAO userDAO;
+
+    @Mock
+    private Connection mockConn;
+    @Mock
+    private PreparedStatement mockPs;
+    @Mock
+    private ResultSet mockRs;
+    @Mock
+    private DatabaseManager mockDbManager;
+
+    private MockedStatic<DatabaseManager> mockedStaticDbManager;
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        MockitoAnnotations.openMocks(this);
+        userDAO = new UserDAO();
+
+        mockedStaticDbManager = mockStatic(DatabaseManager.class);
+        mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
+        when(mockDbManager.getConnection()).thenReturn(mockConn);
+        when(mockConn.prepareStatement(anyString())).thenReturn(mockPs);
+    }
+
+    @AfterEach
+    void tearDown() {
+        mockedStaticDbManager.close();
+    }
+
+
+    //TEST MAP TO USER GIÁN TIẾP QUA GET USER
+
+
+    @Test
+    void testGetUserById_AdminRole_ReturnsAdmin() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getString("id")).thenReturn("A1");
+        when(mockRs.getString("role")).thenReturn("ADMIN");
+        when(mockRs.getString("username")).thenReturn("admin_minh");
+
+        User result = userDAO.getUserById("A1");
+        assertTrue(result instanceof Admin);
+        assertEquals("admin_minh", result.getUsername());
+    }
+
+    @Test
+    void testGetUserById_BidderRole_ReturnsBidder() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getString("id")).thenReturn("B1");
+        when(mockRs.getString("role")).thenReturn("BIDDER");
+        when(mockRs.getDouble("balance")).thenReturn(1000.0);
+        when(mockRs.getDouble("reservedBalance")).thenReturn(200.0);
+        when(mockRs.getBoolean("sellerEnabled")).thenReturn(true);
+
+        User result = userDAO.getUserById("B1");
+        assertTrue(result instanceof Bidder);
+        Bidder bidder = (Bidder) result;
+        assertEquals(1000.0, bidder.getBalance());
+        assertEquals(200.0, bidder.getReservedBalance());
+        assertTrue(bidder.isSellerEnabled());
+    }
+
+    @Test
+    void testGetUserById_InvalidRole_ReturnsNull() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getString("role")).thenReturn("UNKNOWN_ROLE");
+
+        assertNull(userDAO.getUserById("X1"));
+    }
+
+    @Test
+    void testGetUserById_NotFound_ReturnsNull() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(false);
+
+        assertNull(userDAO.getUserById("GHOST"));
+    }
+
+    @Test
+    void testGetUserById_SQLException_ThrowsException() throws SQLException {
+        when(mockPs.executeQuery()).thenThrow(new SQLException("DB Error"));
+        assertThrows(AuctionException.class, () -> userDAO.getUserById("U1"));
+    }
+
+
+    //TEST KIỂM TRA USERNAME VÀ GET TẤT CẢ USER
+
+
+    @Test
+    void testIsUsernameExist_Exists_ReturnsTrue() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        assertTrue(userDAO.isUsernameExist("test_user"));
+    }
+
+    @Test
+    void testIsUsernameExist_NotExists_ReturnsFalse() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(false);
+        assertFalse(userDAO.isUsernameExist("ghost_user"));
+    }
+
+    @Test
+    void testIsUsernameExist_SQLException_ThrowsException() throws SQLException {
+        when(mockPs.executeQuery()).thenThrow(new SQLException("Lỗi"));
+        assertThrows(AuctionException.class, () -> userDAO.isUsernameExist("test"));
+    }
+
+    @Test
+    void testGetAllUsers_Success() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true, false); // 1 user
+        when(mockRs.getString("role")).thenReturn("ADMIN");
+
+        List<User> list = userDAO.getAllUsers();
+        assertEquals(1, list.size());
+    }
+
+    @Test
+    void testGetAllUsers_SQLException() throws SQLException {
+        when(mockPs.executeQuery()).thenThrow(new SQLException("Error"));
+        assertThrows(AuctionException.class, () -> userDAO.getAllUsers());
+    }
+
+    @Test
+    void testGetUserByUsername_Success() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getString("role")).thenReturn("ADMIN");
+
+        assertNotNull(userDAO.getUserByUsername("admin1"));
+    }
+
+    @Test
+    void testGetUserByUsername_NotFound() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(false);
+        assertNull(userDAO.getUserByUsername("admin1"));
+    }
+
+    @Test
+    void testGetUserByUsername_SQLException() throws SQLException {
+        when(mockPs.executeQuery()).thenThrow(new SQLException("Error"));
+        assertThrows(AuctionException.class, () -> userDAO.getUserByUsername("admin"));
+    }
+
+
+    //TEST INSERT, UPDATE, DELETE
+
+
+    @Test
+    void testInsertUser_Success() throws SQLException {
+        Bidder bidder = new Bidder("U1", "user", "pass", "Name", "BIDDER", 0, 0);
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.insertUser(bidder));
+        verify(mockPs).setBoolean(8, false); //đảm bảo sellerEnabled = false
+    }
+
+    @Test
+    void testInsertUser_SQLException() throws SQLException {
+        Bidder bidder = new Bidder("U1", "user", "pass", "Name", "BIDDER", 0, 0);
+        when(mockPs.executeUpdate()).thenThrow(new SQLException("Duplicate PK"));
+        assertThrows(AuctionException.class, () -> userDAO.insertUser(bidder));
+    }
+
+    @Test
+    void testUpdateUser_Success() throws SQLException {
+        Bidder bidder = new Bidder("U1", "new_user", "pass", "New Name", "BIDDER", 0, 0);
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.updateUser(bidder));
+    }
+
+    @Test
+    void testUpdateUser_SQLException() throws SQLException {
+        when(mockPs.executeUpdate()).thenThrow(new SQLException("Error"));
+        assertThrows(AuctionException.class, () -> userDAO.updateUser(new Bidder("U1", "", "", "", "", 0, 0)));
+    }
+
+    @Test
+    void testUpdatePassword_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.updatePassword("U1", "newPass123"));
+    }
+
+    @Test
+    void testUpdatePassword_NotFound_ThrowsException() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0);
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.updatePassword("U1", "newPass"));
+        assertEquals("User not found.", e.getMessage());
+    }
+
+    @Test
+    void testDeleteUser_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.deleteUser("U1"));
+    }
+
+    @Test
+    void testDeleteUser_SQLException() throws SQLException {
+        when(mockPs.executeUpdate()).thenThrow(new SQLException("Error"));
+        assertThrows(AuctionException.class, () -> userDAO.deleteUser("U1"));
+    }
+
+    @Test
+    void testEnableSeller_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        //do hàm enableSeller có gọi getUserById ở dòng return, cần mock thêm
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getString("role")).thenReturn("BIDDER");
+
+        assertDoesNotThrow(() -> userDAO.enableSeller("U1"));
+    }
+
+    @Test
+    void testEnableSeller_NotFound_ThrowsException() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0);
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.enableSeller("U1"));
+        assertEquals("User not found.", e.getMessage());
+    }
+
+
+    //TEST NGHIỆP VỤ TIỀN BẠC
+
+
+    @Test
+    void testGetAvailableBalance_Success() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getDouble("balance")).thenReturn(1000.0);
+        when(mockRs.getDouble("reservedBalance")).thenReturn(300.0);
+
+        assertEquals(700.0, userDAO.getAvailableBalance("U1"));
+    }
+
+    @Test
+    void testGetAvailableBalance_NotFound() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(false);
+
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.getAvailableBalance("U1"));
+        assertEquals("User not found.", e.getMessage());
+    }
+
+    @Test
+    void testGetBalanceForUpdate_Success() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(true);
+        when(mockRs.getDouble("balance")).thenReturn(500.0);
+        when(mockRs.getDouble("reservedBalance")).thenReturn(100.0);
+
+        UserBalance ub = userDAO.getBalanceForUpdate(mockConn, "U1");
+        assertNotNull(ub);
+    }
+
+    @Test
+    void testGetBalanceForUpdate_NotFound() throws SQLException {
+        when(mockPs.executeQuery()).thenReturn(mockRs);
+        when(mockRs.next()).thenReturn(false);
+
+        assertThrows(AuctionException.class, () -> userDAO.getBalanceForUpdate(mockConn, "U1"));
+    }
+
+    @Test
+    void testUpdateBalance_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.updateBalance("U1", 500.0));
+    }
+
+    @Test
+    void testUpdateBalance_InsufficientOrNotFound() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0); //trừ quá số tiền hoặc user ko tồn tại
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.updateBalance("U1", -5000.0));
+        assertEquals("Insufficient balance or user not found.", e.getMessage());
+    }
+
+    @Test
+    void testReserveBalance_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.reserveBalance("U1", 200.0));
+    }
+
+    @Test
+    void testReserveBalance_Insufficient() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0);
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.reserveBalance("U1", 9999.0));
+        assertEquals("Insufficient available balance.", e.getMessage());
+    }
+
+    @Test
+    void testUpdateReservedBalance_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.updateReservedBalance(mockConn, "U1", 150.0));
+    }
+
+    @Test
+    void testUpdateReservedBalance_NotFound() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0);
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.updateReservedBalance(mockConn, "U1", 150.0));
+        assertEquals("User not found.", e.getMessage());
+    }
+
+    @Test
+    void testReleaseReservedBalance_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.releaseReservedBalance("U1", 100.0));
+    }
+
+    @Test
+    void testReleaseReservedBalance_Invalid() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0); //cố tình nhả số tiền lớn hơn số đang bị đóng băng
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.releaseReservedBalance("U1", 999.0));
+        assertEquals("Invalid reserved balance.", e.getMessage());
+    }
+
+    @Test
+    void testDeductReservedBalance_Success() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(1);
+        assertDoesNotThrow(() -> userDAO.deductReservedBalance("U1", 100.0));
+    }
+
+    @Test
+    void testDeductReservedBalance_Invalid() throws SQLException {
+        when(mockPs.executeUpdate()).thenReturn(0);
+        AuctionException e = assertThrows(AuctionException.class, () -> userDAO.deductReservedBalance("U1", 999.0));
+        assertEquals("Invalid reserved balance or user not found.", e.getMessage());
+    }
 }
