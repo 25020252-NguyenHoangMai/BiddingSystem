@@ -181,6 +181,22 @@ public class UserDAO {
         throw new AuctionException("User not found.");
     }
 
+    public double getBalance(String userId) {
+        String sql = "SELECT balance FROM Users WHERE id = ?";
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("balance");
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting balance: " + e.getMessage());
+        }
+        throw new AuctionException("User not found.");
+    }
+
     public UserBalance getBalanceForUpdate(Connection conn, String userId) {
         String sql = "SELECT balance, reservedBalance FROM Users WHERE id = ? FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
