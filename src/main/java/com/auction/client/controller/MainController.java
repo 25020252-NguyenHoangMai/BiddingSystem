@@ -222,4 +222,33 @@ public class MainController {
 
         tableAuctions.setItems(filteredList);
     }
+
+    private void setupRowClickToDetail() {
+        tableAuctions.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                ItemDTO selected = tableAuctions.getSelectionModel().getSelectedItem();
+                if (selected != null) {
+                    openAuctionDetail(selected);
+                }
+            }
+        });
+    }
+
+    private void openAuctionDetail(ItemDTO item) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/auction_details.fxml"));
+            Parent root = loader.load();
+
+            AuctionDetailController controller = loader.getController();
+            controller.setItemData(item);
+
+            Stage stage = new Stage();
+            stage.setTitle("Auction — " + item.getName());
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            showError("Cannot open auction detail: " + e.getMessage());
+        }
+    }
 }

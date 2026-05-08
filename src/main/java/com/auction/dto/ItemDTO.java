@@ -22,6 +22,9 @@ public class ItemDTO implements Serializable {
     private String brand;
     private String artist;
     private long endTimeMillis;
+    private String sessionId;
+    private String currentWinnerUsername;
+    private String sessionStatus;
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
@@ -142,6 +145,20 @@ public class ItemDTO implements Serializable {
     public void setSelected(boolean selected) { this.selected.set(selected);}
 
     public long getEndTimeMillis() { return endTimeMillis; }
+
+    public void setEndTimeMillis(long endTimeMillis) { this.endTimeMillis = endTimeMillis; }
+
+    public String getSessionId() { return sessionId; }
+
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+
+    public String getCurrentWinnerUsername() { return currentWinnerUsername; }
+
+    public void setCurrentWinnerUsername(String u) { this.currentWinnerUsername = u; }
+
+    public String getSessionStatus() { return sessionStatus; }
+
+    public void setSessionStatus(String s) { this.sessionStatus = s; }
 
     public String calculateTimeLeft() {
         long now = System.currentTimeMillis();

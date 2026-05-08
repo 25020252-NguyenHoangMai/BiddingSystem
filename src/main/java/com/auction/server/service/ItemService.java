@@ -133,7 +133,31 @@ public class ItemService {
     }
 
     public List<ItemDTO> getAllItemDTOS() {
-        return itemDAO.getAllItems();
+        List<ItemDTO> items = itemDAO.getAllItems();
+        for (ItemDTO dto : items) {
+            List<AuctionSession> sessions = sessionDAO.getSessionsByItemId(dto.getId());
+            if (!sessions.isEmpty()) {
+                AuctionSession latestSession = sessions.get(0);
+                dto.setSessionId(latestSession.getId());
+                dto.setCurrentPrice(latestSession.getCurrentPrice());
+                dto.setSessionStatus(latestSession.getStatus());
+                if (latestSession.getEndTime() != null) {
+                    dto.setEndTimeMillis(
+                            latestSession.getEndTime()
+                                    .atZone(java.time.ZoneId.systemDefault())
+                                    .toInstant().toEpochMilli()
+                    );
+                }
+                String winnerId = latestSession.getCurrentWinnerId();
+                if (winnerId != null && !winnerId.isBlank()) {
+                    try {
+                        com.auction.model.User winner = userService.getUserById(winnerId);
+                        dto.setCurrentWinnerUsername(winner.getUsername());
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return items;
     }
 
     //=============== hiển thị sản phẩm (qua id) ===============
