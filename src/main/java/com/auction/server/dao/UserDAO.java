@@ -198,7 +198,7 @@ public class UserDAO {
     }
 
     public UserBalance getBalanceForUpdate(Connection conn, String userId) {
-        String sql = "SELECT balance, reservedBalance FROM Users WHERE id = ? FOR UPDATE";
+        String sql = "SELECT balance, reservedBalance FROM Users WITH (UPDLOCK, ROWLOCK) WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -213,8 +213,6 @@ public class UserDAO {
         }
         throw new AuctionException("User not found.");
     }
-
-
 
     //=============== thay đổi thông tin của user ===============
     public void updateUser(User user) {
@@ -301,11 +299,12 @@ public class UserDAO {
     }
 
     public void updateReservedBalance(Connection conn, String userId, double amount) {
-        String sql = "UPDATE Users SET reservedBalance = ? WHERE id = ?";
+        String sql = "UPDATE Users SET reservedBalance = reservedBalance + ? WHERE id = ? AND reservedBalance + ? >= 0";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, amount);
             ps.setString(2, userId);
+            ps.setDouble(3, amount);
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
