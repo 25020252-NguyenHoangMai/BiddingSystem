@@ -9,6 +9,7 @@ import com.auction.server.dao.ItemDAO;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.network.SocketServer;
+import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.*;
 
 public class    MainServer {
@@ -17,6 +18,8 @@ public class    MainServer {
         UserDAO userDAO = new UserDAO();
         BidDAO bidDAO = new BidDAO();
         SessionDAO sessionDAO = new SessionDAO(itemDAO);
+
+        SessionWatchRegistry sessionWatchRegistry = new SessionWatchRegistry();
 
         UserService userService = new UserService(userDAO);
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
@@ -34,7 +37,7 @@ public class    MainServer {
 
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController);
 
-        SocketServer server = new SocketServer(5000, auctionController);
+        SocketServer server = new SocketServer(5000, auctionController, sessionWatchRegistry);
         server.startServer();
     }
 }

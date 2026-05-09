@@ -1,6 +1,8 @@
 package com.auction.server.network;
 
 import com.auction.server.controller.AuctionController;
+import com.auction.server.realtime.SessionWatchRegistry;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
@@ -8,10 +10,12 @@ import java.io.IOException;
 public class SocketServer {
     private final int port;
     private final AuctionController auctionController;
+    private final SessionWatchRegistry sessionWatchRegistry;
 
-    public SocketServer(int port, AuctionController auctionController) {
+    public SocketServer(int port, AuctionController auctionController, SessionWatchRegistry sessionWatchRegistry) {
         this.port = port;
         this.auctionController = auctionController;
+        this.sessionWatchRegistry = sessionWatchRegistry;
     }
 
     public void startServer() {
@@ -23,7 +27,7 @@ public class SocketServer {
                 Socket socket = serverSocket.accept();
                 System.out.println("Client connected: " + socket);
 
-                ClientHandler handler = new ClientHandler(socket, auctionController);
+                ClientHandler handler = new ClientHandler(socket, auctionController, sessionWatchRegistry);
                 handler.start();
             }
 

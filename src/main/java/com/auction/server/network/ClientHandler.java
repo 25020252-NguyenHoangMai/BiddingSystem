@@ -1,9 +1,12 @@
 package com.auction.server.network;
 
 import com.auction.request.Request;
+import com.auction.response.BidUpdateResponse;
 import com.auction.response.Response;
 import com.auction.response.ErrorResponse;
 import com.auction.server.controller.AuctionController;
+import com.auction.server.realtime.AuctionSessionObserver;
+import com.auction.server.realtime.SessionWatchRegistry;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -15,16 +18,18 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class ClientHandler extends Thread {
+public class ClientHandler extends Thread implements AuctionSessionObserver {
     private final Socket socket;
     private final AuctionController auctionController;
+    private final SessionWatchRegistry sessionWatchRegistry;
 
     private ObjectInputStream in;
     private ObjectOutputStream out;
 
-    public ClientHandler(Socket socket, AuctionController auctionController) {
+    public ClientHandler(Socket socket, AuctionController auctionController, SessionWatchRegistry sessionWatchRegistry) {
         this.socket = socket;
         this.auctionController = auctionController;
+        this.sessionWatchRegistry = sessionWatchRegistry;
     }
 
     @Override
@@ -91,21 +96,33 @@ public class ClientHandler extends Thread {
             System.out.println("Fatal error in client handler: " + socket);
             e.printStackTrace();
         } finally {
+            sessionWatchRegistry.unwatchAll(this);
             closeResources();
         }
     }
 
-    private void safeSendResponse(Response response) {
+    private synchronized boolean safeSendResponse(Response response) {
         if (out == null) {
-            return;
+            return false;
         }
 
         try {
             out.writeObject(response);
             out.flush();
+            return true;
         } catch (IOException e) {
             System.out.println("Failed to send response to client: " + socket);
+            return false;
         }
+    }
+
+    @Override
+    public boolean onBidUpdated(BidUpdateResponse update) {
+        if (update == null) {
+            return false;
+        }
+
+        return safeSendResponse(update);
     }
 
     private void closeResources() {
