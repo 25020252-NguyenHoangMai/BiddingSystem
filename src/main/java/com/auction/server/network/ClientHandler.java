@@ -76,7 +76,7 @@ public class ClientHandler extends Thread implements AuctionSessionObserver {
 
                 Response response;
                 try {
-                    response = auctionController.handleRequest(request);
+                    response = auctionController.handleRequest(request, this);
 
                     if (response == null) {
                         response = new ErrorResponse("Server returned null response");

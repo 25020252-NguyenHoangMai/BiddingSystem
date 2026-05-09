@@ -1,9 +1,6 @@
 package com.auction.server;
 
-import com.auction.server.controller.AuctionController;
-import com.auction.server.controller.AuthController;
-import com.auction.server.controller.BiddingController;
-import com.auction.server.controller.ItemController;
+import com.auction.server.controller.*;
 import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.ItemDAO;
 import com.auction.server.dao.SessionDAO;
@@ -33,9 +30,12 @@ public class    MainServer {
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService);
-        BiddingController biddingController = new BiddingController(biddingService);
+        BiddingController biddingController = new BiddingController(biddingService, sessionService, sessionWatchRegistry);
+        RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, sessionService,
+                                                userService);
 
-        AuctionController auctionController = new AuctionController(authController, itemController, biddingController);
+        AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
+                                                realTimeController);
 
         SocketServer server = new SocketServer(5000, auctionController, sessionWatchRegistry);
         server.startServer();

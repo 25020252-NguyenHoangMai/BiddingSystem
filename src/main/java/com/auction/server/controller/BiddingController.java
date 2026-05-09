@@ -2,16 +2,27 @@ package com.auction.server.controller;
 
 import com.auction.exception.InsufficientBalanceException;
 import com.auction.exception.InvalidBidException;
+import com.auction.model.AuctionSession;
 import com.auction.request.PlaceBidRequest;
+import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
+import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.BiddingService;
 import com.auction.server.service.BidResult;
+import com.auction.server.service.SessionService;
+
+import java.time.ZoneId;
 
 public class BiddingController {
     private final BiddingService biddingService;
+    private final SessionService sessionService;
+    private final SessionWatchRegistry sessionWatchRegistry;
 
-    public BiddingController(BiddingService biddingService) {
+    public BiddingController(BiddingService biddingService, SessionService sessionService,
+                             SessionWatchRegistry sessionWatchRegistry) {
         this.biddingService = biddingService;
+        this.sessionWatchRegistry = sessionWatchRegistry;
+        this.sessionService = sessionService;
     }
 
     public PlaceBidResponse placeBid(PlaceBidRequest request) {
@@ -33,6 +44,9 @@ public class BiddingController {
 
             BidResult result = biddingService.placeBid(request.getSessionId(),
                     request.getBidderId(), request.getAmount());
+            if (result.isSuccess()) {
+                broadcastBidUpdate(result);
+            }
 
             return new PlaceBidResponse(result.isSuccess(), result.getMessage(), result.getSessionId(),
                     result.getCurrentPrice(), result.getCurrentWinnerId(),
@@ -51,5 +65,40 @@ public class BiddingController {
             return new PlaceBidResponse(false, "Bid failed: unexpected server error!", null,
                     null, null, null, null);
         }
+    }
+
+    private void broadcastBidUpdate(BidResult result) {
+        try {
+            Long endTimeMillis = getEndTimeMillis(result.getSessionId());
+
+            BidUpdateResponse update = new BidUpdateResponse(
+                    true,
+                    result.getMessage(),
+                    result.getSessionId(),
+                    result.getCurrentPrice(),
+                    result.getCurrentWinnerId(),
+                    result.getCurrentWinnerUsername(),
+                    result.getStatus(),
+                    endTimeMillis
+            );
+
+            sessionWatchRegistry.broadcastBidUpdate(result.getSessionId(), update);
+        } catch (Exception e) {
+            System.out.println("Failed to broadcast bid update for session: " + result.getSessionId());
+            e.printStackTrace();
+        }
+    }
+
+    private Long getEndTimeMillis(String sessionId) {
+        AuctionSession session = sessionService.getSession(sessionId);
+
+        if (session == null || session.getEndTime() == null) {
+            return null;
+        }
+
+        return session.getEndTime()
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
     }
 }
