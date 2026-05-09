@@ -25,6 +25,10 @@ public class AuctionController {
             return authController.register(registerRequest);
         }
 
+        if (request instanceof EnableSellerRequest r) {
+            return authController.enableSeller(r);
+        }
+
         if (request instanceof GetAllItemsRequest getAllItemsRequest) {
             return itemController.getAllItems(getAllItemsRequest);
         }

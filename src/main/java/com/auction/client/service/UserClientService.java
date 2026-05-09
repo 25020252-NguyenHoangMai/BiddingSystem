@@ -2,11 +2,14 @@ package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
 import com.auction.dto.UserSessionDTO;
+import com.auction.request.EnableSellerRequest;
+import com.auction.response.EnableSellerResponse;
+
 import java.util.List;
 
 public class UserClientService {
 
-    // Áp dụng Singleton để AdminController gọi cho dễ
+    // Áp dụng Singleton để AdminController dễ gọi
     private static UserClientService instance;
 
     private UserClientService() {}
@@ -48,5 +51,20 @@ public class UserClientService {
 
         Object res = socket.receiveResponse();
         return res instanceof Boolean && (Boolean) res;
+    }
+
+    // Gửi EnableSellerRequest lên Server
+    public boolean enableSeller(String userId) throws Exception {
+        ClientSocket socket = ClientSocket.getInstance();
+        socket.connect();
+
+        socket.sendRequest(new EnableSellerRequest(userId));
+        Object raw = socket.receiveResponse();
+
+        if (raw instanceof EnableSellerResponse res) {
+            if (res.isSuccess()) return true;
+            throw new Exception(res.getMessage());
+        }
+        throw new Exception("Phản hồi từ server không hợp lệ");
     }
 }

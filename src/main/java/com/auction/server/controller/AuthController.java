@@ -5,8 +5,10 @@ import com.auction.exception.AuthenticationException;
 import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.dto.UserSessionDTO;
+import com.auction.request.EnableSellerRequest;
 import com.auction.request.LoginRequest;
 import com.auction.request.RegisterRequest;
+import com.auction.response.EnableSellerResponse;
 import com.auction.response.LoginResponse;
 import com.auction.response.RegisterResponse;
 import com.auction.server.service.UserService;
@@ -73,6 +75,27 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return new RegisterResponse(false, "Register failed!");
+        }
+    }
+
+    // ===== ENABLE SELLER =====
+    public EnableSellerResponse enableSeller(EnableSellerRequest request) {
+        try {
+            if (request.getUserId() == null || request.getUserId().isBlank())
+                return new EnableSellerResponse(false, "User ID is required!");
+
+            User updated = userService.enableSeller(request.getUserId());
+
+            if (updated == null)
+                return new EnableSellerResponse(false, "User not found!");
+
+            return new EnableSellerResponse(true, "Seller enabled successfully!");
+
+        } catch (AuctionException e) {
+            return new EnableSellerResponse(false, e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new EnableSellerResponse(false, "Failed to enable seller!");
         }
     }
 

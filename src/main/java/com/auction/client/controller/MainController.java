@@ -62,6 +62,9 @@ public class MainController {
 
         // Tải dữ liệu
         loadProductsAsync();
+
+        // Chuyển màn hình Main sang màn hình đấu giá
+        setupRowClickToDetail();
     }
 
     // ===== USER INFO =====

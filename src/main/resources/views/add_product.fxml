@@ -35,15 +35,28 @@
                 <Label text="Starting Price ($):" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                 <TextField fx:id="txtPrice" promptText="e.g. 100.00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
+                <!-- DURATION -->
+                <Label text="Duration (hours):" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                <HBox spacing="8" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                    <TextField fx:id="txtDuration" prefWidth="100" promptText="e.g. 24"
+                               style="-fx-pref-width: 100;"/>
+                    <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 12;"
+                           text="hours  (min 1 — max 720)"/>
+                </HBox>
+
                 <!-- CATEGORY -->
-                <Label text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                <ComboBox fx:id="cbCategory" onAction="#handleCategoryChange" prefWidth="220" promptText="Select category" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-            <rowConstraints>
-               <RowConstraints />
-               <RowConstraints />
-               <RowConstraints />
-               <RowConstraints />
-            </rowConstraints>
+                <Label text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                <ComboBox fx:id="cbCategory" onAction="#handleCategoryChange"
+                          prefWidth="220" promptText="Select category"
+                          GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                <rowConstraints>
+                    <RowConstraints/>
+                    <RowConstraints/>
+                    <RowConstraints/>
+                    <RowConstraints/>
+                    <RowConstraints/>
+                </rowConstraints>
             </GridPane>
 
             <!-- DYNAMIC FIELDS -->

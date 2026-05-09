@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class AddProductController {
 
-    @FXML private TextField txtName, txtPrice;
+    @FXML private TextField txtName, txtPrice, txtDuration;
     @FXML private TextArea txtDescription;
     @FXML private ComboBox<String> cbCategory;
     @FXML private VBox dynamicFields;
@@ -33,6 +33,8 @@ public class AddProductController {
     @FXML
     public void initialize() {
         cbCategory.getItems().addAll(categoryFields.keySet());
+        // Giá trị duration mặc định 24 giờ
+        txtDuration.setText("24");
     }
 
     @FXML
@@ -106,12 +108,29 @@ public class AddProductController {
         if (price <= 0)
             throw new Exception("Giá khởi điểm phải lớn hơn 0");
 
+        // ===== DURATION =====
+        String durText = txtDuration.getText().trim();
+        if (durText.isBlank()) throw new Exception("Vui lòng nhập thời gian đấu giá!");
+
+        int durationHours;
+        try {
+            durationHours = Integer.parseInt(durText);
+        } catch (NumberFormatException e) {
+            throw new Exception("Thời gian phải là số nguyên (giờ)!");
+        }
+        if (durationHours < 1 || durationHours > 720)
+            throw new Exception("Thời gian đấu giá phải từ 1 đến 720 giờ!");
+
+        // Tính endTimeMillis = bây giờ + durationHours
+        long endTimeMillis = System.currentTimeMillis() + (long) durationHours * 3_600_000L;
+
         ItemDTO item = new ItemDTO();
         item.setName(txtName.getText().trim());
         item.setStartingPrice(price);
         item.setSellerId(user.getId());
         item.setItemType(cbCategory.getValue().toUpperCase());
         item.setDescription(txtDescription.getText().trim());
+        item.setEndTimeMillis(endTimeMillis);   // Truyền thời gian kết thúc
 
         // Xử lý dynamic fields
         for (var entry : fields.entrySet()) {
