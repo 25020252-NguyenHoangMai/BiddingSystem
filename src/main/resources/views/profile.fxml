@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
 
@@ -11,12 +12,22 @@
         <Insets bottom="20" left="20" right="20" top="20" />
     </padding>
 
-    <!-- ===== USER INFO ===== -->
+    <!-- ===== AVATAR & USER INFO ===== -->
     <VBox alignment="CENTER" spacing="10">
-        <Circle fill="#d3d3d3" radius="45" />
+
+        <StackPane fx:id="avatarPane" onMouseClicked="#handleEditProfile" prefHeight="100.0" prefWidth="100.0" styleClass="avatar-container">
+            <children>
+                <Label fx:id="avatarLabel" styleClass="avatar-label" text="?" />
+
+                <ImageView fx:id="avatarImageView" fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="false">
+                    <clip>
+                        <Circle centerX="50.0" centerY="50.0" radius="50.0" />
+                    </clip>
+                </ImageView>
+            </children>
+        </StackPane>
 
         <Label fx:id="fullNameLabel" style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Full Name" />
-
         <Label fx:id="usernameLabel" style="-fx-text-fill: gray;" text="\@username" />
     </VBox>
 
@@ -47,7 +58,7 @@
 
         <Button maxWidth="Infinity" onAction="#handleTransactionHistory" text="Transaction History" />
 
-        <Button maxWidth="Infinity" onAction="#handleEnableSeller" style="-fx-background-color: #27ae60;" text="Enable Seller" textFill="WHITE" />
+        <Button fx:id="btnEnableSeller" maxWidth="Infinity" onAction="#handleEnableSeller" style="-fx-background-color: #27ae60;" text="Enable Seller" textFill="WHITE" />
 
         <Button maxWidth="Infinity" onAction="#handleLogout" style="-fx-background-color: red; -fx-text-fill: white;" text="Logout" />
 
