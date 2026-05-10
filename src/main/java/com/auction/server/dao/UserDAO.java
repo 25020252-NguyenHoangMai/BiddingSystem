@@ -79,7 +79,7 @@ public class UserDAO {
 
     //=============== bật chế độ SELLER ===============
     public User enableSeller(String userId) {
-        String sql = "UPDATE Users SET sellerEnabled = 1 WHERE id = ?";
+        String sql = "UPDATE Users SET sellerEnabled = 1 WHERE id = ? AND role = 'BIDDER'";
 
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -87,7 +87,7 @@ public class UserDAO {
             ps.setString(1, userId);
             int rows = ps.executeUpdate();
             if (rows == 0) {
-                throw new AuctionException("User not found.");
+                throw new AuctionException("User not found or user is not a bidder.");
             }
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while enabling selling: " + e.getMessage());
