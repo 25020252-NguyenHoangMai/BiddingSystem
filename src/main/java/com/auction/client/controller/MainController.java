@@ -152,12 +152,12 @@ public class MainController {
     @FXML
     private void handleLogout() {
         ClientSession.clear();
-        switchScene("/com/auction/client/view/login.fxml");
+        switchScene("/views/login_view.fxml");
     }
 
     @FXML
     private void handleAddProduct() {
-        switchScene("/com/auction/client/view/add_product.fxml");
+        switchScene("/views/add_product.fxml");
     }
 
     // ===== NAVIGATION =====
@@ -195,7 +195,7 @@ public class MainController {
 
     @FXML
     private void handleViewProfile() {
-        switchScene("/com/auction/client/view/profile.fxml");
+        switchScene("/views/profile.fxml");
     }
 
     @FXML
