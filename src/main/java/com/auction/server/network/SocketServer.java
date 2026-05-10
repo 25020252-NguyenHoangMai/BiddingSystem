@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SocketServer {
-    private static final int MAX_CLIENTS = 1;
+    private static final int MAX_CLIENTS = 10;
     private final int port;
     private final AuctionController auctionController;
     private final SessionWatchRegistry sessionWatchRegistry;
