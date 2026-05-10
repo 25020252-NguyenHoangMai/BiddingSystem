@@ -5,7 +5,9 @@ import com.auction.dto.ItemDTO;
 import com.auction.request.AddItemRequest;
 import com.auction.request.GetAllItemsRequest;
 import com.auction.response.AddItemResponse;
+import com.auction.response.ErrorResponse;
 import com.auction.response.GetAllItemsResponse;
+import com.auction.response.Response;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,19 @@ public class ProductService {
                 }
             }
 
-            throw new Exception("Định dạng phản hồi từ Server không đúng"); // Trường hợp Server gặp lỗi trả về String
+            if (response instanceof ErrorResponse err) {
+                throw new RuntimeException(err.getMessage());
+            }
+
+            if (response instanceof Response res) {
+                throw new RuntimeException(res.getMessage());
+            }
+
+            if (response == null) {
+                throw new RuntimeException("Server không phản hồi hoặc bị timeout");
+            }
+
+            throw new Exception("Định dạng phản hồi từ Server không đúng: " + response.getClass().getName());
 
         } catch (Exception e) {
             throw new RuntimeException("Không thể tải danh sách sản phẩm: " + e.getMessage());
