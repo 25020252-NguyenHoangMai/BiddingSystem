@@ -78,6 +78,8 @@ public class BiddingService { // Xử lí đặt giá
                                         null, null, null);
                 }
 
+                validateSellerCannotBidOwnAuction(session, bidderId);
+
                 if (!isSessionCurrentlyBiddable(session)) {
                     conn.rollback();
                     return new BidResult(false, buildNotBiddableMessage(session), session.getId(),
@@ -271,6 +273,16 @@ public class BiddingService { // Xử lí đặt giá
 
         if (bidAmount < minimumNextBid) {
             throw new InvalidBidException("Bid failed: minimum next bid is " + minimumNextBid);
+        }
+    }
+
+    private void validateSellerCannotBidOwnAuction(AuctionSession session, String bidderId) {
+        if (session.getItem() == null || session.getItem().getSellerId() == null) {
+            return;
+        }
+
+        if (session.getItem().getSellerId().equals(bidderId)) {
+            throw new InvalidBidException("Bid failed: seller cannot bid on their own auction.");
         }
     }
 }
