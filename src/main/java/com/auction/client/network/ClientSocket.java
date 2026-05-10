@@ -109,8 +109,8 @@ public class ClientSocket {
             }
         }, "ClientSocket-Reader");
         readerThread = reader;
-        reader.setDaemon(true);
-        reader.start();
+        readerThread.setDaemon(true);
+        readerThread.start();
     }
 
     public void sendRequest(Object request) {
