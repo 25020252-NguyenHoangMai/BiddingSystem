@@ -158,7 +158,30 @@ public class MainController {
 
     @FXML
     private void handleAddProduct() {
-        switchScene("/views/add_product.fxml");
+        try {
+            var resource = getClass().getResource("/views/add_product.fxml");
+            if (resource == null) {
+                showError("Khong tim thay file: /views/add_product.fxml");
+                return;
+            }
+
+            Parent root = FXMLLoader.load(resource);
+            Stage mainStage = (Stage) welcomeLabel.getScene().getWindow();
+
+            Stage addProductStage = new Stage();
+            addProductStage.setTitle("Add Product");
+            addProductStage.initOwner(mainStage);
+            addProductStage.initModality(Modality.WINDOW_MODAL);
+            addProductStage.setScene(new Scene(root));
+
+            // Add Product xong load lại danh sách sản phẩm ở Main
+            addProductStage.setOnHidden(event -> loadProductsAsync());
+
+            addProductStage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Loi mo man hinh them san pham: " + e.getMessage());
+        }
     }
 
     // ===== NAVIGATION =====
