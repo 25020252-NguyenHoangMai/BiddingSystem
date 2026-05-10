@@ -16,6 +16,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -195,7 +196,29 @@ public class MainController {
 
     @FXML
     private void handleViewProfile() {
-        switchScene("/views/profile.fxml");
+        try {
+            var resource = getClass().getResource("/views/profile.fxml");
+            if (resource == null) {
+                showError("Khong tim thay file: /views/profile.fxml");
+                return;
+            }
+
+            Parent root = FXMLLoader.load(resource);
+            Stage mainStage = (Stage) welcomeLabel.getScene().getWindow();
+
+            Stage profileStage = new Stage();
+            profileStage.setTitle("Profile");
+            profileStage.initOwner(mainStage);
+            profileStage.initModality(Modality.WINDOW_MODAL);
+            profileStage.setScene(new Scene(root));
+
+            profileStage.setOnHidden(event -> setupUserInfo());
+
+            profileStage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Loi mo man hinh profile: " + e.getMessage());
+        }
     }
 
     @FXML
