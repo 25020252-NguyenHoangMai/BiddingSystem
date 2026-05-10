@@ -18,7 +18,7 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class ClientHandler extends Thread implements AuctionSessionObserver {
+public class ClientHandler implements Runnable, AuctionSessionObserver {
     private final Socket socket;
     private final AuctionController auctionController;
     private final SessionWatchRegistry sessionWatchRegistry;
