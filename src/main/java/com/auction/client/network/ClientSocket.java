@@ -15,6 +15,7 @@ public class ClientSocket {
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
+    private Thread readerThread;
 
     private ClientSocket() {}
 
@@ -39,16 +40,25 @@ public class ClientSocket {
         void onBidUpdate(BidUpdateResponse update);
     }
 
-    public void connect() {
+    public synchronized void connect() {
         try {
-            if (socket != null && socket.isConnected() && !socket.isClosed()) {
+            if (isConnected()) {
+                startReaderThread();
                 return;
             }
+
+            closeSilently();
+
             socket = new Socket("127.0.0.1", 5000);
 
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
+
+            responseQueue.clear();
+            bidUpdateQueue.clear();
+
+            startReaderThread();
 
             System.out.println("Connected to server");
 
@@ -57,10 +67,19 @@ public class ClientSocket {
         }
     }
 
+    private boolean isConnected() {
+        return socket != null && socket.isConnected() && !socket.isClosed()
+                && out != null && in != null;
+    }
+
     // ===== READER THREAD — 1 thread duy nhất đọc stream =====
-    private void startReaderThread() {
+    private synchronized void startReaderThread() {
+        if (!isConnected()) { return; }
+
+        if (readerThread != null && readerThread.isAlive()) { return; }
+
         Thread reader = new Thread(() -> {
-            while (socket != null && !socket.isClosed()) {
+            while (isConnected()) {
                 try {
                     Object obj = in.readObject(); // block ở đây
 
@@ -95,7 +114,13 @@ public class ClientSocket {
 
     public void sendRequest(Object request) {
         try {
-            synchronized (out) {
+            connect();
+
+            synchronized (this) {
+                if (!isConnected()) {
+                    throw new IllegalStateException("Socket is not connected");
+                }
+
                 out.writeObject(request);
                 out.flush();
             }
@@ -123,6 +148,13 @@ public class ClientSocket {
     // Đăng ký listener — gọi khi mở AuctionDetail
     public void setBidUpdateListener(BidUpdateListener listener) {
         this.bidUpdateListener = listener;
+
+        if (listener != null) {
+            BidUpdateResponse pending;
+            while ((pending = bidUpdateQueue.poll()) != null) {
+                listener.onBidUpdate(pending);
+            }
+        }
     }
 
     // Huỷ listener — gọi khi đóng AuctionDetail
@@ -131,9 +163,29 @@ public class ClientSocket {
     }
 
     // ===== CLOSE =====
-    public void close() {
+    public synchronized void close() {
+        // 1. Dừng luồng đọc trước
+        if (readerThread != null) {
+            readerThread.interrupt();
+        }
+
+        // 2. Đóng luồng và socket
+        closeSilently();
+
+        // 3. Xóa sạch trạng thái
+        readerThread = null;
+        responseQueue.clear();
+        bidUpdateQueue.clear();
+        bidUpdateListener = null;
+    }
+
+    public void closeSilently() {
         try { if (in  != null) in.close();  } catch (Exception ignored) {}
         try { if (out != null) out.close();  } catch (Exception ignored) {}
         try { if (socket != null) socket.close(); } catch (Exception ignored) {}
+
+        in = null;
+        out = null;
+        socket = null;
     }
 }

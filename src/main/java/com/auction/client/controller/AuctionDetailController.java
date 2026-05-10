@@ -112,7 +112,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     // ===== OBSERVER CALLBACK — gọi bởi ClientSocket reader thread =====
     @Override
     public void onBidUpdate(BidUpdateResponse update) {
-        if (currentItem == null) return;
+        if (update == null || currentItem == null) return;
         // Lọc đúng session đang xem
         if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
 
@@ -122,25 +122,44 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
             currentItem.setSessionStatus(update.getStatus());
 
+            boolean isClosed = isClosedStatus(update.getStatus());
+
+            if (update.getEndTimeMillis() != null) {
+                currentItem.setEndTimeMillis(update.getEndTimeMillis());
+                if (!isClosed) {
+                    startCountdown(update.getEndTimeMillis());
+                }
+            }
+
             // Cập nhật UI
             refreshBidState(update.getCurrentPrice(),
                     update.getCurrentWinnerUsername(),
                     update.getStatus());
             updateBidHint(update.getCurrentPrice());
-
-            // Thêm vào bid history
-            String me = ClientSession.getCurrentUser() != null
-                    ? ClientSession.getCurrentUser().getUsername() : "";
-            boolean isMe = Objects.equals(update.getCurrentWinnerUsername(), me);
-
-            String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
-                    .format(new java.util.Date());
-            String entry = String.format("[%s]  %-18s  %s",
-                    timeStr,
-                    isMe ? update.getCurrentWinnerUsername() + " (you)" : update.getCurrentWinnerUsername(),
-                    fmt.format(update.getCurrentPrice()));
-            lvBidHistory.getItems().add(0, entry);
+            addBidHistoryEntry(update);
         });
+    }
+
+    private void addBidHistoryEntry(BidUpdateResponse update) {
+        if (update.getCurrentWinnerUsername() == null || update.getCurrentWinnerUsername().isBlank()) {
+            return;
+        }
+
+        String me = ClientSession.getCurrentUser() != null
+                ? ClientSession.getCurrentUser().getUsername()
+                : "";
+
+        boolean isMe = Objects.equals(update.getCurrentWinnerUsername(), me);
+
+        String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
+                .format(new java.util.Date());
+
+        String entry = String.format("[%s]  %-18s  %s",
+                timeStr,
+                isMe ? update.getCurrentWinnerUsername() + " (you)" : update.getCurrentWinnerUsername(),
+                fmt.format(update.getCurrentPrice()));
+
+        lvBidHistory.getItems().add(0, entry);
     }
 
     // Vô hiệu hóa tính năng đặt bid nếu là Seller
@@ -168,7 +187,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         }
 
         // Kiểm tra xem phiên đấu giá đã kết thúc chưa
-        boolean isClosed = "FINISHED".equals(status) || "CANCELED".equals(status) || "PAID".equals(status);
+        boolean isClosed = isClosedStatus(status);
 
         // Chỉ Enable nút đặt giá nếu (Không phải Seller) VÀ (Phiên chưa đóng)
         var currentUser = ClientSession.getCurrentUser();
@@ -186,6 +205,13 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             socket.clearBidUpdateListener();
         }
     }
+
+    private boolean isClosedStatus(String status) {
+        return "FINISHED".equals(status)
+                || "CANCELED".equals(status)
+                || "PAID".equals(status);
+    }
+
 
     private void updateBidHint(double currentPrice) {
         double minStep = Math.max(10.0, currentPrice * 0.01);
