@@ -80,6 +80,7 @@ public class SessionWatchRegistry {
         if (update == null) {
             return 0;
         }
+        long startTime = System.currentTimeMillis();
 
         Set<AuctionSessionObserver> observers = watchersBySessionId.get(sessionId);
         if (observers == null || observers.isEmpty()) {
@@ -110,6 +111,10 @@ public class SessionWatchRegistry {
         if (observers.isEmpty()) {
             watchersBySessionId.remove(sessionId, observers);
         }
+
+        long duration = System.currentTimeMillis() - startTime;
+        System.out.println("Broadcast bid update to session " + sessionId + ". Watchers: " + observersList.size()
+                + ", success: " + successCount + ", duration: " + duration + "ms");
 
         return successCount;
     }
