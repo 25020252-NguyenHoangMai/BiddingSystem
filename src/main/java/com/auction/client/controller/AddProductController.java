@@ -41,12 +41,16 @@ public class AddProductController {
     private void handleCategoryChange(ActionEvent event) {
         dynamicFields.getChildren().clear();
         fields.clear();
+        dynamicFields.setVisible(false);
+        dynamicFields.setManaged(false);
 
         String cat = cbCategory.getValue();
         if (cat == null) return;
 
         String[] fieldNames = categoryFields.get(cat);
         if (fieldNames != null) addFields(fieldNames);
+        dynamicFields.setVisible(true);
+        dynamicFields.setManaged(true);
     }
 
     private void addFields(String... names) {
