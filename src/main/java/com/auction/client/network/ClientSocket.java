@@ -108,6 +108,7 @@ public class ClientSocket {
                 }
             }
         }, "ClientSocket-Reader");
+        readerThread = reader;
         reader.setDaemon(true);
         reader.start();
     }
