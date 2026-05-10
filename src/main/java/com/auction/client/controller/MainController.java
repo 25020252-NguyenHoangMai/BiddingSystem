@@ -29,9 +29,6 @@ import javafx.util.Duration;
 
 public class MainController {
 
-    // ===== CONSTANT =====
-    private static final String ROLE_SELLER = "Seller";
-
     // ===== UI =====
     @FXML private Label welcomeLabel;
     @FXML private Label balanceLabel;
@@ -81,7 +78,7 @@ public class MainController {
         welcomeLabel.setText("Welcome, " + safe(user.getUsername()));
         balanceLabel.setText(String.format("Balance: %.2f $", user.getBalance()));
 
-        boolean isSeller = Objects.equals(user.getRole(), ROLE_SELLER);
+        boolean isSeller = user.isSellerEnabled();
         addBtn.setVisible(isSeller);
         addBtn.setManaged(isSeller);
     }
