@@ -1,11 +1,16 @@
 package com.auction.client.controller;
 
 import com.auction.client.ClientSession;
+import com.auction.client.network.ClientSocket;
 import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
+import com.auction.request.UnwatchSessionRequest;
+import com.auction.request.WatchSessionRequest;
+import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -19,7 +24,7 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Objects;
 
-public class AuctionDetailController {
+public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
     @FXML private Label lblCategory, lblName, lblTimer, lblCurrentBid, lblLeadingUser,
             lblMinBidHint, lblBalance, lblSeller, lblStartingPrice;
@@ -33,9 +38,8 @@ public class AuctionDetailController {
     private ItemDTO currentItem;
     private final AuctionService auctionService = new AuctionService();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
+    private final ClientSocket socket = ClientSocket.getInstance();
     private Timeline countdownTimeline;
-    private Timeline refreshTimeline;
-
 
     // ===== INIT =====
     @FXML
@@ -67,8 +71,76 @@ public class AuctionDetailController {
 
         // 5. Đếm ngược (Sử dụng thời gian thực từ Server)
         startCountdown(item.getEndTimeMillis());
-        startRealtimeRefresh();
         updateBidHint(item.getCurrentPrice());
+
+        // ===== OBSERVER: đăng ký listener + gửi WatchSessionRequest =====
+        socket.setBidUpdateListener(this);
+        sendWatchRequest(item.getSessionId());
+    }
+
+    // ===== OBSERVER: WATCH / UNWATCH =====
+    private void sendWatchRequest(String sessionId) {
+        Task<Void> task = new Task<>() {
+            @Override protected Void call() throws Exception {
+                socket.connect();
+                socket.sendRequest(new WatchSessionRequest(sessionId));
+                // Response là BidUpdateResponse với trạng thái hiện tại —
+                // reader thread tự route vào onBidUpdate() luôn
+                return null;
+            }
+        };
+        task.setOnFailed(e ->
+                System.out.println("[AuctionDetail] Watch failed: " + task.getException().getMessage()));
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void sendUnwatchRequest(String sessionId) {
+        Task<Void> task = new Task<>() {
+            @Override protected Void call() throws Exception {
+                socket.sendRequest(new UnwatchSessionRequest(sessionId));
+                socket.receiveResponse(); // đọc SessionWatchResponse (bỏ đi)
+                return null;
+            }
+        };
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // ===== OBSERVER CALLBACK — gọi bởi ClientSocket reader thread =====
+    @Override
+    public void onBidUpdate(BidUpdateResponse update) {
+        if (currentItem == null) return;
+        // Lọc đúng session đang xem
+        if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
+
+        Platform.runLater(() -> {
+            // Cập nhật state local
+            currentItem.setCurrentPrice(update.getCurrentPrice());
+            currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
+            currentItem.setSessionStatus(update.getStatus());
+
+            // Cập nhật UI
+            refreshBidState(update.getCurrentPrice(),
+                    update.getCurrentWinnerUsername(),
+                    update.getStatus());
+            updateBidHint(update.getCurrentPrice());
+
+            // Thêm vào bid history
+            String me = ClientSession.getCurrentUser() != null
+                    ? ClientSession.getCurrentUser().getUsername() : "";
+            boolean isMe = Objects.equals(update.getCurrentWinnerUsername(), me);
+
+            String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
+                    .format(new java.util.Date());
+            String entry = String.format("[%s]  %-18s  %s",
+                    timeStr,
+                    isMe ? update.getCurrentWinnerUsername() + " (you)" : update.getCurrentWinnerUsername(),
+                    fmt.format(update.getCurrentPrice()));
+            lvBidHistory.getItems().add(0, entry);
+        });
     }
 
     // Vô hiệu hóa tính năng đặt bid nếu là Seller
@@ -109,10 +181,9 @@ public class AuctionDetailController {
         if (isClosed) {
             lblTimer.setText("CLOSED");
             btnPlaceBid.setDisable(true);
-        }
-
-        if (refreshTimeline != null) {
-            refreshTimeline.stop();
+            if (countdownTimeline != null) countdownTimeline.stop();
+            // Huỷ listener — phiên đã đóng, không cần nhận thêm
+            socket.clearBidUpdateListener();
         }
     }
 
@@ -154,54 +225,6 @@ public class AuctionDetailController {
         }));
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
-    }
-
-    // ===== REALTIME REFRESH =====
-    private void startRealtimeRefresh() {
-        refreshTimeline = new Timeline(
-                new KeyFrame(
-                        Duration.seconds(2),
-                        e -> refreshAuctionData()
-                )
-        );
-
-        refreshTimeline.setCycleCount(
-                Timeline.INDEFINITE
-        );
-
-        refreshTimeline.play();
-    }
-
-    private void refreshAuctionData() {
-        Task<ItemDTO> task = new Task<>() {
-
-            @Override
-            protected ItemDTO call() throws Exception {
-                return auctionService.refreshAuction(
-                        currentItem.getSessionId()
-                );
-            }
-        };
-
-        task.setOnSucceeded(e -> {
-
-            ItemDTO updated = task.getValue();
-            if (updated == null) return;
-
-            currentItem.setCurrentPrice(updated.getCurrentPrice());
-            currentItem.setCurrentWinnerUsername(updated.getCurrentWinnerUsername());
-            currentItem.setSessionStatus(updated.getSessionStatus());
-
-            refreshBidState(
-                    updated.getCurrentPrice(),
-                    updated.getCurrentWinnerUsername(),
-                    updated.getSessionStatus()
-            );
-
-            updateBidHint(updated.getCurrentPrice());
-        });
-
-        new Thread(task).start();
     }
 
     private void setupDynamicSpecs(ItemDTO item) {
@@ -299,8 +322,10 @@ public class AuctionDetailController {
 
     @FXML
     private void handleBack(ActionEvent event) {
+        // Dọn dẹp: dừng countdown, huỷ listener, gửi unwatch
         if (countdownTimeline != null) countdownTimeline.stop();
-        if (refreshTimeline != null) refreshTimeline.stop();
+        socket.clearBidUpdateListener();
+        if (currentItem != null) sendUnwatchRequest(currentItem.getSessionId());
         ((Stage) btnBack.getScene().getWindow()).close();
     }
 

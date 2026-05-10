@@ -150,12 +150,6 @@ public class MainController {
 
     // ===== ACTIONS =====
     @FXML
-    private void handleRefresh() {
-        tableAuctions.setPlaceholder(new Label("Đang làm mới..."));
-        loadProductsAsync();
-    }
-
-    @FXML
     private void handleLogout() {
         ClientSession.clear();
         switchScene("/com/auction/client/view/login.fxml");
