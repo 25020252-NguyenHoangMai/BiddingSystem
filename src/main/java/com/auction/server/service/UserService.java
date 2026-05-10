@@ -4,6 +4,7 @@ import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.UserNotFoundException;
 //import com.auction.server.factory.UserFromDTOFactory;
+import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.server.dao.UserDAO;
 //import com.auction.dto.UserDTO;
@@ -204,6 +205,18 @@ public class UserService {
     public User enableSeller(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new AuctionException("User id is required!");
+        }
+
+        User user = userDAO.getUserById(userId);
+        if (user == null) {
+            throw new UserNotFoundException("User not found!");
+        }
+        if (!(user instanceof Bidder bidder)) {
+            throw new AuctionException("Only bidder accounts can enable seller mode.");
+        }
+
+        if (bidder.isSellerEnabled()) {
+            throw new AuctionException("Seller mode is already enabled.");
         }
 
         return userDAO.enableSeller(userId);

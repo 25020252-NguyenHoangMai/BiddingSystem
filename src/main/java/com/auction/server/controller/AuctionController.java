@@ -28,8 +28,8 @@ public class AuctionController {
             return authController.register(registerRequest);
         }
 
-        if (request instanceof EnableSellerRequest r) {
-            return authController.enableSeller(r);
+        if (request instanceof EnableSellerRequest enableSellerRequest) {
+            return authController.enableSeller(enableSellerRequest);
         }
 
         if (request instanceof GetAllItemsRequest getAllItemsRequest) {

@@ -82,20 +82,21 @@ public class AuthController {
     public EnableSellerResponse enableSeller(EnableSellerRequest request) {
         try {
             if (request.getUserId() == null || request.getUserId().isBlank())
-                return new EnableSellerResponse(false, "User ID is required!");
+                return new EnableSellerResponse(false, "User ID is required!", null);
 
             User updated = userService.enableSeller(request.getUserId());
-
             if (updated == null)
-                return new EnableSellerResponse(false, "User not found!");
+                return new EnableSellerResponse(false, "User not found!", null);
 
-            return new EnableSellerResponse(true, "Seller enabled successfully!");
+            UserSessionDTO dto = toUserSessionDTO(updated);
+
+            return new EnableSellerResponse(true, "Seller enabled successfully!", dto);
 
         } catch (AuctionException e) {
-            return new EnableSellerResponse(false, e.getMessage());
+            return new EnableSellerResponse(false, e.getMessage(), null);
         } catch (Exception e) {
             e.printStackTrace();
-            return new EnableSellerResponse(false, "Failed to enable seller!");
+            return new EnableSellerResponse(false, "Failed to enable seller!", null);
         }
     }
 
