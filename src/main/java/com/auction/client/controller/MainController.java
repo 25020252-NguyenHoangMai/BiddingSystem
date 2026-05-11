@@ -100,7 +100,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             protected Void call() throws Exception {
                 clientSocket.connect();
                 clientSocket.sendRequest(new WatchDashboardRequest());
-                clientSocket.receiveResponse();
                 return null;
             }
         };
