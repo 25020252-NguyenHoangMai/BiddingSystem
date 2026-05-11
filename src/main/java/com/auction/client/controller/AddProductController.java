@@ -23,6 +23,7 @@ public class AddProductController {
 
     private final Map<String, TextField> fields = new LinkedHashMap<>();
     private final ProductService service = ProductService.getInstance();
+    private boolean submitting;
 
     private final Map<String, String[]> categoryFields = Map.of(
             "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
@@ -65,6 +66,12 @@ public class AddProductController {
 
     @FXML
     private void handleAddAndStart(ActionEvent event) {
+        if (submitting) {
+            return;
+        }
+
+        submitting = true;
+        btnSubmit.setDisable(true);
         errorLabel.setVisible(false);
 
         try {
@@ -87,10 +94,14 @@ public class AddProductController {
         } catch (NumberFormatException e) {
             errorLabel.setText("Giá hoặc Mileage phải là số hợp lệ!");
             errorLabel.setVisible(true);
+            submitting = false;
+            btnSubmit.setDisable(false);
         } catch (Exception e) {
             // Hiển thị mọi lỗi từ kết nối, logic server,... lên UI
             errorLabel.setText(e.getMessage());
             errorLabel.setVisible(true);
+            submitting = false;
+            btnSubmit.setDisable(false);
         }
     }
 
