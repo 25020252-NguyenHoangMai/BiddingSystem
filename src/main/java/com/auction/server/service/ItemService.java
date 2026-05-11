@@ -135,6 +135,14 @@ public class ItemService {
     public List<ItemDTO> getAllItemDTOS() {
         List<ItemDTO> items = itemDAO.getAllItems();
         for (ItemDTO dto : items) {
+            // THÊM: lookup tên seller
+            if (dto.getSellerId() != null && !dto.getSellerId().isBlank()) {
+                try {
+                    com.auction.model.User seller = userService.getUserById(dto.getSellerId());
+                    dto.setSellerUsername(seller.getUsername());
+                } catch (Exception ignored) {}
+            }
+
             List<AuctionSession> sessions = sessionDAO.getSessionsByItemId(dto.getId());
             if (!sessions.isEmpty()) {
                 AuctionSession latestSession = sessions.get(0);

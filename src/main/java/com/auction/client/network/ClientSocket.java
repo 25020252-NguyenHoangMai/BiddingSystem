@@ -1,6 +1,7 @@
 package com.auction.client.network;
 
 import com.auction.response.BidUpdateResponse;
+import com.auction.response.DashboardUpdateResponse;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -35,9 +36,17 @@ public class ClientSocket {
     // Callback nhận BidUpdateResponse — set bởi AuctionDetailController
     private volatile BidUpdateListener bidUpdateListener;
 
+    // Callback nhận DashboardUpdateResponse — set bởi MainController
+    private volatile DashboardUpdateListener dashboardUpdateListener;
+
     // Interface Observer — AuctionDetailController implement
     public interface BidUpdateListener {
         void onBidUpdate(BidUpdateResponse update);
+    }
+
+    // Interface Observer — MainController implement
+    public interface DashboardUpdateListener {
+        void onDashboardUpdate(DashboardUpdateResponse update);
     }
 
     public synchronized void connect() {
@@ -92,6 +101,13 @@ public class ClientSocket {
                         } else {
                             bidUpdateQueue.offer(update); // backup nếu chưa có listener
                         }
+                    } else if (obj instanceof DashboardUpdateResponse dashUpdate) {
+                        // Server push dashboard (sản phẩm mới) → gọi dashboardUpdateListener
+                        DashboardUpdateListener dcb = dashboardUpdateListener;
+                        if (dcb != null) {
+                            dcb.onDashboardUpdate(dashUpdate);
+                        }
+                        // KHÔNG bỏ vào responseQueue — đây là server-push, không phải response cho request
                     } else {
                         // Response bình thường → bỏ vào queue, AuctionService lấy ra
                         responseQueue.offer(obj);
@@ -163,6 +179,11 @@ public class ClientSocket {
         this.bidUpdateListener = null;
     }
 
+    // ===== DASHBOARD UPDATE LISTENER =====
+    public void setDashboardUpdateListener(DashboardUpdateListener listener) {
+        this.dashboardUpdateListener = listener;
+    }
+
     // ===== CLOSE =====
     public synchronized void close() {
         // 1. Dừng luồng đọc trước
@@ -178,6 +199,7 @@ public class ClientSocket {
         responseQueue.clear();
         bidUpdateQueue.clear();
         bidUpdateListener = null;
+        dashboardUpdateListener = null;
     }
 
     public void closeSilently() {

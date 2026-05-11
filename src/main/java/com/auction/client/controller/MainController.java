@@ -1,10 +1,15 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientSocket;
 import com.auction.client.service.ProductService;
 import com.auction.client.ClientSession;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
 
+import com.auction.request.UnwatchDashboardRequest;
+import com.auction.request.WatchDashboardRequest;
+import com.auction.response.DashboardUpdateResponse;
+import com.auction.response.DashboardUpdateType;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -29,7 +34,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
 
-public class MainController {
+public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== UI =====
     @FXML
@@ -58,6 +63,7 @@ public class MainController {
 
     // ===== SERVICE =====
     private final ProductService productService = ProductService.getInstance();
+    private final ClientSocket clientSocket = ClientSocket.getInstance();
 
     // ===== INIT =====
     @FXML
@@ -74,6 +80,67 @@ public class MainController {
 
         // Chuyển màn hình Main sang màn hình đấu giá
         setupRowClickToDetail();
+
+        // Xóa text search thì tự động hiện lại toàn bộ sản phẩm
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal == null || newVal.isBlank()) {
+                tableAuctions.setItems(auctionList);
+            }
+        });
+
+        // Đăng ký lắng nghe realtime update từ server
+        clientSocket.setDashboardUpdateListener(this);
+        sendWatchDashboardRequest();
+    }
+
+    // ===== Gửi request đăng ký dashboard watch =====
+    private void sendWatchDashboardRequest() {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                clientSocket.connect();
+                clientSocket.sendRequest(new WatchDashboardRequest());
+                clientSocket.receiveResponse();
+                return null;
+            }
+        };
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // ===== Callback khi server push sản phẩm mới =====
+    @Override
+    public void onDashboardUpdate(DashboardUpdateResponse update) {
+        if (update == null || update.getItem() == null) return;
+
+        Platform.runLater(() -> {
+            ItemDTO item = update.getItem();
+            DashboardUpdateType type = update.getType();
+
+            if (type == DashboardUpdateType.ITEM_ADDED) {
+                // Thêm sản phẩm mới vào list (tránh trùng)
+                boolean exists = auctionList.stream().anyMatch(i -> Objects.equals(i.getId(), item.getId()));
+                if (!exists) {
+                    auctionList.add(item);
+                }
+            } else if (type == DashboardUpdateType.ITEM_UPDATED) {
+                for (int i = 0; i < auctionList.size(); i++) {
+                    if (Objects.equals(auctionList.get(i).getId(), item.getId())) {
+                        auctionList.set(i, item);
+                        break;
+                    }
+                }
+            } else if (type == DashboardUpdateType.ITEM_REMOVED) {
+                auctionList.removeIf(i -> Objects.equals(i.getId(), item.getId()));
+            }
+
+            // Nếu đang lọc search thì re-apply filter
+            String keyword = searchField.getText();
+            if (keyword != null && !keyword.isBlank()) {
+                applyFilter(keyword);
+            }
+        });
     }
 
     // ===== USER INFO =====
@@ -163,6 +230,20 @@ public class MainController {
     // ===== ACTIONS =====
     @FXML
     private void handleLogout() {
+        // Hủy đăng ký dashboard watch trước khi logout
+        clientSocket.setDashboardUpdateListener(null);
+        Task<Void> unwatch = new Task<>() {
+            @Override
+            protected Void call() {
+                clientSocket.sendRequest(new UnwatchDashboardRequest());
+                clientSocket.receiveResponse();
+                return null;
+            }
+        };
+        Thread t = new Thread(unwatch);
+        t.setDaemon(true);
+        t.start();
+
         closeChildStages();
         ClientSession.clear();
         switchScene("/views/login_view.fxml");
@@ -293,14 +374,16 @@ public class MainController {
             tableAuctions.setItems(auctionList);
             return;
         }
+        applyFilter(keyword);
+    }
 
+    private void applyFilter(String keyword) {
         ObservableList<ItemDTO> filteredList = FXCollections.observableArrayList(
                 auctionList.stream()
                         .filter(item -> item.getName() != null &&
                                 item.getName().toLowerCase().contains(keyword.toLowerCase()))
                         .toList()
         );
-
         tableAuctions.setItems(filteredList);
     }
 
