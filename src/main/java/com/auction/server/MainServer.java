@@ -40,7 +40,8 @@ public class    MainServer {
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
                                                 realTimeController);
 
-        SocketServer server = new SocketServer(5000, auctionController, sessionWatchRegistry);
+        SocketServer server = new SocketServer(5000, auctionController, sessionWatchRegistry,
+                                dashboardWatchRegistry);
         server.startServer();
     }
 }

@@ -1,6 +1,7 @@
 package com.auction.server.network;
 
 import com.auction.server.controller.AuctionController;
+import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
 
 import java.net.ServerSocket;
@@ -15,16 +16,19 @@ public class SocketServer {
     private final int port;
     private final AuctionController auctionController;
     private final SessionWatchRegistry sessionWatchRegistry;
+    private final DashboardWatchRegistry dashboardWatchRegistry;
     private final ExecutorService clientExecutor = Executors.newVirtualThreadPerTaskExecutor();
     private final AtomicInteger activeClients = new AtomicInteger(0);
 
     private ServerSocket serverSocket;
     private volatile boolean running;
 
-    public SocketServer(int port, AuctionController auctionController, SessionWatchRegistry sessionWatchRegistry) {
+    public SocketServer(int port, AuctionController auctionController, SessionWatchRegistry sessionWatchRegistry,
+                        DashboardWatchRegistry dashboardWatchRegistry) {
         this.port = port;
         this.auctionController = auctionController;
         this.sessionWatchRegistry = sessionWatchRegistry;
+        this.dashboardWatchRegistry = dashboardWatchRegistry;
     }
 
     public void startServer() {
@@ -44,7 +48,8 @@ public class SocketServer {
                     }
                     System.out.println("Client connected: " + socket + ". Active clients: " + activeClients.get());
 
-                    ClientHandler handler = new ClientHandler(socket, auctionController, sessionWatchRegistry);
+                    ClientHandler handler = new ClientHandler(socket, auctionController, sessionWatchRegistry,
+                                                dashboardWatchRegistry);
 
                     try {
                         clientExecutor.submit(() -> {
