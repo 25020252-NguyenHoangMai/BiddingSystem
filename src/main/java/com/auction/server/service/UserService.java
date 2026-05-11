@@ -222,4 +222,17 @@ public class UserService {
         return userDAO.enableSeller(userId);
     }
 
+    public User deposit(String userId, double amount) {
+        if (userId == null || userId.isBlank()) {
+            throw new AuctionException("User id is required!");
+        }
+
+        if (amount <= 0) {
+            throw new AuctionException("Amount must be greater than 0.");
+        }
+
+        userDAO.updateBalance(userId, amount);
+        return userDAO.getUserById(userId);
+    }
+
 }

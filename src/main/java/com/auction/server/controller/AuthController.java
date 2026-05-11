@@ -5,9 +5,11 @@ import com.auction.exception.AuthenticationException;
 import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.dto.UserSessionDTO;
+import com.auction.request.DepositRequest;
 import com.auction.request.EnableSellerRequest;
 import com.auction.request.LoginRequest;
 import com.auction.request.RegisterRequest;
+import com.auction.response.DepositResponse;
 import com.auction.response.EnableSellerResponse;
 import com.auction.response.LoginResponse;
 import com.auction.response.RegisterResponse;
@@ -97,6 +99,29 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return new EnableSellerResponse(false, "Failed to enable seller!", null);
+        }
+    }
+
+    public DepositResponse deposit(DepositRequest request) {
+        try {
+            if (request.getUserId() == null || request.getUserId().isBlank()) {
+                return new DepositResponse(false, "User ID is required!", null);
+            }
+
+            if (request.getAmount() <= 0) {
+                return new DepositResponse(false, "Deposit amount must be greater than zero!", null);
+            }
+
+            User updated = userService.deposit(request.getUserId(), request.getAmount());
+            UserSessionDTO dto = toUserSessionDTO(updated);
+
+            return new DepositResponse(true, "Deposit successfully!", dto);
+
+        } catch (AuctionException e) {
+            return new DepositResponse(false, e.getMessage(), null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new DepositResponse(false, "Deposit failed!", null);
         }
     }
 
