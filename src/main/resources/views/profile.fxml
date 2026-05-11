@@ -60,7 +60,7 @@
 
         <Button fx:id="btnEnableSeller" maxWidth="Infinity" onAction="#handleEnableSeller" style="-fx-background-color: #27ae60;" text="Enable Seller" textFill="WHITE" />
 
-        <Button maxWidth="Infinity" onAction="#handleLogout" style="-fx-background-color: red; -fx-text-fill: white;" text="Logout" />
+        <Button maxWidth="Infinity" onAction="#handleLogout" style="-fx-background-color: red; -fx-text-fill: white;" text="Log out" />
 
     </VBox>
 
