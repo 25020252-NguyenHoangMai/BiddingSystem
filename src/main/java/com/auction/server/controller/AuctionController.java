@@ -27,7 +27,9 @@ public class AuctionController {
         if (request instanceof RegisterRequest registerRequest) {
             return authController.register(registerRequest);
         }
-
+        if (request instanceof DepositRequest depositRequest) {
+            return authController.deposit(depositRequest);
+        }
         if (request instanceof EnableSellerRequest enableSellerRequest) {
             return authController.enableSeller(enableSellerRequest);
         }
