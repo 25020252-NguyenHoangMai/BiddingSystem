@@ -257,6 +257,35 @@ public class MainController {
     }
 
     @FXML
+    private void handleDepositBalance() {
+        try {
+            var resource = getClass().getResource("/views/deposit.fxml");
+            if (resource == null) {
+                showError("Không tìm thấy file: /views/deposit.fxml");
+                return;
+            }
+
+            Parent root = FXMLLoader.load(resource);
+            Stage mainStage = (Stage) welcomeLabel.getScene().getWindow();
+
+            Stage depositStage = new Stage();
+            depositStage.setTitle("Nạp tiền");
+            depositStage.initOwner(mainStage);
+            depositStage.initModality(Modality.WINDOW_MODAL);
+            depositStage.setScene(new Scene(root));
+            depositStage.setResizable(false);
+
+            // Khi đóng màn hình nạp tiền, cập nhật lại balance ở Main
+            depositStage.setOnHidden(event -> setupUserInfo());
+
+            depositStage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Lỗi mở màn hình nạp tiền: " + e.getMessage());
+        }
+    }
+
+    @FXML
     private void handleSearch() {
         String keyword = searchField.getText();
 

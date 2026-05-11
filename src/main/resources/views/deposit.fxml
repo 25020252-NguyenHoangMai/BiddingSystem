@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox alignment="TOP_CENTER" prefHeight="380.0" prefWidth="380.0" spacing="0" style="-fx-background-color: #f4f6f8;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.DepositController">
+
+    <!-- Header -->
+    <HBox alignment="CENTER" style="-fx-background-color: #2c3e50; -fx-padding: 18 25;">
+        <Label text="💳 Ví Tiền" textFill="WHITE">
+            <font><Font name="System Bold" size="20.0" /></font>
+        </Label>
+    </HBox>
+
+    <!-- Body -->
+    <VBox alignment="CENTER" spacing="22" style="-fx-padding: 30 35;">
+
+        <!-- Current Balance -->
+        <VBox alignment="CENTER" spacing="6" style="-fx-background-color: white; -fx-padding: 16 24; -fx-background-radius: 12;                      -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);">
+            <Label text="Số dư hiện tại" textFill="#7f8c8d">
+                <font><Font size="13.0" /></font>
+            </Label>
+            <Label fx:id="currentBalanceLabel" text="0.00 $" textFill="#27ae60">
+                <font><Font name="System Bold" size="24.0" /></font>
+            </Label>
+        </VBox>
+
+        <!-- Amount Input -->
+        <VBox spacing="8">
+            <Label text="Số tiền muốn nạp ($)" textFill="#2c3e50">
+                <font><Font name="System Bold" size="14.0" /></font>
+            </Label>
+            <TextField fx:id="amountField" promptText="Nhập số tiền..." style="-fx-background-color: white; -fx-border-color: #dcdde1;                               -fx-border-radius: 8; -fx-background-radius: 8;                               -fx-padding: 10 14; -fx-font-size: 15px;">
+            </TextField>
+            <Label fx:id="errorLabel" text="" textFill="#e74c3c" wrapText="true">
+                <font><Font size="12.0" /></font>
+            </Label>
+        </VBox>
+
+        <!-- Quick Amount Buttons -->
+        <VBox spacing="6">
+            <Label text="Chọn nhanh" textFill="#7f8c8d">
+                <font><Font size="12.0" /></font>
+            </Label>
+            <HBox spacing="8">
+                <Button maxWidth="Infinity" onAction="#handleQuickAmount" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                                -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 12;" text="+ 100$" userData="100" HBox.hgrow="ALWAYS" />
+                <Button maxWidth="Infinity" onAction="#handleQuickAmount" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                                -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 12;" text="+ 500$" userData="500" HBox.hgrow="ALWAYS" />
+                <Button maxWidth="Infinity" onAction="#handleQuickAmount" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                                -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 12;" text="+ 1000$" userData="1000" HBox.hgrow="ALWAYS" />
+                <Button maxWidth="Infinity" onAction="#handleQuickAmount" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                                -fx-cursor: hand; -fx-background-radius: 6; -fx-padding: 6 12;" text="+ 5000$" userData="5000" HBox.hgrow="ALWAYS" />
+            </HBox>
+        </VBox>
+
+        <!-- Buttons -->
+        <HBox spacing="12">
+            <Button fx:id="cancelBtn" maxWidth="Infinity" onAction="#handleCancel" prefHeight="42.0" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                            -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8;" text="Hủy" HBox.hgrow="ALWAYS" />
+            <Button fx:id="confirmBtn" maxWidth="Infinity" onAction="#handleConfirm" prefHeight="42.0" style="-fx-background-color: #27ae60; -fx-text-fill: white;                            -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8;" text="✔ Xác nhận nạp tiền" HBox.hgrow="ALWAYS">
+                <font><Font name="System Bold" size="13.0" /></font>
+            </Button>
+        </HBox>
+
+    </VBox>
+</VBox>
