@@ -5,15 +5,23 @@ import com.auction.dto.ItemDTO;
 import com.auction.request.AddItemRequest;
 import com.auction.request.GetAllItemsRequest;
 import com.auction.response.AddItemResponse;
+import com.auction.response.DashboardUpdateResponse;
+import com.auction.response.DashboardUpdateType;
 import com.auction.response.GetAllItemsResponse;
+import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.service.ItemService;
+import com.auction.server.service.SessionService;
+import com.auction.server.service.UserService;
+
 import java.util.List;
 
 public class ItemController {
     private final ItemService itemService;
+    private final DashboardWatchRegistry dashboardWatchRegistry;
 
-    public ItemController(ItemService itemService) {
+    public ItemController(ItemService itemService, DashboardWatchRegistry dashboardWatchRegistry) {
         this.itemService = itemService;
+        this.dashboardWatchRegistry = dashboardWatchRegistry;
     }
 
     public GetAllItemsResponse getAllItems(GetAllItemsRequest request) {
@@ -39,6 +47,15 @@ public class ItemController {
             }
 
             ItemDTO createdItem = itemService.addItem(request.getSellerId(), request.getItem());
+
+            dashboardWatchRegistry.broadcastDashboardUpdate(
+                    new DashboardUpdateResponse(
+                            true,
+                            "Item added",
+                            DashboardUpdateType.ITEM_ADDED,
+                            createdItem
+                    )
+            );
             return new AddItemResponse(true, "Add item successfully", createdItem);
 
         } catch (Exception e) {

@@ -3,12 +3,14 @@ package com.auction.server.controller;
 import com.auction.exception.UserNotFoundException;
 import com.auction.model.AuctionSession;
 import com.auction.model.User;
+import com.auction.request.UnwatchDashboardRequest;
 import com.auction.request.UnwatchSessionRequest;
+import com.auction.request.WatchDashboardRequest;
 import com.auction.request.WatchSessionRequest;
-import com.auction.response.BidUpdateResponse;
-import com.auction.response.Response;
-import com.auction.response.SessionWatchResponse;
+import com.auction.response.*;
 import com.auction.server.realtime.AuctionSessionObserver;
+import com.auction.server.realtime.DashboardObserver;
+import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
@@ -17,12 +19,14 @@ import java.time.ZoneId;
 
 public class RealTimeController {
     private final SessionWatchRegistry sessionWatchRegistry;
+    private final DashboardWatchRegistry dashboardWatchRegistry;
     private final SessionService sessionService;
     private final UserService userService;
 
-    public RealTimeController(SessionWatchRegistry sessionWatchRegistry, SessionService sessionService,
-                              UserService userService) {
+    public RealTimeController(SessionWatchRegistry sessionWatchRegistry,DashboardWatchRegistry dashboardWatchRegistry,
+                              SessionService sessionService, UserService userService) {
         this.sessionWatchRegistry = sessionWatchRegistry;
+        this.dashboardWatchRegistry = dashboardWatchRegistry;
         this.sessionService = sessionService;
         this.userService = userService;
     }
@@ -94,6 +98,42 @@ public class RealTimeController {
         } catch (Exception e) {
             e.printStackTrace();
             return new SessionWatchResponse(false, "Unwatch session failed: unexpected server error");
+        }
+    }
+
+    public DashboardWatchResponse watchDashboard(WatchDashboardRequest request, DashboardObserver observer) {
+        try {
+            if (observer == null) {
+                return new DashboardWatchResponse(false, "Dashboard observer is required");
+            }
+
+            boolean watched = dashboardWatchRegistry.watchDashboard(observer);
+            if (!watched) {
+                return new DashboardWatchResponse(false, "Dashboard Not Watched");
+            }
+
+            return new DashboardWatchResponse(true, "Watching dashboard");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new DashboardWatchResponse(false, "Watch dashboard failed: unexpected server error");
+        }
+    }
+
+    public DashboardWatchResponse unwatchDashboard(UnwatchDashboardRequest request, DashboardObserver observer) {
+        try {
+            if (observer == null) {
+                return new DashboardWatchResponse(false, "Dashboard observer is required");
+            }
+
+            boolean unwatched = dashboardWatchRegistry.unwatchDashboard(observer);
+            if (!unwatched) {
+                return new DashboardWatchResponse(false, "Dashboard Not Watched");
+            }
+
+            return new DashboardWatchResponse(true, "Unwatched dashboard");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new DashboardWatchResponse(false, "Unwatch dashboard failed: unexpected server error");
         }
     }
 }

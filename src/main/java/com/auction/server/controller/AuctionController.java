@@ -4,6 +4,7 @@ import com.auction.request.*;
 import com.auction.response.ErrorResponse;
 import com.auction.response.Response;
 import com.auction.server.realtime.AuctionSessionObserver;
+import com.auction.server.realtime.DashboardObserver;
 
 public class AuctionController {
 
@@ -51,6 +52,19 @@ public class AuctionController {
         if (request instanceof UnwatchSessionRequest unwatchSessionRequest) {
             return realTimeController.unwatchSession(unwatchSessionRequest, observer);
         }
+        if (request instanceof WatchDashboardRequest watchDashboardRequest) {
+            if (observer instanceof DashboardObserver dashboardObserver) {
+                return realTimeController.watchDashboard(watchDashboardRequest, dashboardObserver);
+            }
+            return new ErrorResponse("Dashboard observer is required");
+        }
+        if (request instanceof UnwatchDashboardRequest unwatchDashboardRequest) {
+            if (observer instanceof DashboardObserver dashboardObserver) {
+                return realTimeController.unwatchDashboard(unwatchDashboardRequest, dashboardObserver);
+            }
+            return new ErrorResponse("Dashboard observer is required");
+        }
+
         return new ErrorResponse("Unknown request");
     }
 }

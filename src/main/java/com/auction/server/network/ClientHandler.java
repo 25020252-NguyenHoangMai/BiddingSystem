@@ -2,10 +2,13 @@ package com.auction.server.network;
 
 import com.auction.request.Request;
 import com.auction.response.BidUpdateResponse;
+import com.auction.response.DashboardUpdateResponse;
 import com.auction.response.Response;
 import com.auction.response.ErrorResponse;
 import com.auction.server.controller.AuctionController;
 import com.auction.server.realtime.AuctionSessionObserver;
+import com.auction.server.realtime.DashboardObserver;
+import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
 
 import java.io.EOFException;
@@ -18,18 +21,21 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class ClientHandler implements Runnable, AuctionSessionObserver {
+public class ClientHandler implements Runnable, AuctionSessionObserver, DashboardObserver {
     private final Socket socket;
     private final AuctionController auctionController;
     private final SessionWatchRegistry sessionWatchRegistry;
+    private final DashboardWatchRegistry dashboardWatchRegistry;
 
     private ObjectInputStream in;
     private ObjectOutputStream out;
 
-    public ClientHandler(Socket socket, AuctionController auctionController, SessionWatchRegistry sessionWatchRegistry) {
+    public ClientHandler(Socket socket, AuctionController auctionController, SessionWatchRegistry sessionWatchRegistry,
+                         DashboardWatchRegistry dashboardWatchRegistry) {
         this.socket = socket;
         this.auctionController = auctionController;
         this.sessionWatchRegistry = sessionWatchRegistry;
+        this.dashboardWatchRegistry = dashboardWatchRegistry;
     }
 
     @Override
@@ -97,6 +103,7 @@ public class ClientHandler implements Runnable, AuctionSessionObserver {
             e.printStackTrace();
         } finally {
             sessionWatchRegistry.unwatchAll(this);
+            dashboardWatchRegistry.unwatchAll(this);
             closeResources();
         }
     }
@@ -118,6 +125,15 @@ public class ClientHandler implements Runnable, AuctionSessionObserver {
 
     @Override
     public boolean onBidUpdated(BidUpdateResponse update) {
+        if (update == null) {
+            return false;
+        }
+
+        return safeSendResponse(update);
+    }
+
+    @Override
+    public boolean onDashboardUpdate(DashboardUpdateResponse update) {
         if (update == null) {
             return false;
         }

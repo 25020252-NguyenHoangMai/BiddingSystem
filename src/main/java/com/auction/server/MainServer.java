@@ -6,6 +6,8 @@ import com.auction.server.dao.ItemDAO;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
 import com.auction.server.network.SocketServer;
+import com.auction.server.realtime.DashboardObserver;
+import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.*;
 
@@ -17,6 +19,7 @@ public class    MainServer {
         SessionDAO sessionDAO = new SessionDAO(itemDAO);
 
         SessionWatchRegistry sessionWatchRegistry = new SessionWatchRegistry();
+        DashboardWatchRegistry dashboardWatchRegistry = new DashboardWatchRegistry();
 
         UserService userService = new UserService(userDAO);
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
@@ -29,10 +32,10 @@ public class    MainServer {
                                             userService, bidIncrementService, sessionDAO, userDAO);
 
         AuthController authController = new AuthController(userService);
-        ItemController itemController = new ItemController(itemService);
+        ItemController itemController = new ItemController(itemService, dashboardWatchRegistry);
         BiddingController biddingController = new BiddingController(biddingService, sessionService, sessionWatchRegistry);
-        RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, sessionService,
-                                                userService);
+        RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
+                                                sessionService, userService);
 
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
                                                 realTimeController);
