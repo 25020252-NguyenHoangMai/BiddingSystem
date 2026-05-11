@@ -235,7 +235,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             @Override
             protected Void call() {
                 clientSocket.sendRequest(new UnwatchDashboardRequest());
-                clientSocket.receiveResponse();
                 return null;
             }
         };

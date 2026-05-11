@@ -101,13 +101,8 @@ public class ClientSocket {
                         } else {
                             bidUpdateQueue.offer(update); // backup nếu chưa có listener
                         }
-                    } else if (obj instanceof DashboardUpdateResponse dashUpdate) {
-                        // Server push dashboard (sản phẩm mới) → gọi dashboardUpdateListener
-                        DashboardUpdateListener dcb = dashboardUpdateListener;
-                        if (dcb != null) {
-                            dcb.onDashboardUpdate(dashUpdate);
-                        }
-                        // KHÔNG bỏ vào responseQueue — đây là server-push, không phải response cho request
+                    } else if (obj instanceof DashboardUpdateResponse) {
+                        // Không cho vào responseQueue tránh bị thread khác lấy nhầm
                     } else {
                         // Response bình thường → bỏ vào queue, AuctionService lấy ra
                         responseQueue.offer(obj);
