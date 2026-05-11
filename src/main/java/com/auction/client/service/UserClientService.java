@@ -2,7 +2,9 @@ package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
 import com.auction.dto.UserSessionDTO;
+import com.auction.request.DepositRequest;
 import com.auction.request.EnableSellerRequest;
+import com.auction.response.DepositResponse;
 import com.auction.response.EnableSellerResponse;
 
 import java.util.List;
@@ -65,6 +67,24 @@ public class UserClientService {
             if (res.isSuccess()) return true;
             throw new Exception(res.getMessage());
         }
+        throw new Exception("Phản hồi từ server không hợp lệ");
+    }
+
+    // Gửi DepositRequest
+    public UserSessionDTO deposit(String userId, double amount) throws Exception {
+        ClientSocket socket = ClientSocket.getInstance();
+        socket.connect();
+
+        socket.sendRequest(new DepositRequest(userId, amount));
+        Object raw = socket.receiveResponse();
+
+        if (raw instanceof DepositResponse res) {
+            if (res.isSuccess()) {
+                return res.getUserSession();
+            }
+            throw new Exception(res.getMessage());
+        }
+
         throw new Exception("Phản hồi từ server không hợp lệ");
     }
 }
