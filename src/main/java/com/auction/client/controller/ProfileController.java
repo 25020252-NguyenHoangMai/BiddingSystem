@@ -168,9 +168,15 @@ public class ProfileController {
     private void handleLogout() {
         ClientSession.clear();
         try {
-            Stage stage = (Stage) fullNameLabel.getScene().getWindow();
+            Stage profileStage = (Stage) fullNameLabel.getScene().getWindow();
+            Stage stage = profileStage.getOwner() instanceof Stage ownerStage ? ownerStage : profileStage;
+
             Parent root = FXMLLoader.load(getClass().getResource("/views/login_view.fxml"));
             stage.setScene(new Scene(root));
+
+            if (profileStage != stage) {
+                profileStage.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
