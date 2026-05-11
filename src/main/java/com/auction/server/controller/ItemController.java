@@ -8,19 +8,27 @@ import com.auction.response.AddItemResponse;
 import com.auction.response.DashboardUpdateResponse;
 import com.auction.response.DashboardUpdateType;
 import com.auction.response.GetAllItemsResponse;
+import com.auction.server.factory.ItemFromDTOFactory;
 import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.service.ItemService;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 public class ItemController {
     private final ItemService itemService;
+    private final SessionService sessionService;
+    private final UserService userService;
     private final DashboardWatchRegistry dashboardWatchRegistry;
 
-    public ItemController(ItemService itemService, DashboardWatchRegistry dashboardWatchRegistry) {
+    public ItemController(ItemService itemService, SessionService sessionService, UserService userService, DashboardWatchRegistry dashboardWatchRegistry) {
         this.itemService = itemService;
+        this.sessionService = sessionService;
+        this.userService = userService;
         this.dashboardWatchRegistry = dashboardWatchRegistry;
     }
 
@@ -47,6 +55,32 @@ public class ItemController {
             }
 
             ItemDTO createdItem = itemService.addItem(request.getSellerId(), request.getItem());
+
+            // THÊM: tạo AuctionSession với endTimeMillis từ client
+            Item item = ItemFromDTOFactory.createItem(createdItem);
+            LocalDateTime now = LocalDateTime.now();
+
+            long endMillis = request.getItem().getEndTimeMillis();
+            LocalDateTime endTime;
+            if (endMillis > 0) {
+                endTime = Instant.ofEpochMilli(endMillis)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+            } else {
+                endTime = now.plusHours(24); // fallback
+            }
+
+            if (!endTime.isAfter(now.plusMinutes(1))) {
+                return new AddItemResponse(false, "Thời gian đấu giá quá ngắn hoặc đã hết hạn!", null);
+            }
+
+            sessionService.createSession(item, now, endTime);
+
+// Lấy lại DTO đầy đủ (có sessionId, sellerUsername) để broadcast
+            ItemDTO fullDTO = itemService.getAllItemDTOS().stream()
+                    .filter(d -> d.getId().equals(createdItem.getId()))
+                    .findFirst()
+                    .orElse(createdItem);
 
             dashboardWatchRegistry.broadcastDashboardUpdate(
                     new DashboardUpdateResponse(

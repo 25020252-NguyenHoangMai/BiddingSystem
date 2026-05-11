@@ -32,7 +32,7 @@ public class    MainServer {
                                             userService, bidIncrementService, sessionDAO, userDAO);
 
         AuthController authController = new AuthController(userService);
-        ItemController itemController = new ItemController(itemService, dashboardWatchRegistry);
+        ItemController itemController = new ItemController(itemService, sessionService, userService,dashboardWatchRegistry);
         BiddingController biddingController = new BiddingController(biddingService, sessionService, sessionWatchRegistry);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
                                                 sessionService, userService);
