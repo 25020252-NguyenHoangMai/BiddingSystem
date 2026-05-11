@@ -1,7 +1,9 @@
 package com.auction.server.controller;
 
+import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.dto.ItemDTO;
+import com.auction.model.User;
 import com.auction.request.AddItemRequest;
 import com.auction.request.GetAllItemsRequest;
 import com.auction.response.AddItemResponse;
@@ -74,13 +76,21 @@ public class ItemController {
                 return new AddItemResponse(false, "Thời gian đấu giá quá ngắn hoặc đã hết hạn!", null);
             }
 
-            sessionService.createSession(item, now, endTime);
+            // Tạo session, giữ lại object trả về
+            AuctionSession session = sessionService.createSession(item, now, endTime);
 
-// Lấy lại DTO đầy đủ (có sessionId, sellerUsername) để broadcast
-            ItemDTO fullDTO = itemService.getAllItemDTOS().stream()
-                    .filter(d -> d.getId().equals(createdItem.getId()))
-                    .findFirst()
-                    .orElse(createdItem);
+            // Build fullDTO trực tiếp
+            ItemDTO fullDTO = createdItem;
+            fullDTO.setSessionId(session.getId());
+            fullDTO.setSessionStatus(session.getStatus());       // "OPEN"
+            fullDTO.setCurrentPrice(session.getCurrentPrice());  // = startingPrice
+            fullDTO.setEndTimeMillis(                            // tính từ endTime server
+                    endTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            );
+            try {
+                User seller = userService.getUserById(request.getSellerId());
+                fullDTO.setSellerUsername(seller.getUsername());
+            } catch (Exception ignored) {}
 
             dashboardWatchRegistry.broadcastDashboardUpdate(
                     new DashboardUpdateResponse(
