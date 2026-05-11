@@ -20,6 +20,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,19 +32,29 @@ import javafx.util.Duration;
 public class MainController {
 
     // ===== UI =====
-    @FXML private Label welcomeLabel;
-    @FXML private Label balanceLabel;
-    @FXML private Button addBtn;
-    @FXML private TextField searchField;
+    @FXML
+    private Label welcomeLabel;
+    @FXML
+    private Label balanceLabel;
+    @FXML
+    private Button addBtn;
+    @FXML
+    private TextField searchField;
 
-    @FXML private TableView<ItemDTO> tableAuctions;
-    @FXML private TableColumn<ItemDTO, String> colProductName;
-    @FXML private TableColumn<ItemDTO, Double> colCurrentPrice;
-    @FXML private TableColumn<ItemDTO, String> colSeller; // Kiểu String cho tên người bán
-    @FXML private TableColumn<ItemDTO, String> colTime;
+    @FXML
+    private TableView<ItemDTO> tableAuctions;
+    @FXML
+    private TableColumn<ItemDTO, String> colProductName;
+    @FXML
+    private TableColumn<ItemDTO, Double> colCurrentPrice;
+    @FXML
+    private TableColumn<ItemDTO, String> colSeller; // Kiểu String cho tên người bán
+    @FXML
+    private TableColumn<ItemDTO, String> colTime;
 
     // ===== DATA =====
     private final ObservableList<ItemDTO> auctionList = FXCollections.observableArrayList();
+    private final List<Stage> childStages = new ArrayList<>();
 
     // ===== SERVICE =====
     private final ProductService productService = ProductService.getInstance();
@@ -152,6 +163,7 @@ public class MainController {
     // ===== ACTIONS =====
     @FXML
     private void handleLogout() {
+        closeChildStages();
         ClientSession.clear();
         switchScene("/views/login_view.fxml");
     }
@@ -284,11 +296,26 @@ public class MainController {
 
             Stage stage = new Stage();
             stage.setTitle("Auction — " + item.getName());
+            stage.initOwner(welcomeLabel.getScene().getWindow());
             stage.setScene(new Scene(root));
+            childStages.add(stage);
+            stage.setOnHidden(event -> childStages.remove(stage));
             stage.show();
         } catch (java.io.IOException e) {
             e.printStackTrace();
             showError("Cannot open auction detail: " + e.getMessage());
+        }
+    }
+
+    // Đòng hết tất cả màn hình khi log out
+    private void closeChildStages() {
+        List<Stage> stagesToClose = new ArrayList<>(childStages);
+        childStages.clear();
+
+        for (Stage stage : stagesToClose) {
+            if (stage != null && stage.isShowing()) {
+                stage.close();
+            }
         }
     }
 }
