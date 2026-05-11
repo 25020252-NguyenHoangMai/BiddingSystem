@@ -60,7 +60,7 @@ public class DepositController {
         String amountText = amountField.getText().trim();
 
         if (amountText.isEmpty()) {
-            errorLabel.setText("Vui lòng nhập số tiền cần nạp.");
+            errorLabel.setText("Please enter the amount you deposit.");
             return;
         }
 
@@ -68,25 +68,25 @@ public class DepositController {
         try {
             amount = Double.parseDouble(amountText);
         } catch (NumberFormatException e) {
-            errorLabel.setText("Số tiền không hợp lệ.");
+            errorLabel.setText("The amount is invalid.");
             return;
         }
 
         if (amount <= 0) {
-            errorLabel.setText("Số tiền phải lớn hơn 0.");
+            errorLabel.setText("The amount must be greater than 0.");
             return;
         }
 
         UserSessionDTO user = ClientSession.getCurrentUser();
         if (user == null) {
-            errorLabel.setText("Phiên đăng nhập hết hạn.");
+            errorLabel.setText("Login session has expired.");
             return;
         }
 
         // Disable UI trong khi xử lý
         confirmBtn.setDisable(true);
         cancelBtn.setDisable(true);
-        confirmBtn.setText("Đang xử lý...");
+        confirmBtn.setText("Processing...");
 
         final double finalAmount = amount;
 
@@ -103,7 +103,7 @@ public class DepositController {
             ClientSession.setCurrentUser(updatedUser);
 
             Platform.runLater(() -> {
-                showSuccess(String.format("Nạp tiền thành công!\nSố dư mới: %.2f $", updatedUser.getBalance()));
+                showSuccess(String.format("Deposit successful!\nNew balance: %.2f $", updatedUser.getBalance()));
                 closeWindow();
             });
         });
@@ -112,8 +112,8 @@ public class DepositController {
             Platform.runLater(() -> {
                 confirmBtn.setDisable(false);
                 cancelBtn.setDisable(false);
-                confirmBtn.setText("✔ Xác nhận nạp tiền");
-                String msg = task.getException() != null ? task.getException().getMessage() : "Lỗi không xác định";
+                confirmBtn.setText("Confirm");
+                String msg = task.getException() != null ? task.getException().getMessage() : "Unknown Error";
                 errorLabel.setText(msg);
             });
         });
@@ -135,7 +135,7 @@ public class DepositController {
 
     private void showSuccess(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Nạp tiền thành công");
+        alert.setTitle("Deposit successful");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

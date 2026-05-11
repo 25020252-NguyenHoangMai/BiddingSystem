@@ -8,7 +8,7 @@
 
     <!-- Header -->
     <HBox alignment="CENTER" style="-fx-background-color: #2c3e50; -fx-padding: 18 25;">
-        <Label text="💳 Ví Tiền" textFill="WHITE">
+        <Label text="💳 Wallet" textFill="WHITE">
             <font><Font name="System Bold" size="20.0" /></font>
         </Label>
     </HBox>
@@ -18,7 +18,7 @@
 
         <!-- Current Balance -->
         <VBox alignment="CENTER" spacing="6" style="-fx-background-color: white; -fx-padding: 16 24; -fx-background-radius: 12;                      -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);">
-            <Label text="Số dư hiện tại" textFill="#7f8c8d">
+            <Label text="Curent balance" textFill="#7f8c8d">
                 <font><Font size="13.0" /></font>
             </Label>
             <Label fx:id="currentBalanceLabel" text="0.00 $" textFill="#27ae60">
@@ -28,10 +28,10 @@
 
         <!-- Amount Input -->
         <VBox spacing="8">
-            <Label text="Số tiền muốn nạp ($)" textFill="#2c3e50">
+            <Label text="Amount ($)" textFill="#2c3e50">
                 <font><Font name="System Bold" size="14.0" /></font>
             </Label>
-            <TextField fx:id="amountField" promptText="Nhập số tiền..." style="-fx-background-color: white; -fx-border-color: #dcdde1;                               -fx-border-radius: 8; -fx-background-radius: 8;                               -fx-padding: 10 14; -fx-font-size: 15px;">
+            <TextField fx:id="amountField" promptText="Enter the amount..." style="-fx-background-color: white; -fx-border-color: #dcdde1;                               -fx-border-radius: 8; -fx-background-radius: 8;                               -fx-padding: 10 14; -fx-font-size: 15px;">
             </TextField>
             <Label fx:id="errorLabel" text="" textFill="#e74c3c" wrapText="true">
                 <font><Font size="12.0" /></font>
@@ -40,7 +40,7 @@
 
         <!-- Quick Amount Buttons -->
         <VBox spacing="6">
-            <Label text="Chọn nhanh" textFill="#7f8c8d">
+            <Label text="Amount:" textFill="#7f8c8d">
                 <font><Font size="12.0" /></font>
             </Label>
             <HBox spacing="8">
@@ -53,8 +53,8 @@
 
         <!-- Buttons -->
         <HBox spacing="12">
-            <Button fx:id="cancelBtn" maxWidth="Infinity" onAction="#handleCancel" prefHeight="42.0" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                            -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8;" text="Hủy" HBox.hgrow="ALWAYS" />
-            <Button fx:id="confirmBtn" maxWidth="Infinity" onAction="#handleConfirm" prefHeight="42.0" style="-fx-background-color: #27ae60; -fx-text-fill: white;                            -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8;" text="✔ Xác nhận nạp tiền" HBox.hgrow="ALWAYS">
+            <Button fx:id="cancelBtn" maxWidth="Infinity" onAction="#handleCancel" prefHeight="42.0" style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50;                            -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8;" text="Cancel" HBox.hgrow="ALWAYS" />
+            <Button fx:id="confirmBtn" maxWidth="Infinity" onAction="#handleConfirm" prefHeight="42.0" style="-fx-background-color: #27ae60; -fx-text-fill: white;                            -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 8;" text="Confirm" HBox.hgrow="ALWAYS">
                 <font><Font name="System Bold" size="13.0" /></font>
             </Button>
         </HBox>
