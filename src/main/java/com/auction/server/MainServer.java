@@ -25,11 +25,16 @@ public class    MainServer {
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
 
         BidIncrementService bidIncrementService = new BidIncrementService();
+        BidReservationCalculator bidReservationCalculator = new BidReservationCalculator();
+        BidValidationService bidValidationService = new BidValidationService(userService, bidIncrementService);
+        BidTransactionExecutor bidTransactionExecutor = new BidTransactionExecutor(bidDAO, sessionDAO, userDAO,
+                                                    bidValidationService, bidReservationCalculator);
+
         AutoBiddingService autoBiddingService = new AutoBiddingService();
         AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO);
-        BiddingService biddingService = new BiddingService(sessionService, bidDAO, antiSnipingService,
-                                            userService, bidIncrementService, sessionDAO, userDAO);
+        BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
+                                            bidValidationService, bidTransactionExecutor);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry);
