@@ -22,13 +22,12 @@ import java.util.List;
 public class ItemController {
     private final ItemService itemService;
     private final SessionService sessionService;
-    private final UserService userService;
     private final DashboardWatchRegistry dashboardWatchRegistry;
 
-    public ItemController(ItemService itemService, SessionService sessionService, UserService userService, DashboardWatchRegistry dashboardWatchRegistry) {
+    public ItemController(ItemService itemService, SessionService sessionService,
+                          DashboardWatchRegistry dashboardWatchRegistry) {
         this.itemService = itemService;
         this.sessionService = sessionService;
-        this.userService = userService;
         this.dashboardWatchRegistry = dashboardWatchRegistry;
     }
 
@@ -77,18 +76,7 @@ public class ItemController {
             // Tạo session, giữ lại object trả về
             AuctionSession session = sessionService.createSession(item, now, endTime);
 
-            // Build fullDTO trực tiếp
-            ItemDTO fullDTO = createdItem;
-            fullDTO.setSessionId(session.getId());
-            fullDTO.setSessionStatus(session.getStatus());       // "OPEN"
-            fullDTO.setCurrentPrice(session.getCurrentPrice());  // = startingPrice
-            fullDTO.setEndTimeMillis(                            // tính từ endTime server
-                    endTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            );
-            try {
-                User seller = userService.getUserById(request.getSellerId());
-                fullDTO.setSellerUsername(seller.getUsername());
-            } catch (Exception ignored) {}
+            ItemDTO fullDTO = itemService.buildFullItemDTO(createdItem, session);
 
             dashboardWatchRegistry.broadcastDashboardUpdate(
                     new DashboardUpdateResponse(

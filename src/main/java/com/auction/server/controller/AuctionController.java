@@ -41,8 +41,8 @@ public class AuctionController {
         if (request instanceof AddItemRequest addItemRequest) {
             return itemController.addItem(addItemRequest);
         }
-        if (request instanceof GetAllItemsRequest getAllItemsRequest) {
-            return itemController.getAllItems(getAllItemsRequest);
+        if (request instanceof GetAuctionDetailRequest getAuctionDetailRequest) {
+            return itemController.getAuctionDetail(getAuctionDetailRequest);
         }
 
         if (request instanceof PlaceBidRequest placeBidRequest) {

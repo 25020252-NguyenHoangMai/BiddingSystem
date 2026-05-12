@@ -254,6 +254,26 @@ public class ItemService {
         dto.setSessionStatus(session.getStatus());
         dto.setCurrentPrice(session.getCurrentPrice());
 
+        if (dto == null) {
+            throw new ItemNotFoundException("Item is not found!");
+        }
+
+        return buildFullItemDTO(dto, session);
+    }
+
+    public ItemDTO buildFullItemDTO(ItemDTO dto, AuctionSession session) {
+        if (dto == null) {
+            throw new AuctionException("ItemDTO must not be null");
+        }
+
+        if (session == null) {
+            throw new AuctionException("Auction session must not be null");
+        }
+
+        dto.setSessionId(session.getId());
+        dto.setSessionStatus(session.getStatus());
+        dto.setCurrentPrice(session.getCurrentPrice());
+
         if (session.getEndTime() != null) {
             dto.setEndTimeMillis(
                     session.getEndTime()
@@ -263,8 +283,10 @@ public class ItemService {
             );
         }
 
-        User seller = userService.getUserById(dto.getSellerId());
-        dto.setSellerUsername(seller.getUsername());
+        if (dto.getSellerId() != null && !dto.getSellerId().isBlank()) {
+            User seller = userService.getUserById(dto.getSellerId());
+            dto.setSellerUsername(seller.getUsername());
+        }
 
         String winnerId = session.getCurrentWinnerId();
         if (winnerId != null && !winnerId.isBlank()) {
