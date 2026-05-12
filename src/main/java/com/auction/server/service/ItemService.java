@@ -250,10 +250,6 @@ public class ItemService {
         Item item = session.getItem();
         ItemDTO dto = itemDAO.getItemById(item.getId());
 
-        dto.setSessionId(session.getId());
-        dto.setSessionStatus(session.getStatus());
-        dto.setCurrentPrice(session.getCurrentPrice());
-
         if (dto == null) {
             throw new ItemNotFoundException("Item is not found!");
         }
