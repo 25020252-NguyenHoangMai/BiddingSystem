@@ -3,6 +3,7 @@ package com.auction.client.network;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.DashboardUpdateResponse;
 import com.auction.response.DashboardWatchResponse;
+import com.auction.response.PlaceBidResponse;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,6 +29,8 @@ public class ClientSocket {
 
     // Response bình thường cho Request-Response
     private final BlockingQueue<Object> responseQueue  = new LinkedBlockingQueue<>();
+
+    private final BlockingQueue<PlaceBidResponse> placeBidQueue = new LinkedBlockingQueue<>();
 
     // BidUpdateResponse do server push — không liên quan request nào
     private final BlockingQueue<BidUpdateResponse> bidUpdateQueue = new LinkedBlockingQueue<>();
@@ -76,6 +79,7 @@ public class ClientSocket {
             responseQueue.clear();
             bidUpdateQueue.clear();
             dashboardWatchQueue.clear();
+            placeBidQueue.clear();
 
             startReaderThread();
 
@@ -103,26 +107,27 @@ public class ClientSocket {
                     Object obj = in.readObject();
                     System.out.println("[ClientSocket] received from server: " + obj.getClass().getSimpleName());
 
-                    if (obj instanceof BidUpdateResponse update) {
+                    if (obj instanceof PlaceBidResponse placeBidResponse) {
+                        placeBidQueue.offer(placeBidResponse);
+                    } else if (obj instanceof BidUpdateResponse update) {
                         BidUpdateListener cb = bidUpdateListener;
+
                         if (cb != null) {
                             callbackExecutor.execute(() -> cb.onBidUpdate(update));
                         } else {
-                            responseQueue.offer(update);
+                            bidUpdateQueue.offer(update);
                         }
                     } else if (obj instanceof DashboardUpdateResponse dashboardUpdate) {
-                        // Server push realtime dashboard → gọi listener, KHÔNG cho vào responseQueue
                         DashboardUpdateListener dcb = dashboardUpdateListener;
+
                         if (dcb != null) {
                             callbackExecutor.execute(() -> dcb.onDashboardUpdate(dashboardUpdate));
                         }
                     } else if (obj instanceof DashboardWatchResponse dwr) {
                         dashboardWatchQueue.offer(dwr);
                     } else {
-                        // Response bình thường → bỏ vào queue, AuctionService lấy ra
                         responseQueue.offer(obj);
                     }
-
                 } catch (java.io.EOFException | java.net.SocketException e) {
                     System.out.println("[ClientSocket] Connection closed.");
                     break;
@@ -225,6 +230,7 @@ public class ClientSocket {
         responseQueue.clear();
         bidUpdateQueue.clear();
         dashboardWatchQueue.clear();
+        placeBidQueue.clear();
         dashboardWatching = false;
         bidUpdateListener = null;
         dashboardUpdateListener = null;
@@ -242,5 +248,15 @@ public class ClientSocket {
 
     public void clearResponseQueue() {
         responseQueue.clear();
+    }
+
+    public PlaceBidResponse takePlaceBidResponse() throws Exception {
+        PlaceBidResponse response = placeBidQueue.poll(30, TimeUnit.SECONDS);
+
+        if (response == null) {
+            throw new Exception("Server response timeout");
+        }
+
+        return response;
     }
 }

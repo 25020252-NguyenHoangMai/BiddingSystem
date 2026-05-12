@@ -353,7 +353,10 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             PlaceBidResponse res = bidTask.getValue();
 
             if (res.isSuccess()) {
-                // Cập nhật UI
+                currentItem.setCurrentPrice(res.getCurrentPrice());
+                currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
+                currentItem.setSessionStatus(res.getStatus());
+
                 refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
                 updateBidHint(res.getCurrentPrice());
                 updateBalanceLabel();

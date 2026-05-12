@@ -14,10 +14,6 @@ public class AuctionService {
         socket.connect();
         socket.sendRequest(new PlaceBidRequest(sessionId, bidderId, amount));
 
-        Object raw = socket.takeResponse();
-
-        if (raw instanceof PlaceBidResponse response) { return response; }
-
-        throw new Exception("Unexpected response from server");
+        return socket.takePlaceBidResponse();
     }
 }
