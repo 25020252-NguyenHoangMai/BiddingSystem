@@ -40,6 +40,8 @@ public class ClientSocket {
     // Callback nhận DashboardUpdateResponse — set bởi MainController
     private volatile DashboardUpdateListener dashboardUpdateListener;
 
+    private final BlockingQueue<DashboardWatchResponse> dashboardWatchQueue = new LinkedBlockingQueue<>();
+
     // Interface Observer — AuctionDetailController implement
     public interface BidUpdateListener {
         void onBidUpdate(BidUpdateResponse update);
@@ -67,6 +69,7 @@ public class ClientSocket {
 
             responseQueue.clear();
             bidUpdateQueue.clear();
+            dashboardWatchQueue.clear();
 
             startReaderThread();
 
@@ -108,8 +111,8 @@ public class ClientSocket {
                         if (dcb != null) {
                             dcb.onDashboardUpdate(dashboardUpdate);
                         }
-                    } else if (obj instanceof DashboardWatchResponse) {
-                        // KHÔNG cho vào responseQueue để tránh bị lấy nhầm bởi request khác
+                    } else if (obj instanceof DashboardWatchResponse dwr) {
+                        dashboardWatchQueue.offer(dwr);
                     } else {
                         // Response bình thường → bỏ vào queue, AuctionService lấy ra
                         responseQueue.offer(obj);
@@ -152,6 +155,12 @@ public class ClientSocket {
         Object obj = responseQueue.poll(10, TimeUnit.SECONDS);
         if (obj == null) throw new Exception("Server response timeout");
         return obj;
+    }
+
+    public DashboardWatchResponse receiveDashboardWatchResponse() throws Exception {
+        DashboardWatchResponse r = dashboardWatchQueue.poll(10, TimeUnit.SECONDS);
+        if (r == null) throw new Exception("DashboardWatch response timeout");
+        return r;
     }
 
     public Object receiveResponse() {
@@ -200,6 +209,7 @@ public class ClientSocket {
         readerThread = null;
         responseQueue.clear();
         bidUpdateQueue.clear();
+        dashboardWatchQueue.clear();
         bidUpdateListener = null;
         dashboardUpdateListener = null;
     }

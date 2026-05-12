@@ -10,6 +10,7 @@ import com.auction.request.UnwatchDashboardRequest;
 import com.auction.request.WatchDashboardRequest;
 import com.auction.response.DashboardUpdateResponse;
 import com.auction.response.DashboardUpdateType;
+import com.auction.response.DashboardWatchResponse;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -101,8 +102,12 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                 // Kết nối và gửi WatchDashboardRequest
                 clientSocket.connect();
                 clientSocket.sendRequest(new WatchDashboardRequest());
-                // Đợi reader thread nhận và lọc WatchDashboardResponse
-                Thread.sleep(150);
+
+                DashboardWatchResponse watchResp = clientSocket.receiveDashboardWatchResponse();
+                if (!watchResp.isSuccess()) {
+                    System.out.println("[MainController] WatchDashboard failed: " + watchResp.getMessage());
+                    // Vẫn tiếp tục tải sản phẩm dù watch thất bại
+                }
                 // Gửi GetAllItemsRequest trên cùng thread (không bị race condition)
                 return productService.getAllProducts();
             }
