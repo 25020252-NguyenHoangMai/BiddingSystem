@@ -13,6 +13,7 @@ import com.auction.server.dao.UserDAO;
 import com.auction.server.factory.ItemFromDTOFactory;
 
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -234,5 +235,43 @@ public class ItemService {
         }
 
         itemDAO.deleteItem(id);
+    }
+
+    public ItemDTO getAuctionDetailDTO(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new AuctionException("Session id is required");
+        }
+
+        AuctionSession session = sessionDAO.getSessionById(sessionId);
+        if (session == null) {
+            throw new AuctionException("Auction session not found");
+        }
+
+        Item item = session.getItem();
+        ItemDTO dto = itemDAO.getItemById(item.getId());
+
+        dto.setSessionId(session.getId());
+        dto.setSessionStatus(session.getStatus());
+        dto.setCurrentPrice(session.getCurrentPrice());
+
+        if (session.getEndTime() != null) {
+            dto.setEndTimeMillis(
+                    session.getEndTime()
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+            );
+        }
+
+        User seller = userService.getUserById(dto.getSellerId());
+        dto.setSellerUsername(seller.getUsername());
+
+        String winnerId = session.getCurrentWinnerId();
+        if (winnerId != null && !winnerId.isBlank()) {
+            User winner = userService.getUserById(winnerId);
+            dto.setCurrentWinnerUsername(winner.getUsername());
+        }
+
+        return dto;
     }
 }
