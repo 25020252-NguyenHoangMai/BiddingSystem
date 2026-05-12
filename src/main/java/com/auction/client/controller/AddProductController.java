@@ -23,7 +23,7 @@ public class AddProductController {
 
     private final Map<String, TextField> fields = new LinkedHashMap<>();
     private final ProductService service = ProductService.getInstance();
-    private boolean submitting;
+    private volatile boolean submitting;
 
     private final Map<String, String[]> categoryFields = Map.of(
             "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
@@ -72,6 +72,7 @@ public class AddProductController {
 
         submitting = true;
         btnSubmit.setDisable(true);
+        btnSubmit.setText("Đang xử lý...");
         errorLabel.setVisible(false);
 
         try {
@@ -96,12 +97,14 @@ public class AddProductController {
             errorLabel.setVisible(true);
             submitting = false;
             btnSubmit.setDisable(false);
+            btnSubmit.setText("Thêm sản phẩm");
         } catch (Exception e) {
             // Hiển thị mọi lỗi từ kết nối, logic server,... lên UI
             errorLabel.setText(e.getMessage());
             errorLabel.setVisible(true);
             submitting = false;
             btnSubmit.setDisable(false);
+            btnSubmit.setText("Thêm sản phẩm");
         }
     }
 

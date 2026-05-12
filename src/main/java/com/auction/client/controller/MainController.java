@@ -279,8 +279,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             addProductStage.initModality(Modality.WINDOW_MODAL);
             addProductStage.setScene(new Scene(root));
 
-            // Add Product xong load lại danh sách sản phẩm ở Main
-            addProductStage.setOnHidden(event -> loadProductsAsync());
+            addProductStage.setOnHidden(event -> {
+                if (auctionList.isEmpty()) loadProductsAsync();
+            });
 
             addProductStage.show();
         } catch (IOException e) {
