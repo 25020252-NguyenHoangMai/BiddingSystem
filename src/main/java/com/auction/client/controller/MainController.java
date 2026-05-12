@@ -96,35 +96,58 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== Gửi WatchDashboardRequest, chờ xác nhận, rồi mới tải sản phẩm =====
     private void sendWatchThenLoad() {
-        Task<java.util.List<ItemDTO>> task = new Task<>() {
+        tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
+        Task<List<ItemDTO>> task = new Task<>() {
             @Override
-            protected java.util.List<ItemDTO> call() throws Exception {
+            protected List<ItemDTO> call() throws Exception {
                 // Kết nối và gửi WatchDashboardRequest
                 clientSocket.connect();
+                System.out.println("[MainController] Sending WatchDashboardRequest");
                 clientSocket.sendRequest(new WatchDashboardRequest());
 
-                DashboardWatchResponse watchResp = clientSocket.receiveDashboardWatchResponse();
-                if (!watchResp.isSuccess()) {
-                    System.out.println("[MainController] WatchDashboard failed: " + watchResp.getMessage());
-                    // Vẫn tiếp tục tải sản phẩm dù watch thất bại
+                try {
+                    DashboardWatchResponse watchResp = clientSocket.receiveDashboardWatchResponse();
+
+                    System.out.println("[MainController] Watch response: " + watchResp.isSuccess());
+
+                } catch (Exception e) {
+                    System.err.println("[MainController] Watch dashboard failed: " + e.getMessage());
+                    // Không throw vì vẫn load product
                 }
-                // Gửi GetAllItemsRequest trên cùng thread (không bị race condition)
-                return productService.getAllProducts();
+
+                System.out.println("[MainController] Loading products...");
+
+                List<ItemDTO> items = productService.getAllProducts();
+
+                System.out.println("[MainController] Loaded " + items.size() + " products");
+
+                return items;
             }
         };
 
         task.setOnSucceeded(e -> {
-            auctionList.setAll(task.getValue());
-            if (task.getValue().isEmpty()) {
-                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào đang đấu giá"));
+            List<ItemDTO> items = task.getValue();
+
+            auctionList.setAll(items);
+            tableAuctions.setItems(auctionList);
+
+            if (items.isEmpty()) {
+                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào"));
             }
         });
 
-        task.setOnFailed(e -> showError("Lỗi tải dữ liệu: " + task.getException().getMessage()));
+        task.setOnFailed(e -> {
+            Throwable ex = task.getException();
+            ex.printStackTrace();
 
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
+            tableAuctions.setPlaceholder(new Label("Không tải được dữ liệu"));
+
+            showError("Lỗi tải dữ liệu: " + ex.getMessage());
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // ===== Callback khi server push sản phẩm mới =====
@@ -216,7 +239,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                     timeline.stop();
                 } else {
                     updateTime();
-                    timeline.play();
+                    if (timeline.getStatus() != Animation.Status.RUNNING) {
+                        timeline.play();
+                    }
                 }
             }
         });
@@ -224,6 +249,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== LOAD DATA (ASYNC) =====
     private void loadProductsAsync() {
+        tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
         Task<List<ItemDTO>> task = new Task<>() {
             @Override
             protected List<ItemDTO> call() {
@@ -232,13 +258,24 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         };
 
         task.setOnSucceeded(e -> {
-            auctionList.setAll(task.getValue());
-            if (task.getValue().isEmpty()) {
-                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào đang đấu giá"));
+            List<ItemDTO> items = task.getValue();
+
+            auctionList.setAll(items);
+            tableAuctions.setItems(auctionList);
+
+            if (items.isEmpty()) {
+                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào"));
             }
         });
 
-        task.setOnFailed(e -> showError("Lỗi tải dữ liệu: " + task.getException().getMessage()));
+        task.setOnFailed(e -> {
+            Throwable ex = task.getException();
+            ex.printStackTrace();
+
+            tableAuctions.setPlaceholder(new Label("Không tải được dữ liệu"));
+
+            showError("Lỗi tải dữ liệu: " + ex.getMessage());
+        });
 
         Thread thread = new Thread(task);
         thread.setDaemon(true);
@@ -250,6 +287,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     private void handleLogout() {
         // Hủy đăng ký dashboard watch trước khi logout
         clientSocket.setDashboardUpdateListener(null);
+        clientSocket.clearResponseQueue();
         Task<Void> unwatch = new Task<>() {
             @Override
             protected Void call() {

@@ -7,9 +7,7 @@ import com.auction.response.DashboardWatchResponse;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class ClientSocket {
     private static ClientSocket instance;
@@ -41,6 +39,8 @@ public class ClientSocket {
     private volatile DashboardUpdateListener dashboardUpdateListener;
 
     private final BlockingQueue<DashboardWatchResponse> dashboardWatchQueue = new LinkedBlockingQueue<>();
+
+    private final ExecutorService callbackExecutor = Executors.newCachedThreadPool();
 
     // Interface Observer — AuctionDetailController implement
     public interface BidUpdateListener {
@@ -94,14 +94,15 @@ public class ClientSocket {
         Thread reader = new Thread(() -> {
             while (isConnected()) {
                 try {
-                    Object obj = in.readObject(); // block ở đây
+                    Object obj = in.readObject();
+                    System.out.println("[ClientSocket] received from server: " + obj.getClass().getSimpleName());
 
                     if (obj instanceof BidUpdateResponse update) {
                         // Server push realtime → gọi listener ngay trên reader thread
                         // Listener dùng Platform.runLater nên không block
                         BidUpdateListener cb = bidUpdateListener;
                         if (cb != null) {
-                            cb.onBidUpdate(update);
+                            callbackExecutor.execute(() -> cb.onBidUpdate(update));
                         } else {
                             bidUpdateQueue.offer(update); // backup nếu chưa có listener
                         }
@@ -109,7 +110,7 @@ public class ClientSocket {
                         // Server push realtime dashboard → gọi listener, KHÔNG cho vào responseQueue
                         DashboardUpdateListener dcb = dashboardUpdateListener;
                         if (dcb != null) {
-                            dcb.onDashboardUpdate(dashboardUpdate);
+                            callbackExecutor.execute(() -> dcb.onDashboardUpdate(dashboardUpdate));
                         }
                     } else if (obj instanceof DashboardWatchResponse dwr) {
                         dashboardWatchQueue.offer(dwr);
@@ -122,9 +123,8 @@ public class ClientSocket {
                     System.out.println("[ClientSocket] Connection closed.");
                     break;
                 } catch (Exception e) {
-                    if (socket != null && !socket.isClosed()) {
-                        System.out.println("[ClientSocket] Reader error: " + e.getMessage());
-                    }
+                    System.err.println("[ClientSocket] Reader error: " + e.getMessage());
+                    close();
                     break;
                 }
             }
@@ -134,26 +134,35 @@ public class ClientSocket {
         readerThread.start();
     }
 
-    public void sendRequest(Object request) {
+    public synchronized void sendRequest(Object request) {
+        connect();
+
+        if (!isConnected()) {
+            throw new IllegalStateException("Socket is not connected");
+        }
+
         try {
-            connect();
+            out.writeObject(request);
+            out.flush();
 
-            synchronized (this) {
-                if (!isConnected()) {
-                    throw new IllegalStateException("Socket is not connected");
-                }
-
-                out.writeObject(request);
-                out.flush();
-            }
+            System.out.println("[ClientSocket] sent request: " + request.getClass().getSimpleName());
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[ClientSocket] sendRequest failed: " + e.getMessage());
+            close();
         }
     }
 
     public Object takeResponse() throws Exception {
-        Object obj = responseQueue.poll(10, TimeUnit.SECONDS);
-        if (obj == null) throw new Exception("Server response timeout");
+        Object obj = responseQueue.poll(30, TimeUnit.SECONDS);
+        if (obj == null) {
+            System.err.println("[ClientSocket] Timeout waiting for server response");
+            throw new Exception("Server response timeout");
+        }
+
+        System.out.println(
+                "[ClientSocket] takeResponse received: "
+                        + obj.getClass().getSimpleName());
+
         return obj;
     }
 
@@ -163,13 +172,8 @@ public class ClientSocket {
         return r;
     }
 
-    public Object receiveResponse() {
-        try {
-            return takeResponse();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+    public Object receiveResponse() throws Exception {
+        return takeResponse();
     }
 
     // ===== BID UPDATE LISTENER =====
@@ -222,5 +226,9 @@ public class ClientSocket {
         in = null;
         out = null;
         socket = null;
+    }
+
+    public void clearResponseQueue() {
+        responseQueue.clear();
     }
 }

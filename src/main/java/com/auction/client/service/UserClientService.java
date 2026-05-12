@@ -26,33 +26,58 @@ public class UserClientService {
     // Lấy toàn bộ danh sách người dùng từ Server
     public List<UserSessionDTO> getAllUsers() {
         ClientSocket socket = ClientSocket.getInstance();
+        try {
+            // gửi request
+            socket.sendRequest("GET_ALL_USERS");
 
-        // 1. Gửi yêu cầu lên Server
-        socket.sendRequest("GET_ALL_USERS");
+            // nhận response
+            Object res = socket.receiveResponse();
 
-        // 2. Nhận phản hồi
-        Object res = socket.receiveResponse();
+            // ép kiểu an toàn
+            if (res instanceof List<?> rawList) {
+                return rawList.stream()
+                        .filter(UserSessionDTO.class::isInstance)
+                        .map(UserSessionDTO.class::cast)
+                        .toList();
+            }
 
-        // 3. Kiểm tra và ép kiểu an toàn
-        if (res instanceof List<?> rawList) {
-            return rawList.stream()
-                    .filter(UserSessionDTO.class::isInstance)
-                    .map(UserSessionDTO.class::cast)
-                    .toList();
+            System.err.println(
+                    "[AdminService] Invalid response type: "
+                            + (res == null
+                            ? "null"
+                            : res.getClass().getSimpleName())
+            );
+        } catch (Exception e) {
+            System.err.println("[AdminService] getAllUsers failed: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        return List.of(); // Trả về danh sách rỗng nếu có lỗi
+        return List.of();
     }
 
     // Gửi yêu cầu xóa người dùng theo ID
     public boolean deleteUser(int userId) {
         ClientSocket socket = ClientSocket.getInstance();
+        try {
+            socket.sendRequest("DELETE_USER:" + userId);
 
-        // Gửi lệnh kèm ID (Ví dụ định dạng: DELETE_USER:123)
-        socket.sendRequest("DELETE_USER:" + userId);
+            Object res = socket.receiveResponse();
 
-        Object res = socket.receiveResponse();
-        return res instanceof Boolean && (Boolean) res;
+            if (res instanceof Boolean success) {
+                return success;
+            }
+
+            System.err.println(
+                    "[AdminService] Invalid delete response type: "
+                            + (res == null
+                            ? "null"
+                            : res.getClass().getSimpleName())
+            );
+        } catch (Exception e) {
+            System.err.println("[AdminService] deleteUser failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     // Gửi EnableSellerRequest lên Server
@@ -63,11 +88,19 @@ public class UserClientService {
         socket.sendRequest(new EnableSellerRequest(userId));
         Object raw = socket.receiveResponse();
 
-        if (raw instanceof EnableSellerResponse res) {
-            if (res.isSuccess()) return true;
+        if (!(raw instanceof EnableSellerResponse res)) {
+            throw new IllegalStateException("Expected EnableSellerResponse but got: "
+                            + (raw == null
+                            ? "null"
+                            : raw.getClass().getSimpleName())
+            );
+        }
+
+        if (!res.isSuccess()) {
             throw new Exception(res.getMessage());
         }
-        throw new Exception("Phản hồi từ server không hợp lệ");
+
+        return true;
     }
 
     // Gửi DepositRequest
@@ -78,13 +111,24 @@ public class UserClientService {
         socket.sendRequest(new DepositRequest(userId, amount));
         Object raw = socket.receiveResponse();
 
-        if (raw instanceof DepositResponse res) {
-            if (res.isSuccess()) {
-                return res.getUserSession();
-            }
+        if (!(raw instanceof DepositResponse res)) {
+            throw new IllegalStateException("Expected DepositResponse but got: "
+                            + (raw == null
+                            ? "null"
+                            : raw.getClass().getSimpleName())
+            );
+        }
+
+        if (!res.isSuccess()) {
             throw new Exception(res.getMessage());
         }
 
-        throw new Exception("Phản hồi từ server không hợp lệ");
+        UserSessionDTO user = res.getUserSession();
+
+        if (user == null) {
+            throw new IllegalStateException("DepositResponse userSession is null");
+        }
+
+        return user;
     }
 }

@@ -26,13 +26,21 @@ public class AuthService {
         clientSocket.connect();
 
         RegisterRequest request = new RegisterRequest(fullName, username, password, confirmPassword);
+
         clientSocket.sendRequest(request);
 
         Object response = clientSocket.receiveResponse();
+
         if (response instanceof RegisterResponse regRes) {
             return regRes;
         }
-        return null;
+
+        throw new IllegalStateException(
+                "Invalid server response: "
+                        + (response == null
+                        ? "null"
+                        : response.getClass().getSimpleName())
+        );
     }
 
     /**
@@ -42,12 +50,20 @@ public class AuthService {
         clientSocket.connect();
 
         LoginRequest request = new LoginRequest(username, password);
+
         clientSocket.sendRequest(request);
 
         Object response = clientSocket.receiveResponse();
+
         if (response instanceof LoginResponse loginRes) {
             return loginRes;
         }
-        return null;
+
+        throw new IllegalStateException(
+                "Invalid server response: "
+                        + (response == null
+                        ? "null"
+                        : response.getClass().getSimpleName())
+        );
     }
 }

@@ -98,14 +98,24 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
     private void sendUnwatchRequest(String sessionId) {
         Task<Void> task = new Task<>() {
-            @Override protected Void call() throws Exception {
-                socket.sendRequest(new UnwatchSessionRequest(sessionId));
-                socket.receiveResponse(); // đọc SessionWatchResponse (bỏ đi)
+            @Override
+            protected Void call() {
+                try {
+                    socket.sendRequest(new UnwatchSessionRequest(sessionId));
+                    // đọc response trả về
+                    socket.receiveResponse();
+                } catch (Exception e) {
+                    System.err.println("[AuctionDetail] Unwatch failed: " + e.getMessage());
+                    e.printStackTrace();
+                }
                 return null;
             }
         };
+
         Thread t = new Thread(task);
+
         t.setDaemon(true);
+
         t.start();
     }
 

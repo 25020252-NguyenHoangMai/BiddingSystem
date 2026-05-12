@@ -23,8 +23,8 @@ public class ProductService {
     }
 
     public List<ItemDTO> getAllProducts() {
+        ClientSocket socket = ClientSocket.getInstance();
         try {
-            ClientSocket socket = ClientSocket.getInstance();
             socket.connect();
 
             GetAllItemsRequest request = new GetAllItemsRequest();
@@ -33,13 +33,15 @@ public class ProductService {
             Object response = socket.receiveResponse();
 
             if (response instanceof GetAllItemsResponse itemResponse) {
-                if (itemResponse.isSuccess()) {
-                    // Trả về danh sách nếu thành công (không null)
-                    return itemResponse.getItems() != null ? itemResponse.getItems() : new ArrayList<>();
-                } else {
-                    // Quăng lỗi với message từ Server
+                if (!itemResponse.isSuccess()) {
                     throw new RuntimeException(itemResponse.getMessage());
                 }
+
+                List<ItemDTO> items = itemResponse.getItems();
+
+                return items != null
+                        ? items
+                        : new ArrayList<>();
             }
 
             if (response instanceof ErrorResponse err) {
@@ -50,21 +52,23 @@ public class ProductService {
                 throw new RuntimeException(res.getMessage());
             }
 
-            if (response == null) {
-                throw new RuntimeException("Server không phản hồi hoặc bị timeout");
-            }
-
-            throw new Exception("Định dạng phản hồi từ Server không đúng: " + response.getClass().getName());
+            throw new IllegalStateException("Expected GetAllItemsResponse but got: "
+                            + (response == null
+                            ? "null"
+                            : response.getClass().getSimpleName())
+            );
 
         } catch (Exception e) {
-            throw new RuntimeException("Không thể tải danh sách sản phẩm: " + e.getMessage());
+            System.err.println("[ProductService] getAllProducts failed: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Không thể tải danh sách sản phẩm: " + e.getMessage(), e);
         }
     }
 
     public ItemDTO addProduct(ItemDTO item) {
+        ClientSocket socket = ClientSocket.getInstance();
         try {
             // 1. Lấy kết nối Socket
-            ClientSocket socket = ClientSocket.getInstance();
             socket.connect();
 
             // 2. Gửi gói tin AddItemRequest chứa đối tượng item
@@ -75,22 +79,30 @@ public class ProductService {
             Object response = socket.receiveResponse();
 
             // 4. Kiểm tra xem Server trả về đúng kiểu AddItemResponse không
-            if (response instanceof AddItemResponse res) {
-                if (res.isSuccess()) {
-                    // Trả về item đã lưu (đã có ID từ Server)
-                    return res.getItemDTO();
-                } else {
-                    // Nếu Server báo lỗi (ví dụ: dữ liệu không hợp lệ), ném lỗi với message từ Server
-                    throw new RuntimeException(res.getMessage());
-                }
+            if (!(response instanceof AddItemResponse res)) {
+                throw new IllegalStateException("Expected AddItemResponse but got: "
+                                + (response == null
+                                ? "null"
+                                : response.getClass().getSimpleName())
+                );
             }
 
-            throw new Exception("Định dạng phản hồi từ Server không đúng (Expected AddItemResponse)");
+            if (!res.isSuccess()) {
+                throw new RuntimeException(res.getMessage());
+            }
+
+            ItemDTO savedItem = res.getItemDTO();
+
+            if (savedItem == null) {
+                throw new IllegalStateException("AddItemResponse itemDTO is null");
+            }
+
+            return savedItem;
 
         } catch (Exception e) {
-            // Log lỗi và ném ra RuntimeException để UI xử lý
+            System.err.println("[ProductService] addProduct failed: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Lỗi thêm sản phẩm: " + e.getMessage());
+            throw new RuntimeException("Lỗi thêm sản phẩm: " + e.getMessage(), e);
         }
     }
 }
