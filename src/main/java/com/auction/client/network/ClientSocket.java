@@ -42,6 +42,8 @@ public class ClientSocket {
 
     private final ExecutorService callbackExecutor = Executors.newCachedThreadPool();
 
+    private volatile boolean dashboardWatching = false;
+
     // Interface Observer — AuctionDetailController implement
     public interface BidUpdateListener {
         void onBidUpdate(BidUpdateResponse update);
@@ -50,6 +52,10 @@ public class ClientSocket {
     // Interface Observer — MainController implement
     public interface DashboardUpdateListener {
         void onDashboardUpdate(DashboardUpdateResponse update);
+    }
+
+    public boolean isDashboardWatching() {
+        return dashboardWatching;
     }
 
     public synchronized void connect() {
@@ -98,13 +104,11 @@ public class ClientSocket {
                     System.out.println("[ClientSocket] received from server: " + obj.getClass().getSimpleName());
 
                     if (obj instanceof BidUpdateResponse update) {
-                        // Server push realtime → gọi listener ngay trên reader thread
-                        // Listener dùng Platform.runLater nên không block
                         BidUpdateListener cb = bidUpdateListener;
                         if (cb != null) {
                             callbackExecutor.execute(() -> cb.onBidUpdate(update));
                         } else {
-                            bidUpdateQueue.offer(update); // backup nếu chưa có listener
+                            responseQueue.offer(update);
                         }
                     } else if (obj instanceof DashboardUpdateResponse dashboardUpdate) {
                         // Server push realtime dashboard → gọi listener, KHÔNG cho vào responseQueue
@@ -167,8 +171,15 @@ public class ClientSocket {
     }
 
     public DashboardWatchResponse receiveDashboardWatchResponse() throws Exception {
-        DashboardWatchResponse r = dashboardWatchQueue.poll(10, TimeUnit.SECONDS);
-        if (r == null) throw new Exception("DashboardWatch response timeout");
+        DashboardWatchResponse r = dashboardWatchQueue.poll(30, TimeUnit.SECONDS);
+        if (r == null) {
+            throw new Exception("DashboardWatch response timeout");
+        }
+
+        dashboardWatching = r.isSuccess();
+
+        System.out.println("[ClientSocket] dashboardWatching = " + dashboardWatching);
+
         return r;
     }
 
@@ -214,6 +225,7 @@ public class ClientSocket {
         responseQueue.clear();
         bidUpdateQueue.clear();
         dashboardWatchQueue.clear();
+        dashboardWatching = false;
         bidUpdateListener = null;
         dashboardUpdateListener = null;
     }

@@ -81,16 +81,39 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     // ===== OBSERVER: WATCH / UNWATCH =====
     private void sendWatchRequest(String sessionId) {
         Task<Void> task = new Task<>() {
-            @Override protected Void call() throws Exception {
+            @Override
+            protected Void call() throws Exception {
                 socket.connect();
+
                 socket.sendRequest(new WatchSessionRequest(sessionId));
-                // Response là BidUpdateResponse với trạng thái hiện tại —
-                // reader thread tự route vào onBidUpdate() luôn
+
+                // Nhận current state
+                Object raw = socket.receiveResponse();
+
+                if (raw instanceof BidUpdateResponse update) {
+                    Platform.runLater(() -> {
+                        currentItem.setCurrentPrice(update.getCurrentPrice());
+                        currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
+                        currentItem.setSessionStatus(update.getStatus());
+
+                        refreshBidState(update.getCurrentPrice(), update.getCurrentWinnerUsername(), update.getStatus());
+
+                        updateBidHint(update.getCurrentPrice());
+
+                        if (update.getEndTimeMillis() != null) {
+                            currentItem.setEndTimeMillis(update.getEndTimeMillis());
+
+                            startCountdown(update.getEndTimeMillis());
+                        }
+                    });
+                }
                 return null;
             }
         };
+
         task.setOnFailed(e ->
                 System.out.println("[AuctionDetail] Watch failed: " + task.getException().getMessage()));
+
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();

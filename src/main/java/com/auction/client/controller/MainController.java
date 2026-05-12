@@ -91,7 +91,11 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
         // Gửi WatchDashboardRequest VÀ tải danh sách sản phẩm tuần tự trên 1 thread
         // để tránh race condition: WatchDashboardResponse bị lấy nhầm bởi getAllProducts()
-        sendWatchThenLoad();
+        if (!clientSocket.isDashboardWatching()) {
+            sendWatchThenLoad();
+        } else {
+            loadProductsAsync();
+        }
     }
 
     // ===== Gửi WatchDashboardRequest, chờ xác nhận, rồi mới tải sản phẩm =====
