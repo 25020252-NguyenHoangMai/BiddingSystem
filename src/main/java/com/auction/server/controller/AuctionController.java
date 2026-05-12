@@ -48,6 +48,9 @@ public class AuctionController {
         if (request instanceof PlaceBidRequest placeBidRequest) {
             return biddingController.placeBid(placeBidRequest);
         }
+        if (request instanceof SetAutoBidRequest setAutoBidRequest) {
+            return biddingController.setAutoBid(setAutoBidRequest);
+        }
 
         if (request instanceof WatchSessionRequest watchSessionRequest) {
             return realTimeController.watchSession(watchSessionRequest, observer);

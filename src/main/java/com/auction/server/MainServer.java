@@ -30,15 +30,17 @@ public class    MainServer {
         BidTransactionExecutor bidTransactionExecutor = new BidTransactionExecutor(bidDAO, sessionDAO, userDAO,
                                                     bidValidationService, bidReservationCalculator);
 
-        AutoBiddingService autoBiddingService = new AutoBiddingService();
         AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO);
+        AutoBiddingService autoBiddingService = new AutoBiddingService(bidValidationService, sessionService,
+                                                    bidIncrementService, bidTransactionExecutor, userService);
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
                                             bidValidationService, bidTransactionExecutor);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry);
-        BiddingController biddingController = new BiddingController(biddingService, sessionService, sessionWatchRegistry);
+        BiddingController biddingController = new BiddingController(biddingService, sessionService,
+                                                sessionWatchRegistry, autoBiddingService);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
                                                 sessionService, userService);
 
