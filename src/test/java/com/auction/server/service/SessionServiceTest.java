@@ -44,7 +44,6 @@ public class SessionServiceTest {
         sessionService = new SessionService(sessionDAO);
         now = LocalDateTime.now(); //lấy mốc time chuẩn cho mỗi test
 
-        // Setup mock cho Item
         when(mockItem.getId()).thenReturn("ITEM_1");
 
         // Mock DatabaseManager cho method updateCurrentBid
@@ -63,13 +62,14 @@ public class SessionServiceTest {
 
     @Nested
     class ConstructorTests {
+
         @Test
-        void constructor_shouldCreateSuccessfully_whenSessionDAONotNull() {
+        void SessionDAONotNull_Success() {
             assertDoesNotThrow(() -> new SessionService(sessionDAO));
         }
 
         @Test
-        void constructor_shouldThrowIllegalArgumentException_whenSessionDAONull() {
+        void SessionDAONull_ThrowIllegalArgumentException() {
             IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new SessionService(null));
             assertEquals("sessionDAO cannot be null", e.getMessage());
         }
@@ -80,8 +80,9 @@ public class SessionServiceTest {
 
     @Nested
     class CreateSessionTests {
+
         @Test
-        void createSession_shouldCreateSuccessfully() {
+        void Success() {
             LocalDateTime start = now.plusDays(1);
             LocalDateTime end = now.plusDays(2);
             when(sessionDAO.existsActiveSessionByItemId("ITEM_1")).thenReturn(false);
@@ -95,24 +96,24 @@ public class SessionServiceTest {
         }
 
         @Test
-        void createSession_shouldThrowException_whenItemNull() {
+        void ItemNull_ThrowException() {
             assertThrows(IllegalArgumentException.class, () -> sessionService.createSession(null, now, now.plusDays(1)));
         }
 
         @Test
-        void createSession_shouldThrowException_whenItemIdNullOrBlank() {
+        void ItemIdNullOrBlank_ThrowException() {
             Item badItem = mock(Item.class);
             when(badItem.getId()).thenReturn("");
             assertThrows(IllegalArgumentException.class, () -> sessionService.createSession(badItem, now, now.plusDays(1)));
         }
 
         @Test
-        void createSession_shouldThrowException_whenEndBeforeStart() {
+        void EndBeforeStart_ThrowException() {
             assertThrows(IllegalArgumentException.class, () -> sessionService.createSession(mockItem, now.plusDays(2), now.plusDays(1)));
         }
 
         @Test
-        void createSession_shouldThrowException_whenActiveSessionExists() {
+        void ActiveSessionExists_ThrowException() {
             when(sessionDAO.existsActiveSessionByItemId("ITEM_1")).thenReturn(true);
             IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> sessionService.createSession(mockItem, now, now.plusDays(1)));
             assertEquals("This item already has an OPEN or RUNNING auction session", e.getMessage());
@@ -120,12 +121,15 @@ public class SessionServiceTest {
     }
 
 
-    //TEST GET RUNNING SESSIONS & AUTO STATE TRANSITIONS
+    //TEST GET RUNNING SESSIONS & AUTO STATE TRANSITIONS(chuyển đổi trạng thái tự động)
+    //trandition: chuyển đổi
+    //state: trạng thái
 
     @Nested
     class GetRunningSessionsAndAutoTransitionsTests {
+
         @Test
-        void getRunningSessions_shouldAutoStartOpenSession_whenTimeReached() {
+        void TimeReached_AutoStartOpenSession() {
             // OPEN nhưng đã đến giờ start -> Phải tự chuyển thành RUNNING
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(10), now.plusHours(1));
             session.setStatus(SessionService.STATUS_OPEN);
@@ -140,8 +144,8 @@ public class SessionServiceTest {
         }
 
         @Test
-        void getRunningSessions_shouldAutoFinishExpiredRunningSession() {
-            // RUNNING nhưng đã quá giờ end -> Phải tự chuyển thành FINISHED
+        void AutoFinishExpiredRunningSession() {//Expire:hết hạn
+
             AuctionSession session = new AuctionSession("S2", mockItem, now.minusHours(2), now.minusMinutes(1));
             session.setStatus(SessionService.STATUS_RUNNING);
 
@@ -159,9 +163,10 @@ public class SessionServiceTest {
     //TEST START / FINISH SESSION
 
     @Nested
-    class StartFinishSessionTests {
+    class StartSessionTests {
+
         @Test
-        void startSession_shouldStartSuccessfully_whenOpen() {
+        void OPEN_StartSuccessfully() {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(5), now.plusHours(1));
             session.setStatus(SessionService.STATUS_OPEN);
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
@@ -173,16 +178,21 @@ public class SessionServiceTest {
         }
 
         @Test
-        void startSession_shouldThrowException_whenBeforeStartTime() {
+        void BeforeStartTime_ThrowException() {
             AuctionSession session = new AuctionSession("S1", mockItem, now.plusHours(1), now.plusHours(2));
             session.setStatus(SessionService.STATUS_OPEN);
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
             assertThrows(IllegalStateException.class, () -> sessionService.startSession("S1"));
         }
+    }
+
+
+    @Nested
+    class FinishSessionTests{
 
         @Test
-        void finishSession_shouldFinishSuccessfully() {
+        void Success() {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
@@ -193,7 +203,7 @@ public class SessionServiceTest {
         }
 
         @Test
-        void finishSession_shouldThrowException_whenAlreadyPaid() {
+        void AlreadyPaid_ThrowException() {
             AuctionSession session = new AuctionSession("S1", mockItem, now, now.plusHours(1));
             session.setStatus(SessionService.STATUS_PAID); // Terminal state
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
@@ -207,8 +217,9 @@ public class SessionServiceTest {
 
     @Nested
     class ExtendSessionTests {
+
         @Test
-        void extendSession_shouldExtendSuccessfully_AndSupportAntiSniping() {
+        void ExtendSuccessfully_AndSupportAntiSniping() {
             LocalDateTime endTime = now.plusMinutes(5);
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), endTime);
             session.setStatus(SessionService.STATUS_RUNNING);
@@ -222,7 +233,7 @@ public class SessionServiceTest {
         }
 
         @Test
-        void extendSession_shouldThrowException_whenExtraTimeNegative() {
+        void ExtraTimeNegative_ThrowException() {
             AuctionSession session = new AuctionSession("S1", mockItem, now, now.plusHours(1));
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
@@ -236,8 +247,9 @@ public class SessionServiceTest {
 
     @Nested
     class UpdateCurrentBidTests {
+
         @Test
-        void updateCurrentBid_shouldUpdateSuccessfully() throws SQLException {
+        void Success() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(100.0);
@@ -253,7 +265,7 @@ public class SessionServiceTest {
         }
 
         @Test
-        void updateCurrentBid_shouldReturnFalse_whenBidTooLow() {
+        void BidTooLow_ReturnFalse() {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(500.0); //giá hiện tại 500
@@ -267,7 +279,7 @@ public class SessionServiceTest {
 
 
         @Test
-        void updateCurrentBid_shouldReturnFalse_whenSQLExceptionOccurs() throws SQLException {
+        void whenSQLExceptionOccurs_ReturnFalse() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(100.0);
@@ -282,19 +294,19 @@ public class SessionServiceTest {
         }
 
 
-        //TEST CONCURRENCY & LIFECYCLE
+        //TEST sự đồng thời và vòng đời
 
         @Nested
-        class AdvancedArchitectureTests {
+        class AdvancedArchitectureTests { //AdvancedArchitecture: kiến trúc nâng cao
 
             @Test
-            void session_shouldFollowCorrectLifecycle() {
-                //khởi tạo OPEN
+            void session_shouldFollowCorrectLifecycle() { //phiên lm vc tuân theo đúng vòng đời
+                //OPEN
                 AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(1), now.plusMinutes(1));
                 session.setStatus(SessionService.STATUS_OPEN);
                 when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-                // Trigger chuyển sang RUNNING
+                //RUNNING
                 sessionService.refreshSessionStatus("S1");
                 assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
 
