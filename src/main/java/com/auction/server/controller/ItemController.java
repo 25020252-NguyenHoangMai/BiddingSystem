@@ -97,10 +97,10 @@ public class ItemController {
                             true,
                             "Item added",
                             DashboardUpdateType.ITEM_ADDED,
-                            createdItem
+                            fullDTO
                     )
             );
-            return new AddItemResponse(true, "Add item successfully", createdItem);
+            return new AddItemResponse(true, "Add item successfully", fullDTO);
 
         } catch (Exception e) {
             e.printStackTrace();

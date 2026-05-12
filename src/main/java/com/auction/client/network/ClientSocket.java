@@ -2,6 +2,7 @@ package com.auction.client.network;
 
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.DashboardUpdateResponse;
+import com.auction.response.DashboardWatchResponse;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -101,8 +102,14 @@ public class ClientSocket {
                         } else {
                             bidUpdateQueue.offer(update); // backup nếu chưa có listener
                         }
-                    } else if (obj instanceof DashboardUpdateResponse) {
-                        // Không cho vào responseQueue tránh bị thread khác lấy nhầm
+                    } else if (obj instanceof DashboardUpdateResponse dashboardUpdate) {
+                        // Server push realtime dashboard → gọi listener, KHÔNG cho vào responseQueue
+                        DashboardUpdateListener dcb = dashboardUpdateListener;
+                        if (dcb != null) {
+                            dcb.onDashboardUpdate(dashboardUpdate);
+                        }
+                    } else if (obj instanceof DashboardWatchResponse) {
+                        // KHÔNG cho vào responseQueue để tránh bị lấy nhầm bởi request khác
                     } else {
                         // Response bình thường → bỏ vào queue, AuctionService lấy ra
                         responseQueue.offer(obj);

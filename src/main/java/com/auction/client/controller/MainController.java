@@ -75,9 +75,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         // Cập nhật User Info
         setupUserInfo();
 
-        // Tải dữ liệu
-        loadProductsAsync();
-
         // Chuyển màn hình Main sang màn hình đấu giá
         setupRowClickToDetail();
 
@@ -90,19 +87,36 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
         // Đăng ký lắng nghe realtime update từ server
         clientSocket.setDashboardUpdateListener(this);
-        sendWatchDashboardRequest();
+
+        // Gửi WatchDashboardRequest VÀ tải danh sách sản phẩm tuần tự trên 1 thread
+        // để tránh race condition: WatchDashboardResponse bị lấy nhầm bởi getAllProducts()
+        sendWatchThenLoad();
     }
 
-    // ===== Gửi request đăng ký dashboard watch =====
-    private void sendWatchDashboardRequest() {
-        Task<Void> task = new Task<>() {
+    // ===== Gửi WatchDashboardRequest, chờ xác nhận, rồi mới tải sản phẩm =====
+    private void sendWatchThenLoad() {
+        Task<java.util.List<ItemDTO>> task = new Task<>() {
             @Override
-            protected Void call() throws Exception {
+            protected java.util.List<ItemDTO> call() throws Exception {
+                // Kết nối và gửi WatchDashboardRequest
                 clientSocket.connect();
                 clientSocket.sendRequest(new WatchDashboardRequest());
-                return null;
+                // Đợi reader thread nhận và lọc WatchDashboardResponse
+                Thread.sleep(150);
+                // Gửi GetAllItemsRequest trên cùng thread (không bị race condition)
+                return productService.getAllProducts();
             }
         };
+
+        task.setOnSucceeded(e -> {
+            auctionList.setAll(task.getValue());
+            if (task.getValue().isEmpty()) {
+                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào đang đấu giá"));
+            }
+        });
+
+        task.setOnFailed(e -> showError("Lỗi tải dữ liệu: " + task.getException().getMessage()));
+
         Thread t = new Thread(task);
         t.setDaemon(true);
         t.start();
