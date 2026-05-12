@@ -23,6 +23,20 @@ public class DatabaseManager {
         dataSource = new HikariDataSource(config);
     }
 
+    // Constructor để inject DataSource (dùng cho test)
+    private DatabaseManager(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    // Phương thức cho test set instance với DB giả
+    public static void setTestInstance(DataSource dataSource) {
+        instance = new DatabaseManager(dataSource);
+    }
+
+    public static void resetInstance() {
+        instance = null;
+    }
+
     public static DatabaseManager getInstance() {
         if (instance == null) {
             synchronized (DatabaseManager.class) {
