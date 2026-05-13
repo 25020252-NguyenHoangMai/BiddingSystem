@@ -34,24 +34,18 @@ public class BiddingController {
     public PlaceBidResponse placeBid(PlaceBidRequest request) {
         try {
             if (request.getSessionId() == null || request.getSessionId().isBlank()) {
-                //return new PlaceBidResponse(false, "SessionId is required!", null,
-                        //null, null, null, null);
-                return new PlaceBidResponse(false, "SessionId is required!", "",
-                        0.0, "", "", "");
+                return new PlaceBidResponse(false, "SessionId is required!", null,
+                        null, null, null, null);
             }
 
             if (request.getBidderId() == null || request.getBidderId().isBlank()) {
-                //return new PlaceBidResponse(false, "BidderId is required!", null,
-                        //null, null, null, null);
-                return new PlaceBidResponse(false, "BidderId is required!", "",
-                        0.0, "", "", "");
+                return new PlaceBidResponse(false, "BidderId is required!", null,
+                        null, null, null, null);
             }
 
             if (request.getAmount() <= 0) {
-                //return new PlaceBidResponse(false, "Bid amount must be positive!", null,
-                        //null, null, null, null);
-                return new PlaceBidResponse(false, "Bid amount must be positive!", "",
-                        0.0, "", "", "");
+                return new PlaceBidResponse(false, "Bid amount must be positive!", null,
+                        null, null, null, null);
             }
 
             BidResult result = biddingService.placeBid(request.getSessionId(), request.getBidderId(),
@@ -87,29 +81,16 @@ public class BiddingController {
                     //result.getCurrentWinnerUsername(), result.getStatus());
 
         } catch (InsufficientBalanceException e) {
-            //return new PlaceBidResponse(false, e.getMessage(),
-                    //request.getSessionId(), null, null, null, null);
             return new PlaceBidResponse(false, e.getMessage(),
-                    request.getSessionId(), 0.0, "", "", "");
-
+                    request.getSessionId(), null, null, null, null);
         } catch (InvalidBidException | IllegalArgumentException e) {
-            //return new PlaceBidResponse(false, e.getMessage(),
-                    //request.getSessionId(), null, null, null, null);
             return new PlaceBidResponse(false, e.getMessage(),
-                    request.getSessionId(), 0.0, "", "", "");
-
+                    request.getSessionId(), null, null, null, null);
         } catch (Exception e) {
             System.out.println("=== PLACE BID ERROR ===");
             e.printStackTrace();
-            //return new PlaceBidResponse(false, "Bid failed: unexpected server error!", null,
-                    //null, null, null, null);
-            return new PlaceBidResponse(false,
-                    e.getClass().getSimpleName() + ": " + e.getMessage(),
-                    "",
-                    0.0,
-                    "",
-                    "",
-                    "");
+            return new PlaceBidResponse(false, "Bid failed: unexpected server error!", null,
+                    null, null, null, null);
         }
     }
 
