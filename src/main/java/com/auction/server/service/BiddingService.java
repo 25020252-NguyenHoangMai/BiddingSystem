@@ -41,6 +41,17 @@ public class BiddingService { // Xử lí đặt giá
         bidValidationService.requireBidder(bidderId);
         sessionService.refreshSessionStatus(sessionId);
 
+        AuctionSession session = sessionService.getSession(sessionId);
+        if (session == null) {
+            throw new IllegalArgumentException("AuctionSession not found:" + sessionId);
+        }
+
+        if (bidderId.equals(session.getCurrentWinnerId())) {
+            return new BidResult(false, "Current winner cannot bid again", session.getId(),
+                    session.getCurrentPrice(), session.getCurrentWinnerId(),
+                    resolveWinnerUsername(session.getCurrentWinnerId()), session.getStatus());
+        }
+
         BidExecutionResult executionResult = bidTransactionExecutor.execute(sessionId, bidderId, bidAmount);
 
         if (!executionResult.isSuccess()) {
