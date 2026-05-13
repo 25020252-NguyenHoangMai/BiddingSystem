@@ -16,7 +16,7 @@ public class ItemFactoryRegistry {
 
     public static void initializeDefaultFactories() {
         registerFactory("VEHICLE", new VehicleFactory());
-        registerFactory("ELECTRONICS", new ElectronicsFactory());  // Đổi tên từ ElectronicFactory
+        registerFactory("ELECTRONICS", new ElectronicsFactory());
         registerFactory("ART", new ArtFactory());
     }
 }
