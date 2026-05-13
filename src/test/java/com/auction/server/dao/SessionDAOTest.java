@@ -1,4 +1,4 @@
 package com.auction.server.dao;
 
-public class SessionDAOTest {
+public class SessionDAOTest extends BaseDAOTest {
 }

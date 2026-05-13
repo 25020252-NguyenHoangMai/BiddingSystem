@@ -17,8 +17,8 @@ public class DatabaseManager {
         config.setUsername(System.getenv("DB_USER"));
         config.setPassword(System.getenv("DB_PASS"));
 
-        config.setMaximumPoolSize(10);
-        config.setMinimumIdle(2);
+        config.setMaximumPoolSize(10);//max là 10 ống kết nối
+        config.setMinimumIdle(2);//2 ống luôn mở sẵn
 
         dataSource = new HikariDataSource(config);
     }
