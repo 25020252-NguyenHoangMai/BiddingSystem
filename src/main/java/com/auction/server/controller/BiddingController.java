@@ -9,10 +9,7 @@ import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
 import com.auction.response.SetAutoBidResponse;
 import com.auction.server.realtime.SessionWatchRegistry;
-import com.auction.server.service.AutoBiddingService;
-import com.auction.server.service.BiddingService;
-import com.auction.server.service.BidResult;
-import com.auction.server.service.SessionService;
+import com.auction.server.service.*;
 
 import java.time.ZoneId;
 import java.util.List;
@@ -22,30 +19,33 @@ public class BiddingController {
     private final SessionService sessionService;
     private final SessionWatchRegistry sessionWatchRegistry;
     private final AutoBiddingService autoBiddingService;
+    private final BidIncrementService bidIncrementService;
 
     public BiddingController(BiddingService biddingService, SessionService sessionService,
-                             SessionWatchRegistry sessionWatchRegistry, AutoBiddingService autoBiddingService) {
+                             SessionWatchRegistry sessionWatchRegistry, AutoBiddingService autoBiddingService,
+                             BidIncrementService bidIncrementService) {
         this.biddingService = biddingService;
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.sessionService = sessionService;
         this.autoBiddingService = autoBiddingService;
+        this.bidIncrementService = bidIncrementService;
     }
 
     public PlaceBidResponse placeBid(PlaceBidRequest request) {
         try {
             if (request.getSessionId() == null || request.getSessionId().isBlank()) {
                 return new PlaceBidResponse(false, "SessionId is required!", null,
-                        null, null, null, null);
+                        null, null, null, null, null);
             }
 
             if (request.getBidderId() == null || request.getBidderId().isBlank()) {
                 return new PlaceBidResponse(false, "BidderId is required!", null,
-                        null, null, null, null);
+                        null, null, null, null, null);
             }
 
             if (request.getAmount() <= 0) {
                 return new PlaceBidResponse(false, "Bid amount must be positive!", null,
-                        null, null, null, null);
+                        null, null, null, null, null);
             }
 
             BidResult result = biddingService.placeBid(request.getSessionId(), request.getBidderId(),
@@ -73,7 +73,8 @@ public class BiddingController {
                             result.getCurrentPrice(),
                             result.getCurrentWinnerId(),
                             result.getCurrentWinnerUsername(),
-                            result.getStatus()
+                            result.getStatus(),
+                            getMinimumNextBid(result.getCurrentPrice(), result.getStatus())
                     );
 
             //return new PlaceBidResponse(result.isSuccess(), result.getMessage(), result.getSessionId(),
@@ -81,16 +82,16 @@ public class BiddingController {
                     //result.getCurrentWinnerUsername(), result.getStatus());
 
         } catch (InsufficientBalanceException e) {
-            return new PlaceBidResponse(false, e.getMessage(),
-                    request.getSessionId(), null, null, null, null);
+            return new PlaceBidResponse(false, e.getMessage(), request.getSessionId(), null,
+                    null, null, null, null);
         } catch (InvalidBidException | IllegalArgumentException e) {
-            return new PlaceBidResponse(false, e.getMessage(),
-                    request.getSessionId(), null, null, null, null);
+            return new PlaceBidResponse(false, e.getMessage(), request.getSessionId(), null,
+                    null, null, null, null);
         } catch (Exception e) {
             System.out.println("=== PLACE BID ERROR ===");
             e.printStackTrace();
             return new PlaceBidResponse(false, "Bid failed: unexpected server error!", null,
-                    null, null, null, null);
+                    null, null, null, null, null);
         }
     }
 
@@ -106,7 +107,8 @@ public class BiddingController {
                     result.getCurrentWinnerId(),
                     result.getCurrentWinnerUsername(),
                     result.getStatus(),
-                    endTimeMillis
+                    endTimeMillis,
+                    getMinimumNextBid(result.getCurrentPrice(), result.getStatus())
             );
 
             sessionWatchRegistry.broadcastBidUpdate(result.getSessionId(), update);
@@ -184,5 +186,19 @@ public class BiddingController {
                     request.getSessionId(), request.getBidderId(), request.getMaxAmount(),
                     null, null, null, null);
         }
+    }
+
+    private Double getMinimumNextBid(Double currentPrice, String status) {
+        if (currentPrice == null) {
+            return null;
+        }
+
+        if (SessionService.STATUS_FINISHED.equals(status)
+                || SessionService.STATUS_PAID.equals(status)
+                || SessionService.STATUS_CANCELED.equals(status)) {
+            return null;
+        }
+
+        return bidIncrementService.getMinimumNextBid(currentPrice);
     }
 }

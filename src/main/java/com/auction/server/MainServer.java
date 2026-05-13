@@ -40,9 +40,9 @@ public class    MainServer {
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
-                                                sessionWatchRegistry, autoBiddingService);
+                                                sessionWatchRegistry, autoBiddingService, bidIncrementService);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
-                                                sessionService, userService);
+                                                sessionService, userService, bidIncrementService);
 
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
                                                 realTimeController);

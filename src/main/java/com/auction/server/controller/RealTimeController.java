@@ -12,6 +12,7 @@ import com.auction.server.realtime.AuctionSessionObserver;
 import com.auction.server.realtime.DashboardObserver;
 import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
+import com.auction.server.service.BidIncrementService;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
 
@@ -22,13 +23,16 @@ public class RealTimeController {
     private final DashboardWatchRegistry dashboardWatchRegistry;
     private final SessionService sessionService;
     private final UserService userService;
+    private final BidIncrementService bidIncrementService;
 
     public RealTimeController(SessionWatchRegistry sessionWatchRegistry,DashboardWatchRegistry dashboardWatchRegistry,
-                              SessionService sessionService, UserService userService) {
+                              SessionService sessionService, UserService userService,
+                              BidIncrementService bidIncrementService) {
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.dashboardWatchRegistry = dashboardWatchRegistry;
         this.sessionService = sessionService;
         this.userService = userService;
+        this.bidIncrementService = bidIncrementService;
     }
 
     public Response watchSession(WatchSessionRequest request, AuctionSessionObserver observer) {
@@ -59,7 +63,7 @@ public class RealTimeController {
 
             return new BidUpdateResponse(true, "Watching session", session.getId(),
                                         session.getCurrentPrice(), session.getCurrentWinnerId(), currentWinnerUsername,
-                                        session.getStatus(), endTimeMillis);
+                                        session.getStatus(), endTimeMillis, getMinimumNextBid(session));
         } catch (Exception e) {
             e.printStackTrace();
             return new SessionWatchResponse(false, "Watch session failed: unexpected server error");
@@ -135,5 +139,21 @@ public class RealTimeController {
             e.printStackTrace();
             return new DashboardWatchResponse(false, "Unwatch dashboard failed: unexpected server error");
         }
+    }
+
+    private Double getMinimumNextBid(AuctionSession session) {
+        if (session == null) {
+            return null;
+        }
+
+        String status = session.getStatus();
+
+        if (SessionService.STATUS_FINISHED.equals(status)
+                || SessionService.STATUS_PAID.equals(status)
+                || SessionService.STATUS_CANCELED.equals(status)) {
+            return null;
+        }
+
+        return bidIncrementService.getMinimumNextBid(session.getCurrentPrice());
     }
 }
