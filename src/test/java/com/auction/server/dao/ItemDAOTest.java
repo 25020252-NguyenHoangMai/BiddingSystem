@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class ItemDAOTest {
+public class ItemDAOTest extends BaseDAOTest {
 
     private ItemDAO itemDAO;
 
@@ -41,182 +41,196 @@ public class ItemDAOTest {
         MockitoAnnotations.openMocks(this);
         itemDAO = new ItemDAO();
 
-        //ép DatabaseManager.getInstance() trả về bản mock fake
         mockedStaticDbManager = mockStatic(DatabaseManager.class);
         mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
         when(mockDbManager.getConnection()).thenReturn(mockConn);
 
-        //mặc định mọi câu SQL đều trả về mockPs
+
         when(mockConn.prepareStatement(anyString())).thenReturn(mockPs);
     }
 
     @AfterEach
-    void tearDown() {
+    void cleanUp() {
         //pk đóng mock static sau mỗi bài test để ko ảnh hưởng bài kh
         mockedStaticDbManager.close();
     }
 
 
-    //TEST THÊM SẢN PHẨM
+    @Nested
+    class testInsertItem {//thêm sp
 
+        @Test
+        void Vehicle_Success() throws SQLException {
+            Vehicle vehicle = new Vehicle();
+            vehicle.setId("V1");
+            vehicle.setName("Xe Hơi");
+            vehicle.setStartingPrice(100.0);
+            vehicle.setModel("Sedan");
+            vehicle.setEngineType("V8");
+            vehicle.setMileage(1000);
 
-    @Test
-    void testInsertItem_Vehicle_Success() throws SQLException {
-        Vehicle vehicle = new Vehicle();
-        vehicle.setId("V1"); vehicle.setName("Xe Hơi"); vehicle.setStartingPrice(100.0);
-        vehicle.setModel("Sedan"); vehicle.setEngineType("V8"); vehicle.setMileage(1000);
+            when(mockPs.executeUpdate()).thenReturn(1);
 
-        when(mockPs.executeUpdate()).thenReturn(1);
+            assertDoesNotThrow(() -> itemDAO.insertItem(vehicle));
 
-        assertDoesNotThrow(() -> itemDAO.insertItem(vehicle));
+            verify(mockPs).setString(4, "VEHICLE");
+            verify(mockPs).setString(7, "Sedan");
+            verify(mockPs).setNull(10, java.sql.Types.NVARCHAR);
+        }
 
-        verify(mockPs).setString(4, "VEHICLE"); //kiểm tra lấy đúng class name
-        verify(mockPs).setString(7, "Sedan");
-        verify(mockPs).setNull(10, java.sql.Types.NVARCHAR); //brand bị null
-    }
+        @Test
+        void Electronics_Success() throws SQLException {
+            Electronics elec = new Electronics();
+            elec.setId("E1");
+            elec.setBrand("Samsung");
 
-    @Test
-    void testInsertItem_Electronics_Success() throws SQLException {
-        Electronics elec = new Electronics();
-        elec.setId("E1"); elec.setBrand("Samsung");
+            when(mockPs.executeUpdate()).thenReturn(1);
 
-        when(mockPs.executeUpdate()).thenReturn(1);
+            assertDoesNotThrow(() -> itemDAO.insertItem(elec));
 
-        assertDoesNotThrow(() -> itemDAO.insertItem(elec));
+            verify(mockPs).setString(4, "ELECTRONICS");
+            verify(mockPs).setNull(7, java.sql.Types.NVARCHAR); //model bị null
+            verify(mockPs).setString(10, "Samsung");
+        }
 
-        verify(mockPs).setString(4, "ELECTRONICS");
-        verify(mockPs).setNull(7, java.sql.Types.NVARCHAR); //model bị null
-        verify(mockPs).setString(10, "Samsung");
-    }
+        @Test
+        void Art_Success() throws SQLException {
+            Art art = new Art();
+            art.setId("A1");
+            art.setArtist("Picasso");
 
-    @Test
-    void testInsertItem_Art_Success() throws SQLException {
-        Art art = new Art();
-        art.setId("A1"); art.setArtist("Picasso");
+            when(mockPs.executeUpdate()).thenReturn(1);
 
-        when(mockPs.executeUpdate()).thenReturn(1);
+            assertDoesNotThrow(() -> itemDAO.insertItem(art));
 
-        assertDoesNotThrow(() -> itemDAO.insertItem(art));
+            verify(mockPs).setString(4, "ART");
+            verify(mockPs).setString(11, "Picasso");
+        }
 
-        verify(mockPs).setString(4, "ART");
-        verify(mockPs).setString(11, "Picasso");
-    }
+        @Test
+        void InvalidType_ThrowsException() {
+            //tạo 1 class nặc danh kế thừa Item để test nhánh Invalid
+            Item invalidItem = new Item() {
+                @Override
+                public String getId() {
+                    return "I1";
+                }
 
-    @Test
-    void testInsertItem_InvalidType_ThrowsException() {
-        //tạo 1 class nặc danh kế thừa Item để test nhánh Invalid
-        Item invalidItem = new Item() {
-            @Override
-            public String getId() { return "I1"; }
+                @Override
+                public String getCategoryDetails() {
+                    return "Vật phẩm Fake để test Insert";
+                }
+            };
 
-            @Override
-            public String getCategoryDetails() {
-                return "Vật phẩm Fake để test Insert";
-            }
-        };
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(invalidItem));
+            assertEquals("Invalid item type.", exception.getMessage());
+        }
 
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(invalidItem));
-        assertEquals("Invalid item type.", exception.getMessage());
-    }
+        @Test
+        void SQLException_ThrowsException() throws SQLException {
+            Vehicle vehicle = new Vehicle();
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("DB Down"));
 
-    @Test
-    void testInsertItem_SQLException_ThrowsException() throws SQLException {
-        Vehicle vehicle = new Vehicle();
-        when(mockPs.executeUpdate()).thenThrow(new SQLException("DB Down"));
-
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(vehicle));
-        assertTrue(exception.getMessage().contains("An error occurred while inserting item"));
-    }
-
-
-    //TEST CẬP NHẬT SẢN PHẨM
-
-
-    @Test
-    void testUpdateItem_Vehicle_Success() throws SQLException {
-        Vehicle vehicle = new Vehicle();
-        vehicle.setId("V1"); vehicle.setModel("SUV");
-
-        when(mockPs.executeUpdate()).thenReturn(1);
-
-        assertDoesNotThrow(() -> itemDAO.updateItem(vehicle));
-        verify(mockPs).setString(3, "VEHICLE");
-        verify(mockPs).setString(5, "SUV");
-    }
-
-    @Test
-    void testUpdateItem_Electronics_Success() throws SQLException {
-        Electronics elec = new Electronics();
-        elec.setId("E1"); elec.setBrand("Apple");
-
-        when(mockPs.executeUpdate()).thenReturn(1);
-
-        assertDoesNotThrow(() -> itemDAO.updateItem(elec));
-        verify(mockPs).setString(3, "ELECTRONICS");
-        verify(mockPs).setString(8, "Apple");
-    }
-
-    @Test
-    void testUpdateItem_Art_Success() throws SQLException {
-        Art art = new Art();
-        art.setId("A1"); art.setArtist("Van Gogh");
-
-        when(mockPs.executeUpdate()).thenReturn(1);
-
-        assertDoesNotThrow(() -> itemDAO.updateItem(art));
-        verify(mockPs).setString(3, "ART");
-        verify(mockPs).setString(9, "Van Gogh");
-    }
-
-    @Test
-    void testUpdateItem_InvalidType_ThrowsException() {
-        Item invalidItem = new Item() {
-            @Override
-            public String getCategoryDetails() {
-                return "Vật phẩm Fake để test";
-            }
-        };
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(invalidItem));
-        assertEquals("Inavlid item type.", exception.getMessage());//mai sai chính tả trong itemdao
-    }
-
-    @Test
-    void testUpdateItem_SQLException_ThrowsException() throws SQLException {
-        Art art = new Art();
-        when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi mạng"));
-
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(art));
-        assertTrue(exception.getMessage().contains("An error occurred while updating item information"));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(vehicle));
+            assertTrue(exception.getMessage().contains("An error occurred while inserting item"));
+        }
     }
 
 
-    //TEST XÓA SẢN PHẨM
 
+    @Nested
+    class testUpdateItem {
 
-    @Test
-    void testDeleteItem_Success() throws SQLException {
-        when(mockPs.executeUpdate()).thenReturn(1); //giả lập xóa thành công 1 dòng
+        @Test
+        void Vehicle_Success() throws SQLException {
+            Vehicle vehicle = new Vehicle();
+            vehicle.setId("V1");
+            vehicle.setModel("SUV");
 
-        assertDoesNotThrow(() -> itemDAO.deleteItem("ID-123"));
-        verify(mockPs).setString(1, "ID-123");
+            when(mockPs.executeUpdate()).thenReturn(1);
+
+            assertDoesNotThrow(() -> itemDAO.updateItem(vehicle));
+            verify(mockPs).setString(3, "VEHICLE");
+            verify(mockPs).setString(5, "SUV");
+        }
+
+        @Test
+        void Electronics_Success() throws SQLException {
+            Electronics elec = new Electronics();
+            elec.setId("E1");
+            elec.setBrand("Apple");
+
+            when(mockPs.executeUpdate()).thenReturn(1);
+
+            assertDoesNotThrow(() -> itemDAO.updateItem(elec));
+            verify(mockPs).setString(3, "ELECTRONICS");
+            verify(mockPs).setString(8, "Apple");
+        }
+
+        @Test
+        void Art_Success() throws SQLException {
+            Art art = new Art();
+            art.setId("A1");
+            art.setArtist("Van Gogh");
+
+            when(mockPs.executeUpdate()).thenReturn(1);
+
+            assertDoesNotThrow(() -> itemDAO.updateItem(art));
+            verify(mockPs).setString(3, "ART");
+            verify(mockPs).setString(9, "Van Gogh");
+        }
+
+        @Test
+        void InvalidType_ThrowsException() {
+            Item invalidItem = new Item() {
+                @Override
+                public String getCategoryDetails() {
+                    return "Vật phẩm Fake để test";
+                }
+            };
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(invalidItem));
+            assertEquals("Inavlid item type.", exception.getMessage());//mai sai chính tả trong itemdao
+        }
+
+        @Test
+        void SQLException_ThrowsException() throws SQLException {
+            Art art = new Art();
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi mạng"));
+
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(art));
+            assertTrue(exception.getMessage().contains("An error occurred while updating item information"));
+        }
     }
 
-    @Test
-    void testDeleteItem_NotFound_ThrowsException() throws SQLException {
-        when(mockPs.executeUpdate()).thenReturn(0); //ko tìm thấy dòng nào để xóa
 
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem("ID-404"));
-        assertEquals("The item cannot be deleted.", exception.getMessage());
+
+    @Nested
+    class testDeleteItem {
+
+        @Test
+        void Success() throws SQLException {
+            when(mockPs.executeUpdate()).thenReturn(1); //giả lập xóa thành công 1 dòng
+
+            assertDoesNotThrow(() -> itemDAO.deleteItem("ID-123"));
+            verify(mockPs).setString(1, "ID-123");
+        }
+
+        @Test
+        void NotFound_ThrowsException() throws SQLException {
+            when(mockPs.executeUpdate()).thenReturn(0); //ko tìm thấy dòng nào để xóa
+
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem("ID-404"));
+            assertEquals("The item cannot be deleted.", exception.getMessage());
+        }
+
+        @Test
+        void SQLException_ThrowsException() throws SQLException {
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi xóa"));
+
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem("ID-123"));
+            assertTrue(exception.getMessage().contains("An error occurred while deleting item"));
+        }
     }
-
-    @Test
-    void testDeleteItem_SQLException_ThrowsException() throws SQLException {
-        when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi xóa"));
-
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem("ID-123"));
-        assertTrue(exception.getMessage().contains("An error occurred while deleting item"));
-    }
-
 
     //TEST CÁC HÀM GET DỮ LIỆU BẰNG RESULTSET, BAO GỒM MAP TO DTO
 
@@ -240,25 +254,31 @@ public class ItemDAOTest {
         assertEquals("ITEM-1", list.get(0).getId());
     }
 
-    @Test
-    void testGetItemById_Found_ReturnsDTO() throws SQLException {
-        when(mockPs.executeQuery()).thenReturn(mockRs);
-        when(mockRs.next()).thenReturn(true);
-        setupMockResultSet();
 
-        ItemDTO result = itemDAO.getItemById("ITEM-1");
-        assertNotNull(result);
-        assertEquals("Tivi Sony", result.getName());
+    @Nested
+    class testGetItemById {
+
+        @Test
+        void Found_ReturnsDTO() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(true);
+            setupMockResultSet();
+
+            ItemDTO result = itemDAO.getItemById("ITEM-1");
+            assertNotNull(result);
+            assertEquals("Tivi Sony", result.getName());
+        }
+
+        @Test
+        void NotFound_ReturnsNull() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(false); //bảng trống
+
+            ItemDTO result = itemDAO.getItemById("GHOST-ITEM");
+            assertNull(result);
+        }
     }
 
-    @Test
-    void testGetItemById_NotFound_ReturnsNull() throws SQLException {
-        when(mockPs.executeQuery()).thenReturn(mockRs);
-        when(mockRs.next()).thenReturn(false); //bảng trống
-
-        ItemDTO result = itemDAO.getItemById("GHOST-ITEM");
-        assertNull(result);
-    }
 
     @Test
     void testGetItemByName_ReturnsList() throws SQLException {
@@ -316,7 +336,7 @@ public class ItemDAOTest {
         assertEquals("Toyota", result.getBrand());
         assertEquals("Da Vinci", result.getArtist());
 
-        //Verify đã gọi đúng hàm prepareStatement và executeQuery
+
         verify(mockConn).prepareStatement(anyString());
         verify(mockPs).executeQuery();
     }
@@ -325,12 +345,12 @@ public class ItemDAOTest {
     @Test
     void testGetItemByName_EmptyResultSet_ReturnsEmptyList() throws SQLException {
         when(mockPs.executeQuery()).thenReturn(mockRs);
-        when(mockRs.next()).thenReturn(false); // DB trống
+        when(mockRs.next()).thenReturn(false);
 
         List<ItemDTO> list = itemDAO.getItemByName("Sản phẩm ma");
 
         assertTrue(list.isEmpty(), "Nếu DB không có, phải trả về List rỗng, không được null!");
-        verify(mockPs).executeQuery(); //xác nhận đã chạy lệnh query
+        verify(mockPs).executeQuery();
     }
 
     @Test
@@ -344,7 +364,7 @@ public class ItemDAOTest {
 
     @Test
     void testGetAllItems_ThrowsSQLException() throws SQLException {
-        //giả lập DB bị sập đúng lúc đang lấy ds
+
         when(mockConn.prepareStatement(anyString())).thenThrow(new SQLException("Database Connection Lost"));
 
         AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getAllItems());
@@ -362,7 +382,7 @@ public class ItemDAOTest {
 
     @Test
     void testTryWithResources_ClosesConnectionsAutomatically() throws SQLException {
-        //cài đặt một luồng thành công đơn giản
+
         when(mockPs.executeQuery()).thenReturn(mockRs);
         when(mockRs.next()).thenReturn(false);
 
