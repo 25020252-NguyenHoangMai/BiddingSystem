@@ -4,16 +4,23 @@ public class Vehicle extends Item {
 
     private static final long serialVersionUID = 1L;
 
-    private String model;      // Dòng xe (ví dụ: Civic, Vios)
-    private String engineType; // Loại động cơ (Xăng, Điện)
+    private String brand;      // Hãng xe
+    private String model;      // Dòng xe
+    private String engineType; // Loại động cơ
     private int mileage;       // Số km đã đi
 
     public Vehicle() {
         super();
     }
 
-    public Vehicle(String id, String name, String description, String sellerID, double startingPrice, String model, String engineType, int mileage) {
-        super(id, name, description, "VEHICLE", sellerID, startingPrice);
+    public Vehicle(String id, String name, String description, String sellerId, double startingPrice,
+                   String brand, String model, String engineType, int mileage) {
+
+
+        super(id, name, description, "VEHICLE", sellerId, startingPrice);
+
+
+        this.brand = brand;
         this.model = model;
         this.engineType = engineType;
         this.mileage = mileage;
@@ -21,30 +28,19 @@ public class Vehicle extends Item {
 
     @Override
     public String getCategoryDetails() {
-        return "Phương tiện - Dòng xe: " + model + ", Động cơ: " + engineType + ", ODO: " + mileage + "km";
+        return "Phương tiện - Hãng: " + brand + ", Dòng xe: " + model + ", Động cơ: " + engineType + ", ODO: " + mileage + "km";
     }
 
-    public String getModel() {
-        return model;
-    }
 
-    public void setModel(String model) {
-        this.model = model;
-    }
+    public String getBrand() { return brand; }
+    public void setBrand(String brand) { this.brand = brand; }
 
-    public String getEngineType() {
-        return engineType;
-    }
+    public String getModel() { return model; }
+    public void setModel(String model) { this.model = model; }
 
-    public void setEngineType(String engineType) {
-        this.engineType = engineType;
-    }
+    public String getEngineType() { return engineType; }
+    public void setEngineType(String engineType) { this.engineType = engineType; }
 
-    public int getMileage() {
-        return mileage;
-    }
-
-    public void setMileage(int mileage) {
-        this.mileage = mileage;
-    }
+    public int getMileage() { return mileage; }
+    public void setMileage(int mileage) { this.mileage = mileage; }
 }

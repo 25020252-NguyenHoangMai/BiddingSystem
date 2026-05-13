@@ -5,9 +5,19 @@ import com.auction.model.Vehicle;
 import com.auction.model.Item;
 
 public class VehicleFactory implements ItemFactory {
+
     @Override
     public Item createItem(ItemDTO dto) {
-        return new Vehicle (dto.getId(), dto.getName(), dto.getSellerId(),
-                dto.getBrand(), dto.getEngineType(), dto.getMileage());
+        return new Vehicle (
+                dto.getId(),
+                dto.getName(),
+                dto.getDescription(),
+                dto.getSellerId(),
+                dto.getStartingPrice(),
+                dto.getBrand(),
+                dto.getModel(),
+                dto.getEngineType(),
+                dto.getMileage()
+        );
     }
 }
