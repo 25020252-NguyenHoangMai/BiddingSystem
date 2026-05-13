@@ -4,7 +4,7 @@ import com.auction.dto.ItemDTO;
 import com.auction.model.Electronics;
 import com.auction.model.Item;
 
-public class ElectronicFactory implements ItemFactory {
+public class ElectronicsFactory implements ItemFactory {
     @Override
     public Item createItem(ItemDTO dto) {
         return new Electronics(
