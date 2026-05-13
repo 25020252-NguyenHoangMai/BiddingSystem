@@ -33,7 +33,7 @@ public class DatabaseManagerTest {
     }
 
     @AfterEach
-    void tearDown() {
+    void resetState() {
 
         DatabaseManager.resetInstance();
     }
