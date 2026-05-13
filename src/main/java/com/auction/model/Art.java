@@ -8,10 +8,16 @@ public class Art extends Item {
 
     public Art(){}
 
+    public Art(String id, String name, String sellerId, String artist) {
+        super(id, name, sellerId);
+        this.artist = artist;
+    }
+
     public Art(String id, String name, String description, String sellerID, double startingPrice, String artist) {
         super(id, name, description, "ART", sellerID, startingPrice);
         this.artist = artist;
     }
+
 
     @Override
     public String getCategoryDetails() {
