@@ -50,4 +50,10 @@ public class DatabaseManager {
     public Connection getConnection() throws SQLException {
         return dataSource.getConnection();
     }
+    public void close() {
+        if (dataSource instanceof HikariDataSource) {
+            ((HikariDataSource) dataSource).close();
+            System.out.println("Hikari Connection Pool has been closed.");
+        }
+    }
 }
