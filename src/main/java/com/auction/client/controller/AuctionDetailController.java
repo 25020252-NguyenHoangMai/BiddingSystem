@@ -361,16 +361,16 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                 updateBidHint(res.getCurrentPrice());
                 updateBalanceLabel();
                 txtBidAmount.clear();
-                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã đặt giá!");
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
             } else {
-                showAlert(Alert.AlertType.ERROR, "Thất bại", res.getMessage());
+                showAlert(Alert.AlertType.ERROR, "Fail", res.getMessage());
             }
         });
 
         // 3. Xử lý khi lỗi (Tự động chạy trên UI Thread)
         bidTask.setOnFailed(e -> {
             resetBidButton();
-            showAlert(Alert.AlertType.ERROR, "Lỗi kết nối", bidTask.getException().getMessage());
+            showAlert(Alert.AlertType.ERROR, "Connection Error", bidTask.getException().getMessage());
         });
 
         // Chạy task
