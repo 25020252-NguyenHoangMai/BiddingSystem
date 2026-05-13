@@ -1,7 +1,7 @@
 package com.auction.server.service;
 
 public class BidIncrementService {
-    private static final double MIN_INCREMENT = 5_000;
+    private static final double MIN_INCREMENT = 1.0;
     private static final double INCREMENT_RATE = 0.01;
 
     public double getIncrement(double currentPrice) {
