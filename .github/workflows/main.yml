@@ -10,6 +10,15 @@ jobs:
   build:
     runs-on: ubuntu-latest # GitHub sẽ cho bạn mượn 1 máy ảo Ubuntu
 
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          SA_PASSWORD: ${{ secrets.DB_PASS }}
+          ACCEPT_EULA: Y
+        ports:
+          - 1433:1433
+
     steps:
       - name: Bước 1 - Lấy code về máy ảo
         uses: actions/checkout@v4
@@ -21,15 +30,41 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Bước 3 - Build và chạy Unit Test
+      - name: Bước 3 - Đợi SQL Server khởi động
+        run: sleep 30
+
+      - name: Bước 4 - Tạo database
+        run: |
+          docker exec ${{ job.services.sqlserver.id }} \
+          /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost \
+          -U sa \
+          -P "${{ secrets.DB_PASS }}" \
+          -C \
+          -Q "CREATE DATABASE BiddingSystem"   
+
+      - name: Bước 5 - Import schema
+        run: |
+          docker cp database/init.sql $(docker ps -q --filter ancestor=mcr.microsoft.com/mssql/server:2022-latest):/init.sql
+      
+          docker exec $(docker ps -q --filter ancestor=mcr.microsoft.com/mssql/server:2022-latest) \
+          /opt/mssql-tools18/bin/sqlcmd \
+          -S localhost \
+          -U sa \
+          -P "${{ secrets.DB_PASS }}" \
+          -d BiddingSystem \
+          -C \
+          -i /init.sql    
+
+      - name: Bước 6 - Build và chạy Unit Test
         # Lệnh này tương đương với việc bạn bấm 'Clean' và 'Install' trong Maven
         run: mvn clean install
         env:
-          DB_URL: ${{ secrets.DB_URL }}
-          DB_USER: ${{ secrets.DB_USER }}
+          DB_URL: jdbc:sqlserver://localhost:1433;databaseName=BiddingSystem;encrypt=true;trustServerCertificate=true
+          DB_USER: sa
           DB_PASS: ${{ secrets.DB_PASS }}
 
-      - name: Bước 4 - Lưu file .jar (Artifact)
+      - name: Bước 7 - Lưu file .jar (Artifact)
         # Bước này giúp bạn tải file .jar về sau khi build thành công
         uses: actions/upload-artifact@v4
         with:
