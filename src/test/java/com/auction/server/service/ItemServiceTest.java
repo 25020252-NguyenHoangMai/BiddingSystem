@@ -48,8 +48,6 @@ public class ItemServiceTest {
     }
 
 
-    //CONSTRUCTOR TESTS
-
     @Nested
     class ConstructorTests {
         @Test
@@ -73,8 +71,6 @@ public class ItemServiceTest {
         }
     }
 
-
-    //ADD ITEM
 
     @Nested
     class AddItemTests {
@@ -136,8 +132,6 @@ public class ItemServiceTest {
     }
 
 
-    //ADD ITEM DTO
-
     @Nested
     class AddItemDTOTests {
         @Test void itemDTONull() {
@@ -161,8 +155,6 @@ public class ItemServiceTest {
         }
     }
 
-
-    //UPDATE ITEM
 
     @Nested
     class UpdateItemTests {
@@ -267,8 +259,6 @@ public class ItemServiceTest {
     }
 
 
-    //GET ALL ITEMS
-
     @Nested
     class GetAllItemsTests {
         @Test void emptyList_ReturnsEmpty() {
@@ -287,8 +277,6 @@ public class ItemServiceTest {
         }
     }
 
-
-    //GET ALL ITEM DTOs
 
     @Nested
     class GetAllItemDTOsTests {
@@ -414,8 +402,6 @@ public class ItemServiceTest {
     }
 
 
-    //GET ITEM BY ID
-
     @Nested
     class GetItemByIdTests {
         @Test void getItemById_idNull_ThrowsException() {
@@ -441,9 +427,7 @@ public class ItemServiceTest {
         }
     }
 
-    // ==========================================
-    // 8. GET ITEM BY NAME TESTS (51-54)
-    // ==========================================
+
     @Nested
     class GetItemByNameTests {
         @Test void getItemByName_nameNullOrBlank_ThrowsException() {
@@ -466,8 +450,6 @@ public class ItemServiceTest {
     }
 
 
-    //GET ITEM BY TYPE
-
     @Nested
     class GetItemByTypeTests {
         @Test void getItemByType_typeNullOrBlank_ThrowsException() {
@@ -489,8 +471,6 @@ public class ItemServiceTest {
         }
     }
 
-
-    //REMOVE ITEM
 
     @Nested
     class RemoveItemTests {
