@@ -3,6 +3,7 @@ package com.auction.server.service;
 import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.server.dao.SessionDAO;
+import com.auction.server.dao.UserDAO;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -19,17 +20,19 @@ public class SessionService { // Quản lí phiên đấu giá
     public static final String STATUS_PAID = "PAID";
     public static final String STATUS_CANCELED = "CANCELED";
 
-    //private final ConcurrentMap<String, AuctionSession> sessions = new ConcurrentHashMap<>();
-    //key = sessionId
-    // value = AuctionSession
-    // ConcurrentHashMap: an toàn trong môi trường nhiều thread
     private final SessionDAO sessionDAO;
+    private final UserDAO userDAO;
 
-    public SessionService(SessionDAO sessionDAO) {
+    public SessionService(SessionDAO sessionDAO, UserDAO userDAO) {
         if (sessionDAO == null) {
             throw new IllegalArgumentException("sessionDAO cannot be null");
         }
+        if (userDAO == null) {
+            throw new IllegalArgumentException("userDAO cannot be null");
+        }
+
         this.sessionDAO = sessionDAO;
+        this.userDAO = userDAO;
     }
 
     public AuctionSession createSession(Item item, LocalDateTime start, LocalDateTime end) {
@@ -99,8 +102,7 @@ public class SessionService { // Quản lí phiên đấu giá
             // có thể dùng updateStatusByTime nhưng nó có thể auto đổi status trước cả startSession rồi
 
             if (!now.isBefore(session.getEndTime())) {
-                session.setStatus(STATUS_FINISHED);
-                sessionDAO.updateStatus(sessionId, STATUS_FINISHED);
+                finalizeSession(session);
                 throw new IllegalStateException("Cannot start an expired session");
             }
 
@@ -121,8 +123,7 @@ public class SessionService { // Quản lí phiên đấu giá
                 throw new IllegalStateException("Session is already closed");
             }
 
-            session.setStatus(STATUS_FINISHED);
-            sessionDAO.updateStatus(sessionId, STATUS_FINISHED);
+            finalizeSession(session);
         }
     }
 
@@ -194,8 +195,7 @@ public class SessionService { // Quản lí phiên đấu giá
 
         if ((STATUS_OPEN.equals(session.getStatus()) || STATUS_RUNNING.equals(session.getStatus()))
                 && !now.isBefore(session.getEndTime())) {
-            session.setStatus(STATUS_FINISHED);
-            sessionDAO.updateStatus(session.getId(), STATUS_FINISHED);
+            finalizeSession(session);
         }
         //status = open/=running, >= endTime => status = finished
     }
@@ -237,6 +237,23 @@ public class SessionService { // Quản lí phiên đấu giá
             e.printStackTrace();
             return false;
         }
+
+    }
+
+    private void finalizeSession(AuctionSession session) {
+        String winnerId = session.getCurrentWinnerId();
+        double finalPrice = session.getCurrentPrice();
+
+        if (winnerId != null && !winnerId.isBlank() && finalPrice > 0) {
+            userDAO.deductReservedBalance(winnerId, finalPrice);
+
+            session.setStatus(STATUS_PAID);
+            sessionDAO.updateStatus(session.getId(), STATUS_PAID);
+            return;
+        }
+
+        session.setStatus(STATUS_FINISHED);
+        sessionDAO.updateStatus(session.getId(), STATUS_FINISHED);
 
     }
 

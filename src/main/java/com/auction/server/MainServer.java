@@ -31,7 +31,7 @@ public class    MainServer {
                                                     bidValidationService, bidReservationCalculator);
 
         AntiSnipingService antiSnipingService = new AntiSnipingService();
-        SessionService sessionService = new SessionService(sessionDAO);
+        SessionService sessionService = new SessionService(sessionDAO, userDAO);
         AutoBiddingService autoBiddingService = new AutoBiddingService(bidValidationService, sessionService,
                                                     bidIncrementService, bidTransactionExecutor, userService);
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
