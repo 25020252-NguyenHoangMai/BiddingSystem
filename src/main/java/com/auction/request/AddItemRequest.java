@@ -5,10 +5,12 @@ import com.auction.dto.ItemDTO;
 public class AddItemRequest extends Request {
     private final String sellerId;
     private final ItemDTO item;
+    private final int durationHours;
 
-    public AddItemRequest(String sellerId, ItemDTO item) {
+    public AddItemRequest(String sellerId, ItemDTO item, int durationHours) {
         this.sellerId = sellerId;
         this.item = item;
+        this.durationHours = durationHours;
     }
 
     public ItemDTO getItem() {
@@ -17,5 +19,9 @@ public class AddItemRequest extends Request {
 
     public String getSellerId() {
         return sellerId;
+    }
+
+    public int getDurationHours() {
+        return  durationHours;
     }
 }

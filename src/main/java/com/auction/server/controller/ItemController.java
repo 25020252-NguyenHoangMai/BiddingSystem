@@ -59,19 +59,14 @@ public class ItemController {
             Item item = ItemFromDTOFactory.createItem(createdItem);
             LocalDateTime now = LocalDateTime.now();
 
-            long endMillis = request.getItem().getEndTimeMillis();
-            LocalDateTime endTime;
-            if (endMillis > 0) {
-                endTime = Instant.ofEpochMilli(endMillis)
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-            } else {
-                endTime = now.plusHours(24); // fallback
+            int durationHours = request.getDurationHours();
+
+            if (durationHours < 1 || durationHours > 720) {
+                return new AddItemResponse(false, "Auction duration must be between 1 and 720 hours!",
+                                    null);
             }
 
-            if (!endTime.isAfter(now.plusMinutes(1))) {
-                return new AddItemResponse(false, "Thời gian đấu giá quá ngắn hoặc đã hết hạn!", null);
-            }
+            LocalDateTime endTime = now.plusHours(durationHours);
 
             // Tạo session, giữ lại object trả về
             AuctionSession session = sessionService.createSession(item, now, endTime);
