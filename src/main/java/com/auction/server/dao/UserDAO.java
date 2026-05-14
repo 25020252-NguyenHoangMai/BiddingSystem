@@ -369,6 +369,23 @@ public class UserDAO {
         }
     }
 
+    public void updateBalance(Connection conn, String userId, double amount) {
+        String sql = "UPDATE Users SET balance = balance + ? WHERE id = ? AND role = 'SELLER'";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, amount);
+            ps.setString(2, userId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new AuctionException("User not found.");
+            }
+        }
+        catch (SQLException e) {
+            throw new AuctionException("An error occurred while adding balance: " + e.getMessage());
+        }
+    }
+
     //=============== xóa user ===============
     public void deleteUser(String userId) {
         String sql = "DELETE FROM Users WHERE id = ?";
