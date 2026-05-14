@@ -59,6 +59,8 @@ public class BiddingController {
             BidResult result = biddingService.placeBid(request.getSessionId(), request.getBidderId(),
                                                 request.getAmount());
 
+            BidResult finalResult = result;
+
             if (result.isSuccess()) {
                 broadcastBidUpdate(result);
 
@@ -70,6 +72,7 @@ public class BiddingController {
                 for (BidResult autoBidResult : autoBidResults) {
                     if (autoBidResult.isSuccess()) {
                         broadcastBidUpdate(autoBidResult);
+                        finalResult = autoBidResult;
                     }
                 }
             }
@@ -84,12 +87,12 @@ public class BiddingController {
             return new PlaceBidResponse(
                             result.isSuccess(),
                             result.getMessage(),
-                            result.getSessionId(),
-                            result.getCurrentPrice(),
-                            result.getCurrentWinnerId(),
-                            result.getCurrentWinnerUsername(),
-                            result.getStatus(),
-                            getMinimumNextBid(result.getCurrentPrice(), result.getStatus()),
+                            finalResult.getSessionId(),
+                            finalResult.getCurrentPrice(),
+                            finalResult.getCurrentWinnerId(),
+                            finalResult.getCurrentWinnerUsername(),
+                            finalResult.getStatus(),
+                            getMinimumNextBid(finalResult.getCurrentPrice(), finalResult.getStatus()),
                             updatedUser
                     );
 
@@ -171,6 +174,8 @@ public class BiddingController {
             BidResult result = autoBiddingService.setAutoBid(request.getSessionId(), request.getBidderId(),
                                                         request.getMaxAmount());
 
+            BidResult finalResult = result;
+
             if (result.isSuccess()) {
                 broadcastBidUpdate(result);
 
@@ -182,13 +187,16 @@ public class BiddingController {
                 for (BidResult autoBidResult : autoBidResults) {
                     if (autoBidResult.isSuccess()) {
                         broadcastBidUpdate(autoBidResult);
+                        finalResult = autoBidResult;
                     }
                 }
             }
 
-            return new SetAutoBidResponse(result.isSuccess(), result.getMessage(), result.getSessionId(),
-                        request.getBidderId(), request.getMaxAmount(), result.getCurrentPrice(),
-                        result.getCurrentWinnerId(), result.getCurrentWinnerUsername(), result.getStatus());
+            return new SetAutoBidResponse(result.isSuccess(), result.getMessage(), finalResult.getSessionId(),
+                        request.getBidderId(), request.getMaxAmount(), finalResult.getCurrentPrice(),
+                        finalResult.getCurrentWinnerId(), finalResult.getCurrentWinnerUsername(),
+                        finalResult.getStatus());
+
         } catch (InsufficientBalanceException e) {
             return new SetAutoBidResponse(false, e.getMessage(), request.getSessionId(), request.getBidderId(),
                     request.getMaxAmount(), null, null, null, null);
