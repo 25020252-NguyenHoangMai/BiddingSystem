@@ -6,6 +6,7 @@ import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
+import com.auction.response.SessionWatchResponse;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -73,28 +74,12 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
         ClientSocket.getInstance().setBidUpdateListener(this);
 
-        Task<BidUpdateResponse> task = new Task<>() {
+        Task<SessionWatchResponse> task = new Task<>() {
             @Override
-            protected BidUpdateResponse call() throws Exception {
+            protected SessionWatchResponse call() throws Exception {
                 return auctionService.watchSession(item.getSessionId());
             }
         };
-
-        task.setOnSucceeded(event -> {
-            BidUpdateResponse update = task.getValue();
-
-            currentItem.setCurrentPrice(update.getCurrentPrice());
-            currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
-            currentItem.setSessionStatus(update.getStatus());
-
-            refreshBidState(
-                    update.getCurrentPrice(),
-                    update.getCurrentWinnerUsername(),
-                    update.getStatus()
-            );
-
-            updateBidHint(update.getMinimumNextBid());
-        });
 
         task.setOnFailed(event -> {
             Throwable ex = task.getException();
