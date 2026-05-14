@@ -369,7 +369,7 @@ public class UserDAO {
     }
 
     public void updateBalance(Connection conn, String userId, double amount) {
-        String sql = "UPDATE Users SET balance = balance + ? WHERE id = ? AND role = 'SELLER'";
+        String sql = "UPDATE Users SET balance = balance + ? WHERE id = ? AND sellerEnabled = 1";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, amount);
