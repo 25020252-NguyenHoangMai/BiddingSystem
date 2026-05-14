@@ -4,6 +4,7 @@ import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.SessionDAO;
+import com.auction.server.dao.UserDAO;
 import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -33,6 +34,8 @@ public class SessionServiceTest {
     private DatabaseManager mockDbManager;
     @Mock
     private Item mockItem;
+    @Mock
+    private UserDAO mockUserDAO;
 
     private MockedStatic<DatabaseManager> mockedStaticDbManager;
     private SessionService sessionService;
@@ -41,42 +44,41 @@ public class SessionServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         MockitoAnnotations.openMocks(this);
-        sessionService = new SessionService(sessionDAO);
+        sessionService = new SessionService(sessionDAO, mockUserDAO);
         now = LocalDateTime.now(); //lấy mốc time chuẩn cho mỗi test
 
         when(mockItem.getId()).thenReturn("ITEM_1");
 
-        // Mock DatabaseManager cho method updateCurrentBid
+
         mockedStaticDbManager = mockStatic(DatabaseManager.class);
         mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
         when(mockDbManager.getConnection()).thenReturn(mockConn);
     }
 
     @AfterEach
-    void tearDown() {
+    void CleanUp() {
         mockedStaticDbManager.close();
     }
 
 
-    //TEST CONSTRUCTOR
+
 
     @Nested
     class ConstructorTests {
 
         @Test
         void SessionDAONotNull_Success() {
-            assertDoesNotThrow(() -> new SessionService(sessionDAO));
+            assertDoesNotThrow(() -> new SessionService(sessionDAO, mockUserDAO));
         }
 
         @Test
         void SessionDAONull_ThrowIllegalArgumentException() {
-            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new SessionService(null));
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new SessionService(null, mockUserDAO));
             assertEquals("sessionDAO cannot be null", e.getMessage());
         }
     }
 
 
-    // 2. TEST CREATESESSION (VALIDATION & BUSINESS)
 
     @Nested
     class CreateSessionTests {
@@ -130,7 +132,7 @@ public class SessionServiceTest {
 
         @Test
         void TimeReached_AutoStartOpenSession() {
-            // OPEN nhưng đã đến giờ start -> Phải tự chuyển thành RUNNING
+            //đã đêns h start OPEN pk auto thành RUNNING
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(10), now.plusHours(1));
             session.setStatus(SessionService.STATUS_OPEN);
 
@@ -153,14 +155,14 @@ public class SessionServiceTest {
 
             List<AuctionSession> running = sessionService.getRunningSessions();
 
-            assertEquals(0, running.size()); // Không còn running nữa
+            assertEquals(0, running.size());
             assertEquals(SessionService.STATUS_FINISHED, session.getStatus());
             verify(sessionDAO).updateStatus("S2", SessionService.STATUS_FINISHED);
         }
     }
 
 
-    //TEST START / FINISH SESSION
+
 
     @Nested
     class StartSessionTests {
@@ -242,7 +244,7 @@ public class SessionServiceTest {
     }
 
 
-    //TEST UPDATE CURRENT BID
+
 
 
     @Nested
@@ -255,7 +257,7 @@ public class SessionServiceTest {
             session.setCurrentPrice(100.0);
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-            //giả lập DAO xử lý update giá trị thành công
+            //giả lập DAO xử lý update thành công
             when(sessionDAO.updateCurrentBid(any(Connection.class), eq("S1"), eq(150.0), eq("BIDDER_1"))).thenReturn(true);
 
             boolean result = sessionService.updateCurrentBid("S1", 150.0, "BIDDER_1");
@@ -268,10 +270,10 @@ public class SessionServiceTest {
         void BidTooLow_ReturnFalse() {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
-            session.setCurrentPrice(500.0); //giá hiện tại 500
+            session.setCurrentPrice(500.0);
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-            //cố tình bid thấp hơn
+
             boolean result = sessionService.updateCurrentBid("S1", 400.0, "BIDDER_1");
 
             assertFalse(result, "Giá thấp hơn currentPrice phải trả về false");
@@ -285,7 +287,7 @@ public class SessionServiceTest {
             session.setCurrentPrice(100.0);
             when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-            //ép ông qlý Database rút cáp mạng ngay lúc xin Connection
+            //giả lập mất mạng đúng lúc gọi connection
             when(mockDbManager.getConnection()).thenThrow(new SQLException("Deadlock / Connection lost"));
 
             boolean result = sessionService.updateCurrentBid("S1", 150.0, "BIDDER_1");
@@ -306,7 +308,7 @@ public class SessionServiceTest {
                 session.setStatus(SessionService.STATUS_OPEN);
                 when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-                //RUNNING
+
                 sessionService.refreshSessionStatus("S1");
                 assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
 
