@@ -22,16 +22,17 @@ import javafx.util.Duration;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
     @FXML private Label lblCategory, lblName, lblTimer, lblCurrentBid, lblLeadingUser,
-            lblMinBidHint, lblBalance, lblSeller, lblStartingPrice;
+            lblMinBidHint, lblSeller, lblStartingPrice, lblReservedBalance, lblAvailableBalance;
     @FXML private Text txtDescription;
     @FXML private GridPane gridSpecs;
     @FXML private TextField txtBidAmount;
     @FXML private ListView<String> lvBidHistory;
-    @FXML private Button btnBack, btnPlaceBid;
+    @FXML private Button btnBack, btnPlaceBid, btnAutoBid;
 
     // ===== STATE =====
     private ItemDTO currentItem;
@@ -39,6 +40,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     //private final ClientSocket socket = ClientSocket.getInstance();
     private Timeline countdownTimeline;
+    private final AtomicBoolean autoBidRunning = new AtomicBoolean(false);
 
     // ===== INIT =====
     @FXML
@@ -104,6 +106,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             currentItem.setCurrentPrice(update.getCurrentPrice());
             currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
             currentItem.setSessionStatus(update.getStatus());
+            currentItem.setMinimumNextBid(update.getMinimumNextBid());
 
             boolean isClosed = isClosedStatus(update.getStatus());
 
@@ -183,6 +186,8 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         if (isClosed) {
             lblTimer.setText("CLOSED");
             btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+            autoBidRunning.set(false);
             if (countdownTimeline != null) countdownTimeline.stop();
             // Huỷ listener — phiên đã đóng, không cần nhận thêm
             ClientSocket.getInstance().clearBidUpdateListener();
@@ -213,9 +218,16 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
     private void updateBalanceLabel() {
         if (ClientSession.getCurrentUser() != null) {
-            lblBalance.setText(fmt.format(ClientSession.getCurrentUser().getBalance()));
+            double balance = ClientSession.getCurrentUser().getBalance();
+            double reserved = ClientSession.getCurrentUser().getReservedBalance();
+            double available = balance - reserved;
+
+            lblReservedBalance.setText(fmt.format(reserved));
+            lblAvailableBalance.setText(fmt.format(available));
+
         } else {
-            lblBalance.setText("$0.00");
+            lblReservedBalance.setText("$0.00");
+            lblAvailableBalance.setText("$0.00");
         }
     }
 
@@ -329,6 +341,96 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
         // Chạy task
         new Thread(bidTask).start();
+    }
+
+    @FXML
+    private void handleAutoBid(ActionEvent event) {
+        if (autoBidRunning.get()) {
+            autoBidRunning.set(false);
+            btnAutoBid.setText("AutoBid");
+            return;
+        }
+
+        autoBidRunning.set(true);
+        btnAutoBid.setText("Stop AutoBid");
+
+        Task<Void> autoBidTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                while (autoBidRunning.get()) {
+                    if (currentItem == null) break;
+
+                    if (isClosedStatus(currentItem.getSessionStatus())) {break;}
+
+                    var currentUser = ClientSession.getCurrentUser();
+
+                    if (currentUser == null) {break;}
+
+                    double available = currentUser.getBalance() - currentUser.getReservedBalance();
+
+                    Double minBid = currentItem.getMinimumNextBid();
+
+                    if (minBid == null) {
+                        Thread.sleep(1000);
+                        continue;
+                    }
+
+                    if (available < minBid) {
+                        Platform.runLater(() ->
+                                showAlert(Alert.AlertType.INFORMATION,
+                                        "AutoBid",
+                                        "Not enough available balance for next bid."));
+                        break;
+                    }
+
+                    try {
+                        PlaceBidResponse res = auctionService.placeBid(
+                                currentItem.getSessionId(),
+                                currentUser.getId(),
+                                minBid
+                        );
+
+                        if (!res.isSuccess()) {
+                            Thread.sleep(1000);
+                            continue;
+                        }
+
+                        currentItem.setCurrentPrice(res.getCurrentPrice());
+                        currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
+                        currentItem.setSessionStatus(res.getStatus());
+                        currentItem.setMinimumNextBid(res.getMinimumNextBid());
+
+                        Platform.runLater(() -> {
+                            refreshBidState(
+                                    res.getCurrentPrice(),
+                                    res.getCurrentWinnerUsername(),
+                                    res.getStatus()
+                            );
+
+                            updateBidHint(res.getMinimumNextBid());
+                            updateBalanceLabel();
+                        });
+
+                        Thread.sleep(1200);
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        Thread.sleep(1500);
+                    }
+                }
+
+                Platform.runLater(() -> {
+                    autoBidRunning.set(false);
+                    btnAutoBid.setText("AutoBid");
+                });
+
+                return null;
+            }
+        };
+
+        Thread thread = new Thread(autoBidTask);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void resetBidButton() {

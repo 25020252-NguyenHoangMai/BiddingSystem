@@ -11,6 +11,8 @@ public class UserSessionDTO implements Serializable {
     private String role;
     private double balance;
     private boolean sellerEnabled;
+    private double reservedBalance;
+
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
@@ -69,4 +71,9 @@ public class UserSessionDTO implements Serializable {
     public boolean isSelected() { return selected.get();}
 
     public void setSelected(boolean value) {selected.set(value);}
+
+    public double getReservedBalance() { return reservedBalance;}
+
+    public void setReservedBalance(double reservedBalance) { this.reservedBalance = reservedBalance;
+     }
 }

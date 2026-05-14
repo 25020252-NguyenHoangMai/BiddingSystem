@@ -61,17 +61,59 @@
             </VBox>
 
             <!-- Bid input box -->
-            <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20;                                       -fx-border-color: #ddd; -fx-border-radius: 8;">
+            <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20;
+                                  -fx-border-color: #ddd; -fx-border-radius: 8;">
                 <Label style="-fx-font-weight: bold;" text="Place your bid" />
-                <TextField fx:id="txtBidAmount" prefHeight="35.0" promptText="Enter amount (e.g. 1500)" />
-                <Label fx:id="lblMinBidHint" style="-fx-font-size: 11px; -fx-text-fill: #95a5a6;" text="Min next bid: $10" />
-                <Button fx:id="btnPlaceBid" maxWidth="Infinity" onAction="#handlePlaceBid" prefHeight="38.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" text="Place Bid" />
+
+                <TextField fx:id="txtBidAmount"
+                           prefHeight="35.0"
+                           promptText="Enter amount (e.g. 1500)" />
+
+                <Label fx:id="lblMinBidHint"
+                       style="-fx-font-size: 11px; -fx-text-fill: #95a5a6;"
+                       text="Min next bid: $10" />
+
+                <HBox spacing="10">
+                    <Button fx:id="btnPlaceBid"
+                            HBox.hgrow="ALWAYS"
+                            maxWidth="Infinity"
+                            onAction="#handlePlaceBid"
+                            prefHeight="38.0"
+                            style="-fx-background-color: #27ae60;
+                       -fx-text-fill: white;
+                       -fx-font-weight: bold;"
+                            text="Place Bid" />
+
+                    <Button fx:id="btnAutoBid"
+                            HBox.hgrow="ALWAYS"
+                            maxWidth="Infinity"
+                            onAction="#handleAutoBid"
+                            prefHeight="38.0"
+                            style="-fx-background-color: #f39c12;
+                       -fx-text-fill: white;
+                       -fx-font-weight: bold;"
+                            text="AutoBid" />
+                </HBox>
             </VBox>
 
             <!-- Balance display -->
-            <VBox spacing="5" style="-fx-background-color: #34495e; -fx-padding: 15; -fx-background-radius: 8;">
-                <Label style="-fx-font-size: 11px; -fx-text-fill: #bdc3c7;" text="YOUR BALANCE" />
-                <Label fx:id="lblBalance" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #f1c40f;" text="\$0.00" />
+            <VBox spacing="8"
+                  style="-fx-background-color: #FFFFFF;
+             -fx-padding: 15;
+             -fx-background-radius: 8;">
+
+                <VBox spacing="3">
+                    <Label style="-fx-font-size: 11px;
+                       -fx-text-fill: #bdc3c7;"
+                           text="AVAILABLE BALANCE" />
+
+                    <Label fx:id="lblAvailableBalance"
+                           style="-fx-font-size: 18px;
+                      -fx-font-weight: bold;
+                      -fx-text-fill: #2ecc71;"
+                           text="\$0.00" />
+                </VBox>
+
             </VBox>
         </VBox>
 
