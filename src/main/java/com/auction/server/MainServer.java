@@ -1,10 +1,7 @@
 package com.auction.server;
 
 import com.auction.server.controller.*;
-import com.auction.server.dao.BidDAO;
-import com.auction.server.dao.ItemDAO;
-import com.auction.server.dao.SessionDAO;
-import com.auction.server.dao.UserDAO;
+import com.auction.server.dao.*;
 import com.auction.server.network.SocketServer;
 import com.auction.server.realtime.DashboardObserver;
 import com.auction.server.realtime.DashboardWatchRegistry;
@@ -16,6 +13,7 @@ public class    MainServer {
         ItemDAO itemDAO = new ItemDAO();
         UserDAO userDAO = new UserDAO();
         BidDAO bidDAO = new BidDAO();
+        AutoBidDAO autoBidDAO = new AutoBidDAO();
         SessionDAO sessionDAO = new SessionDAO(itemDAO);
 
         SessionWatchRegistry sessionWatchRegistry = new SessionWatchRegistry();
@@ -33,14 +31,16 @@ public class    MainServer {
         AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO, userDAO);
         AutoBiddingService autoBiddingService = new AutoBiddingService(bidValidationService, sessionService,
-                                                    bidIncrementService, bidTransactionExecutor, userService);
+                                                    bidIncrementService, bidTransactionExecutor, userService,
+                                                    autoBidDAO);
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
                                             bidValidationService, bidTransactionExecutor);
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
-                                                sessionWatchRegistry, autoBiddingService, bidIncrementService);
+                                                sessionWatchRegistry, autoBiddingService, bidIncrementService,
+                                                userService);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
                                                 sessionService, userService, bidIncrementService);
 

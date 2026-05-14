@@ -1,8 +1,11 @@
 package com.auction.server.controller;
 
+import com.auction.dto.UserSessionDTO;
 import com.auction.exception.InsufficientBalanceException;
 import com.auction.exception.InvalidBidException;
 import com.auction.model.AuctionSession;
+import com.auction.model.Bidder;
+import com.auction.model.User;
 import com.auction.request.PlaceBidRequest;
 import com.auction.request.SetAutoBidRequest;
 import com.auction.response.BidUpdateResponse;
@@ -20,32 +23,37 @@ public class BiddingController {
     private final SessionWatchRegistry sessionWatchRegistry;
     private final AutoBiddingService autoBiddingService;
     private final BidIncrementService bidIncrementService;
+    private final UserService userService;
 
     public BiddingController(BiddingService biddingService, SessionService sessionService,
                              SessionWatchRegistry sessionWatchRegistry, AutoBiddingService autoBiddingService,
-                             BidIncrementService bidIncrementService) {
+                             BidIncrementService bidIncrementService, UserService userService) {
         this.biddingService = biddingService;
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.sessionService = sessionService;
         this.autoBiddingService = autoBiddingService;
         this.bidIncrementService = bidIncrementService;
+        this.userService = userService;
     }
 
     public PlaceBidResponse placeBid(PlaceBidRequest request) {
         try {
             if (request.getSessionId() == null || request.getSessionId().isBlank()) {
                 return new PlaceBidResponse(false, "SessionId is required!", null,
-                        null, null, null, null, null);
+                        null, null, null, null,
+                        null, null);
             }
 
             if (request.getBidderId() == null || request.getBidderId().isBlank()) {
                 return new PlaceBidResponse(false, "BidderId is required!", null,
-                        null, null, null, null, null);
+                        null, null, null, null,
+                        null, null);
             }
 
             if (request.getAmount() <= 0) {
                 return new PlaceBidResponse(false, "Bid amount must be positive!", null,
-                        null, null, null, null, null);
+                        null, null, null, null,
+                        null, null);
             }
 
             BidResult result = biddingService.placeBid(request.getSessionId(), request.getBidderId(),
@@ -66,6 +74,13 @@ public class BiddingController {
                 }
             }
 
+            UserSessionDTO updatedUser = null;
+
+            if (result.isSuccess()) {
+                User user = userService.getUserById(request.getBidderId());
+                updatedUser = toUserSessionDTO(user);
+            }
+
             return new PlaceBidResponse(
                             result.isSuccess(),
                             result.getMessage(),
@@ -74,7 +89,8 @@ public class BiddingController {
                             result.getCurrentWinnerId(),
                             result.getCurrentWinnerUsername(),
                             result.getStatus(),
-                            getMinimumNextBid(result.getCurrentPrice(), result.getStatus())
+                            getMinimumNextBid(result.getCurrentPrice(), result.getStatus()),
+                            updatedUser
                     );
 
             //return new PlaceBidResponse(result.isSuccess(), result.getMessage(), result.getSessionId(),
@@ -83,15 +99,16 @@ public class BiddingController {
 
         } catch (InsufficientBalanceException e) {
             return new PlaceBidResponse(false, e.getMessage(), request.getSessionId(), null,
-                    null, null, null, null);
+                    null, null, null, null, null);
         } catch (InvalidBidException | IllegalArgumentException e) {
             return new PlaceBidResponse(false, e.getMessage(), request.getSessionId(), null,
-                    null, null, null, null);
+                    null, null, null, null, null);
         } catch (Exception e) {
             System.out.println("=== PLACE BID ERROR ===");
             e.printStackTrace();
             return new PlaceBidResponse(false, "Bid failed: unexpected server error!", null,
-                    null, null, null, null, null);
+                    null, null, null, null,
+                    null, null);
         }
     }
 
@@ -200,5 +217,22 @@ public class BiddingController {
         }
 
         return bidIncrementService.getMinimumNextBid(currentPrice);
+    }
+
+    private UserSessionDTO toUserSessionDTO(User user) {
+        UserSessionDTO dto = new UserSessionDTO();
+
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setFullName(user.getFullName());
+        dto.setRole(user.getRole());
+
+        if (user instanceof Bidder bidder) {
+            double availableBalance = bidder.getBalance() - bidder.getReservedBalance();
+            dto.setBalance(availableBalance);
+            dto.setSellerEnabled(bidder.isSellerEnabled());
+        }
+
+        return dto;
     }
 }
