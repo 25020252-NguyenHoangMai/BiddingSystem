@@ -47,10 +47,11 @@ public class AutoBidDAO {
     }
 
     //tắt chế độ auto-bidding
-    public void deactivateAutoBid(Connection conn, String id) {
+    public void deactivateAutoBid(Connection conn, String sessionId, String bidderId) {
         String sql = "UPDATE AutoBid SET isActive = 0, updatedAt = GETDATE() WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, id);
+            ps.setString(1, sessionId);
+            ps.setString(1, bidderId);
             ps.executeUpdate();
         }
         catch (SQLException e) {
