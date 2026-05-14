@@ -130,11 +130,10 @@ public class SessionDAO {
         }
     }
 
-    public void updateStatus(String sessionId, String status) {
+    public void updateStatus(Connection conn, String sessionId, String status) {
         String sql = "UPDATE AuctionSession SET status = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setString(2, sessionId);
             int updated = ps.executeUpdate();

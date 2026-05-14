@@ -342,7 +342,7 @@ public class UserDAO {
     }
 
     //finalize khi thắng đấu giá
-    public void deductReservedBalance(String userId, double amount) {
+    public void deductReservedBalance(Connection conn, String userId, double amount) {
         String sql = """
         UPDATE Users
         SET 
@@ -352,8 +352,7 @@ public class UserDAO {
         AND reservedBalance >= ?
     """;
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setDouble(1, amount);
             ps.setDouble(2, amount);
