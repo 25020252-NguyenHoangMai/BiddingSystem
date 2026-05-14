@@ -51,7 +51,7 @@ public class AutoBidDAO {
         String sql = "UPDATE AutoBid SET isActive = 0, updatedAt = GETDATE() WHERE sessionId = ? AND bidderId = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
-            ps.setString(1, bidderId);
+            ps.setString(2, bidderId);
             ps.executeUpdate();
         }
         catch (SQLException e) {
