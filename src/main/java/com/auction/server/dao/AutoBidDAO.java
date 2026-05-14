@@ -48,7 +48,7 @@ public class AutoBidDAO {
 
     //tắt chế độ auto-bidding
     public void deactivateAutoBid(Connection conn, String sessionId, String bidderId) {
-        String sql = "UPDATE AutoBid SET isActive = 0, updatedAt = GETDATE() WHERE id = ?";
+        String sql = "UPDATE AutoBid SET isActive = 0, updatedAt = GETDATE() WHERE sessionId = ? AND bidderId = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
             ps.setString(1, bidderId);
