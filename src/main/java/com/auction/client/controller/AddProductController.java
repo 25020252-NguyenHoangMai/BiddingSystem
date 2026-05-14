@@ -140,15 +140,16 @@ public class AddProductController {
             throw new Exception("Thời gian đấu giá phải từ 1 đến 720 giờ!");
 
         // Tính endTimeMillis = bây giờ + durationHours
-        long endTimeMillis = System.currentTimeMillis() + (long) durationHours * 3_600_000L;
-
+        //long endTimeMillis = System.currentTimeMillis() + (long) durationHours * 3_600_000L;
         ItemDTO item = new ItemDTO();
+
         item.setName(txtName.getText().trim());
         item.setStartingPrice(price);
         item.setSellerId(user.getId());
         item.setItemType(cbCategory.getValue().toUpperCase());
         item.setDescription(txtDescription.getText().trim());
-        item.setEndTimeMillis(endTimeMillis);   // Truyền thời gian kết thúc
+        item.setDurationHours(durationHours);
+        //item.setEndTimeMillis(endTimeMillis);   // Truyền thời gian kết thúc
 
         // Xử lý dynamic fields
         for (var entry : fields.entrySet()) {

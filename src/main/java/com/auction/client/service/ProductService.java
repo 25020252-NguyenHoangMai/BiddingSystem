@@ -72,7 +72,7 @@ public class ProductService {
             socket.connect();
 
             // 2. Gửi gói tin AddItemRequest chứa đối tượng item
-            AddItemRequest request = new AddItemRequest(item.getSellerId(), item);
+            AddItemRequest request = new AddItemRequest(item.getSellerId(), item, item.getDurationHours());
             socket.sendRequest(request);
 
             // 3. Nhận phản hồi từ Server

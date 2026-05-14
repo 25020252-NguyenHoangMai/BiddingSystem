@@ -71,7 +71,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
         // 5. Đếm ngược (Sử dụng thời gian thực từ Server)
         startCountdown(item.getEndTimeMillis());
-        updateBidHint(item.getCurrentPrice());
+        //updateBidHint(item.getMinimumNextBid());
 
         // ===== OBSERVER: đăng ký listener + gửi WatchSessionRequest =====
         socket.setBidUpdateListener(this);
@@ -98,7 +98,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
                         refreshBidState(update.getCurrentPrice(), update.getCurrentWinnerUsername(), update.getStatus());
 
-                        updateBidHint(update.getCurrentPrice());
+                        updateBidHint(update.getMinimumNextBid());
 
                         if (update.getEndTimeMillis() != null) {
                             currentItem.setEndTimeMillis(update.getEndTimeMillis());
@@ -168,7 +168,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             refreshBidState(update.getCurrentPrice(),
                     update.getCurrentWinnerUsername(),
                     update.getStatus());
-            updateBidHint(update.getCurrentPrice());
+            updateBidHint(update.getMinimumNextBid());
             addBidHistoryEntry(update);
         });
     }
@@ -246,15 +246,19 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     }
 
 
-    private void updateBidHint(double currentPrice) {
-        double minStep = Math.max(10.0, currentPrice * 0.01);
-        double minNextBid = currentPrice + minStep;
-
-        // Nếu là seller thì không cần hiện hint về giá đặt tiếp theo
+    private void updateBidHint(Double minimumNextBid) {
+        // Nếu là seller thì không cần hiện hint
         var currentUser = ClientSession.getCurrentUser();
-        if (currentUser != null && !Objects.equals(currentUser.getId(), currentItem.getSellerId())) {
-            lblMinBidHint.setText(String.format("Min next bid: %s", fmt.format(minNextBid)));
+
+        if (currentUser == null
+                || Objects.equals(currentUser.getId(), currentItem.getSellerId())
+                || minimumNextBid == null) {
+
+            lblMinBidHint.setText("");
+            return;
         }
+
+        lblMinBidHint.setText(String.format("Min next bid: %s", fmt.format(minimumNextBid)));
     }
 
     private void updateBalanceLabel() {
@@ -358,7 +362,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                 currentItem.setSessionStatus(res.getStatus());
 
                 refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
-                updateBidHint(res.getCurrentPrice());
+                updateBidHint(res.getMinimumNextBid());
                 updateBalanceLabel();
                 txtBidAmount.clear();
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");

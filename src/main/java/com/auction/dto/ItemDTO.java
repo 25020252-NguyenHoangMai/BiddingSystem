@@ -22,9 +22,11 @@ public class ItemDTO implements Serializable {
     private String brand;
     private String artist;
     private long endTimeMillis;
+    private int durationHours;
     private String sessionId;
     private String currentWinnerUsername;
     private String sessionStatus;
+    private Double minimumNextBid;
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
@@ -148,6 +150,10 @@ public class ItemDTO implements Serializable {
 
     public void setEndTimeMillis(long endTimeMillis) { this.endTimeMillis = endTimeMillis; }
 
+    public int getDurationHours() { return durationHours; }
+
+    public void setDurationHours(int durationHours) { this.durationHours = durationHours; }
+
     public String getSessionId() { return sessionId; }
 
     public void setSessionId(String sessionId) { this.sessionId = sessionId; }
@@ -172,4 +178,8 @@ public class ItemDTO implements Serializable {
 
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
+
+    public Double getMinimumNextBid() { return minimumNextBid;}
+
+    public void setMinimumNextBid(Double minimumNextBid) { this.minimumNextBid = minimumNextBid;}
 }
