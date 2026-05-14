@@ -101,28 +101,30 @@ public class ProfileController {
             btnEnableSeller.setDisable(true);
             btnEnableSeller.setText("Đang xử lý...");
 
-            Task<Void> task = new Task<>() {
+            Task<UserSessionDTO> task = new Task<>() {
                 @Override
-                protected Void call() throws Exception {
-                    userClientService.enableSeller(user.getId());
-                    return null;
+                protected UserSessionDTO call() throws Exception {
+                    return userClientService.enableSeller(user.getId());
                 }
             };
 
             task.setOnSucceeded(e -> {
-                // Cập nhật ClientSession local ngay — không cần re-login
-                user.setSellerEnabled(true);
-                ClientSession.setCurrentUser(user);
+                UserSessionDTO updatedUser = task.getValue();
+
+                // Dùng state mới từ server
+                ClientSession.setCurrentUser(updatedUser);
 
                 // Refresh UI
-                refreshSellerUI(user);
+                refreshSellerUI(updatedUser);
                 btnEnableSeller.setDisable(false);
 
                 Alert ok = new Alert(Alert.AlertType.INFORMATION);
+
                 ok.setTitle("Thành công");
                 ok.setHeaderText(null);
                 ok.setContentText("Tài khoản đã được nâng cấp lên Seller!\n"
-                        + "Nút 'Add Product' đã xuất hiện ở màn hình chính.");
+                                + "Nút 'Add Product' đã xuất hiện ở màn hình chính."
+                );
                 ok.showAndWait();
             });
 

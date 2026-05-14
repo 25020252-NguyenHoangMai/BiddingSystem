@@ -81,7 +81,7 @@ public class UserClientService {
     }
 
     // Gửi EnableSellerRequest lên Server
-    public boolean enableSeller(String userId) throws Exception {
+    public UserSessionDTO enableSeller(String userId) throws Exception {
         ClientSocket socket = ClientSocket.getInstance();
         socket.connect();
 
@@ -100,7 +100,7 @@ public class UserClientService {
             throw new Exception(res.getMessage());
         }
 
-        return true;
+        return res.getUserSession();
     }
 
     // Gửi DepositRequest
