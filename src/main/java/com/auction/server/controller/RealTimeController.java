@@ -53,6 +53,10 @@ public class RealTimeController {
                 return new SessionWatchResponse(false, "Session not found: " + sessionId);
             }
 
+            String currentWinnerUsername = resolveWinnerUsername(session.getCurrentWinnerId());
+
+            Double availableBalance = userService.getAvailableBalance(request.getUserId());
+
             boolean watched = sessionWatchRegistry.watchSession(sessionId, observer);
             if (!watched) {
                 return new SessionWatchResponse(false, "Session Not Watched: " + sessionId);
@@ -62,10 +66,6 @@ public class RealTimeController {
             if (session.getEndTime() != null) {
                 endTimeMillis = session.getEndTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             }
-
-            String currentWinnerUsername = resolveWinnerUsername(session.getCurrentWinnerId());
-
-            Double availableBalance = userService.getAvailableBalance(request.getUserId());
 
             return new SessionWatchResponse(true, "Watching session", session.getId(),
                                         session.getCurrentPrice(), session.getCurrentWinnerId(), currentWinnerUsername,
