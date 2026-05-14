@@ -2,13 +2,13 @@ name: Java CI với Maven
 
 on:
   push:
-    branches: [ "master" ] # Chạy khi bạn push lên nhánh main
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest # GitHub sẽ cho bạn mượn 1 máy ảo Ubuntu
+    runs-on: ubuntu-latest
 
     services:
       sqlserver:
@@ -18,54 +18,63 @@ jobs:
           ACCEPT_EULA: Y
         ports:
           - 1433:1433
+        options: >-
+          --health-cmd " /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $${SA_PASSWORD} -C -Q 'SELECT 1' || exit 1 "
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
-      - name: Bước 1 - Lấy code về máy ảo
+      # 1. Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Bước 2 - Cài đặt Java (JDK 25)
+      # 2. Setup Java
+      - name: Setup JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
 
-      - name: Bước 3 - Đợi SQL Server khởi động
-        run: sleep 30
-
-      - name: Bước 4 - Tạo database
+      # 3. Install sqlcmd (client trên runner)
+      - name: Install sqlcmd
         run: |
-          docker exec ${{ job.services.sqlserver.id }} \
-          /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost \
-          -U sa \
-          -P "${{ secrets.DB_PASS }}" \
-          -C \
-          -Q "CREATE DATABASE BiddingSystem"   
+          sudo apt-get update
+          sudo apt-get install -y curl apt-transport-https gnupg
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
+          echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
 
-      - name: Bước 5 - Import schema
+      # 4. Wait until SQL Server is REALLY ready
+      - name: Wait for SQL Server
         run: |
-          docker cp database/init.sql $(docker ps -q --filter ancestor=mcr.microsoft.com/mssql/server:2022-latest):/init.sql
-      
-          docker exec $(docker ps -q --filter ancestor=mcr.microsoft.com/mssql/server:2022-latest) \
-          /opt/mssql-tools18/bin/sqlcmd \
-          -S localhost \
-          -U sa \
-          -P "${{ secrets.DB_PASS }}" \
-          -d BiddingSystem \
-          -C \
-          -i /init.sql    
+          for i in {1..20}; do
+            sqlcmd -S localhost -U sa -P "${{ secrets.DB_PASS }}" -C -Q "SELECT 1" && break
+            echo "Waiting for SQL Server..."
+            sleep 5
+          done
 
-      - name: Bước 6 - Build và chạy Unit Test
-        # Lệnh này tương đương với việc bạn bấm 'Clean' và 'Install' trong Maven
+      # 5. Create database + import schema
+      - name: Setup database
+        run: |
+          sqlcmd -S localhost -U sa -P "${{ secrets.DB_PASS }}" -C -Q "IF DB_ID('BiddingSystem') IS NULL CREATE DATABASE BiddingSystem"
+
+          sqlcmd -S localhost -U sa -P "${{ secrets.DB_PASS }}" \
+          -d BiddingSystem -C -i database/init.sql
+
+      # 6. Build + Test
+      - name: Build and run tests
         run: mvn clean install
         env:
           DB_URL: jdbc:sqlserver://localhost:1433;databaseName=BiddingSystem;encrypt=true;trustServerCertificate=true
           DB_USER: sa
           DB_PASS: ${{ secrets.DB_PASS }}
 
-      - name: Bước 7 - Lưu file .jar (Artifact)
-        # Bước này giúp bạn tải file .jar về sau khi build thành công
+      # 7. Upload artifact
+      - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: auction-app-file
