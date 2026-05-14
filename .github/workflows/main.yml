@@ -14,7 +14,7 @@ jobs:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2025-latest
         env:
-          SA_PASSWORD: ${{ secrets.DB_PASS }}
+          SA_PASSWORD: Stevejobs@14
           ACCEPT_EULA: Y
         ports:
           - 1433:1433
