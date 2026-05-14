@@ -342,7 +342,7 @@ public class UserDAO {
     }
 
     //finalize khi thắng đấu giá
-    public void deductReservedBalance(String userId, double amount) {
+    public void deductReservedBalance(Connection conn, String userId, double amount) {
         String sql = """
         UPDATE Users
         SET 
@@ -352,8 +352,7 @@ public class UserDAO {
         AND reservedBalance >= ?
     """;
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setDouble(1, amount);
             ps.setDouble(2, amount);
@@ -366,6 +365,23 @@ public class UserDAO {
             }
         } catch (SQLException e) {
             throw new AuctionException("Error finalizing payment: " + e.getMessage());
+        }
+    }
+
+    public void updateBalance(Connection conn, String userId, double amount) {
+        String sql = "UPDATE Users SET balance = balance + ? WHERE id = ? AND sellerEnabled = 1";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, amount);
+            ps.setString(2, userId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new AuctionException("User not found.");
+            }
+        }
+        catch (SQLException e) {
+            throw new AuctionException("An error occurred while adding balance: " + e.getMessage());
         }
     }
 

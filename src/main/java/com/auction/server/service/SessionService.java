@@ -110,8 +110,7 @@ public class SessionService { // Quản lí phiên đấu giá
                 throw new IllegalStateException("Cannot start before start time");
             }
 
-            session.setStatus(STATUS_RUNNING);
-            sessionDAO.updateStatus(sessionId, STATUS_RUNNING);
+            updateSessionStatus(session, STATUS_RUNNING);
         }
     }
 
@@ -188,8 +187,7 @@ public class SessionService { // Quản lí phiên đấu giá
         if (STATUS_OPEN.equals(session.getStatus())
                 && !now.isBefore(session.getStartTime())
                 && now.isBefore(session.getEndTime())) {
-            session.setStatus(STATUS_RUNNING);
-            sessionDAO.updateStatus(session.getId(), STATUS_RUNNING);
+            updateSessionStatus(session, STATUS_RUNNING);
         }
         //status = open, >= startTime và < endTime => status = running
 
@@ -245,16 +243,46 @@ public class SessionService { // Quản lí phiên đấu giá
         double finalPrice = session.getCurrentPrice();
 
         if (winnerId != null && !winnerId.isBlank() && finalPrice > 0) {
-            userDAO.deductReservedBalance(winnerId, finalPrice);
+            String sellerId = session.getItem().getSellerId();
+            if (sellerId == null || sellerId.isBlank()) {
+                throw new IllegalStateException("Seller id is missing for auction item");
+            }
 
-            session.setStatus(STATUS_PAID);
-            sessionDAO.updateStatus(session.getId(), STATUS_PAID);
+            try (java.sql.Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    userDAO.deductReservedBalance(conn, winnerId, finalPrice);
+                    userDAO.updateBalance(conn, sellerId, finalPrice);
+                    sessionDAO.updateStatus(conn, session.getId(), STATUS_PAID);
+
+                    conn.commit();
+                    session.setStatus(STATUS_PAID);
+                } catch (Exception e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+            } catch (java.sql.SQLException e) {
+                throw new RuntimeException("Finalize auction payment failed: " + e.getMessage(), e);
+            }
+
             return;
         }
 
-        session.setStatus(STATUS_FINISHED);
-        sessionDAO.updateStatus(session.getId(), STATUS_FINISHED);
+        updateSessionStatus(session, STATUS_FINISHED);
 
+    }
+
+    private void updateSessionStatus(AuctionSession session, String status) {
+        try (java.sql.Connection conn =
+                     com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            sessionDAO.updateStatus(conn, session.getId(), status);
+            session.setStatus(status);
+        } catch (java.sql.SQLException e) {
+            throw new RuntimeException("Failed to update session status: " + e.getMessage(), e);
+        }
     }
 
 }
