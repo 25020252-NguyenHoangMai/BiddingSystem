@@ -239,6 +239,10 @@ public class SessionService { // Quản lí phiên đấu giá
     }
 
     private void finalizeSession(AuctionSession session) {
+        if (STATUS_PAID.equals(session.getStatus()) || STATUS_CANCELED.equals(session.getStatus())) {
+            return;
+        }
+
         String winnerId = session.getCurrentWinnerId();
         double finalPrice = session.getCurrentPrice();
 
