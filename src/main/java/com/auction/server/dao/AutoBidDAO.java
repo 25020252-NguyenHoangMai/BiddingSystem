@@ -24,20 +24,22 @@ public class AutoBidDAO {
     }
 
     //insert khi activate auto-bidding lần đầu và update nếu id auto-bidding này đã tồn tại
-    public void upsertAutoBid(Connection conn, String id, double maxBidAmount) {
+    public void upsertAutoBid(Connection conn, String id, String sessionId, String bidderId, double maxBidAmount) {
         String sql = "MERGE INTO AutoBid AS target " +
-                "USING (SELECT ? AS id) AS source " +
-                "ON (target.id = source.id) " +
+                "USING (SELECT ? AS sessionId, ? AS bidderId) AS source " +
+                "ON (target.sessionId = source.sessionId AND target.bidderId = source.bidderId) " +
                 "WHEN MATCHED THEN " +
                 "    UPDATE SET maxBidAmount = ?, isActive = 1, updatedAt = GETDATE() " +
                 "WHEN NOT MATCHED THEN " +
                 "    INSERT (id, sessionId, bidderId, maxBidAmount, isActive, createdAt, updatedAt) " +
-                "    VALUES (source.id, source.sessionId, source.bidderId, ?, 1, GETDATE(), GETDATE());";
+                "    VALUES (?, source.sessionId, source.bidderId, ?, 1, GETDATE(), GETDATE());";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, id);
-            ps.setDouble(2, maxBidAmount);
+            ps.setString(1, sessionId);
+            ps.setString(2, bidderId);
             ps.setDouble(3, maxBidAmount);
+            ps.setString(4, id);
+            ps.setDouble(5, maxBidAmount);
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while upserting auto-bidding: " + e.getMessage());
@@ -46,7 +48,7 @@ public class AutoBidDAO {
 
     //tắt chế độ auto-bidding
     public void deactivateAutoBid(Connection conn, String id) {
-        String sql = "UPDATE AutoBid SET isActive = 0 AND updatedAt = GETDATE() WHERE id = ?";
+        String sql = "UPDATE AutoBid SET isActive = 0, updatedAt = GETDATE() WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, id);
             ps.executeUpdate();
@@ -59,7 +61,7 @@ public class AutoBidDAO {
     //truy vấn danh sách các auto-bids đang hoạt động
     public List<AutoBid> getActiveAutoBidsBySession(Connection conn, String sessionId) {
         List<AutoBid> list = new ArrayList<>();
-        String sql = "SELECT * FROM AutoBid WHERE session_id = ? AND isActive = 1";
+        String sql = "SELECT * FROM AutoBid WHERE sessionId = ? AND isActive = 1";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
@@ -75,11 +77,12 @@ public class AutoBidDAO {
     }
 
     //truy vấn một auto-bid cụ thể đang hoạt động
-    public AutoBid getActiveAutoBid(Connection conn, String id) {
-        String sql = "SELECT * FROM AutoBid WHERE id = ? AND isActive = 1";
+    public AutoBid getActiveAutoBid(Connection conn, String sessionId, String bidderId) {
+        String sql = "SELECT * FROM AutoBid WHERE sessionId = ? AND bidderId = ? AND isActive = 1";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, id);
+            ps.setString(1, sessionId);
+            ps.setString(2, bidderId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapToAutoBid(rs);
