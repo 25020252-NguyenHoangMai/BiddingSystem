@@ -43,6 +43,10 @@ public class RealTimeController {
             if (request.getSessionId() == null || request.getSessionId().isBlank()) {
                 return new SessionWatchResponse(false, "Session ID is required");
             }
+            if (request.getUserId() == null || request.getUserId().isBlank()) {
+                return new SessionWatchResponse(false, "User ID is required");
+            }
+
             String sessionId = request.getSessionId();
             AuctionSession session = sessionService.getSession(request.getSessionId());
             if (session == null) {
@@ -61,9 +65,12 @@ public class RealTimeController {
 
             String currentWinnerUsername = resolveWinnerUsername(session.getCurrentWinnerId());
 
-            return new BidUpdateResponse(true, "Watching session", session.getId(),
+            Double availableBalance = userService.getAvailableBalance(request.getUserId());
+
+            return new SessionWatchResponse(true, "Watching session", session.getId(),
                                         session.getCurrentPrice(), session.getCurrentWinnerId(), currentWinnerUsername,
-                                        session.getStatus(), endTimeMillis, getMinimumNextBid(session));
+                                        session.getStatus(), endTimeMillis, getMinimumNextBid(session),
+                                        availableBalance);
         } catch (Exception e) {
             e.printStackTrace();
             return new SessionWatchResponse(false, "Watch session failed: unexpected server error");
