@@ -116,16 +116,6 @@ public class AutoBiddingService {
 
     private void removeAutoBid(String sessionId, String bidderId) {
         autoBidDAO.deactivateAutoBid(sessionId, bidderId);
-
-        if (sessionAutoBids == null) {
-            return;
-        }
-
-        sessionAutoBids.remove(bidderId);
-
-        if (sessionAutoBids.isEmpty()) {
-            autoBidsBySession.remove(sessionId);
-        }
     }
 
     private String resolveWinnerUsername(String winnerId) {
