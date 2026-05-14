@@ -2,6 +2,9 @@ package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
 import com.auction.request.PlaceBidRequest;
+import com.auction.request.UnwatchSessionRequest;
+import com.auction.request.WatchSessionRequest;
+import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
 
 public class AuctionService {
@@ -15,5 +18,23 @@ public class AuctionService {
         socket.sendRequest(new PlaceBidRequest(sessionId, bidderId, amount));
 
         return socket.takePlaceBidResponse();
+    }
+
+    public BidUpdateResponse watchSession(String sessionId) throws Exception {
+        socket.connect();
+        socket.sendRequest(new WatchSessionRequest(sessionId));
+
+        Object raw = socket.receiveResponse();
+
+        if (!(raw instanceof BidUpdateResponse response)) {
+            throw new IllegalStateException("Expected BidUpdateResponse but got: " + raw);
+        }
+
+        return response;
+    }
+
+    public void unwatchSession(String sessionId) throws Exception {
+        socket.connect();
+        socket.sendRequest(new UnwatchSessionRequest(sessionId));
     }
 }
