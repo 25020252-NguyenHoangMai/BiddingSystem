@@ -19,8 +19,7 @@ jobs:
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $${SA_PASSWORD} -Q 'SELECT 1' || exit 1"
-          --health-interval 10s
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Auction@123' -Q 'SELECT 1' || exit 1"          --health-interval 10s
           --health-timeout 5s
           --health-retries 10
 
