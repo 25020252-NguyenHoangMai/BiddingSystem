@@ -4,8 +4,6 @@ import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
 import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
-import com.auction.request.UnwatchSessionRequest;
-import com.auction.request.WatchSessionRequest;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
 import javafx.animation.KeyFrame;
@@ -38,7 +36,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     private ItemDTO currentItem;
     private final AuctionService auctionService = new AuctionService();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
-    private final ClientSocket socket = ClientSocket.getInstance();
+    //private final ClientSocket socket = ClientSocket.getInstance();
     private Timeline countdownTimeline;
 
     // ===== INIT =====
@@ -73,73 +71,40 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         startCountdown(item.getEndTimeMillis());
         //updateBidHint(item.getMinimumNextBid());
 
-        // ===== OBSERVER: đăng ký listener + gửi WatchSessionRequest =====
-        socket.setBidUpdateListener(this);
-        sendWatchRequest(item.getSessionId());
-    }
+        ClientSocket.getInstance().setBidUpdateListener(this);
 
-    // ===== OBSERVER: WATCH / UNWATCH =====
-    private void sendWatchRequest(String sessionId) {
-        Task<Void> task = new Task<>() {
+        Task<BidUpdateResponse> task = new Task<>() {
             @Override
-            protected Void call() throws Exception {
-                socket.connect();
-
-                socket.sendRequest(new WatchSessionRequest(sessionId));
-
-                // Nhận current state
-                Object raw = socket.receiveResponse();
-
-                if (raw instanceof BidUpdateResponse update) {
-                    Platform.runLater(() -> {
-                        currentItem.setCurrentPrice(update.getCurrentPrice());
-                        currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
-                        currentItem.setSessionStatus(update.getStatus());
-
-                        refreshBidState(update.getCurrentPrice(), update.getCurrentWinnerUsername(), update.getStatus());
-
-                        updateBidHint(update.getMinimumNextBid());
-
-                        if (update.getEndTimeMillis() != null) {
-                            currentItem.setEndTimeMillis(update.getEndTimeMillis());
-
-                            startCountdown(update.getEndTimeMillis());
-                        }
-                    });
-                }
-                return null;
+            protected BidUpdateResponse call() throws Exception {
+                return auctionService.watchSession(item.getSessionId());
             }
         };
 
-        task.setOnFailed(e ->
-                System.out.println("[AuctionDetail] Watch failed: " + task.getException().getMessage()));
+        task.setOnSucceeded(event -> {
+            BidUpdateResponse update = task.getValue();
 
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
-    }
+            currentItem.setCurrentPrice(update.getCurrentPrice());
+            currentItem.setCurrentWinnerUsername(update.getCurrentWinnerUsername());
+            currentItem.setSessionStatus(update.getStatus());
 
-    private void sendUnwatchRequest(String sessionId) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() {
-                try {
-                    socket.sendRequest(new UnwatchSessionRequest(sessionId));
-                    // đọc response trả về
-                    socket.receiveResponse();
-                } catch (Exception e) {
-                    System.err.println("[AuctionDetail] Unwatch failed: " + e.getMessage());
-                    e.printStackTrace();
-                }
-                return null;
-            }
-        };
+            refreshBidState(
+                    update.getCurrentPrice(),
+                    update.getCurrentWinnerUsername(),
+                    update.getStatus()
+            );
 
-        Thread t = new Thread(task);
+            updateBidHint(update.getMinimumNextBid());
+        });
 
-        t.setDaemon(true);
+        task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Watch Error", "Failed to watch auction: " + ex.getMessage());
+        });
 
-        t.start();
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // ===== OBSERVER CALLBACK — gọi bởi ClientSocket reader thread =====
@@ -235,7 +200,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             btnPlaceBid.setDisable(true);
             if (countdownTimeline != null) countdownTimeline.stop();
             // Huỷ listener — phiên đã đóng, không cần nhận thêm
-            socket.clearBidUpdateListener();
+            ClientSocket.getInstance().clearBidUpdateListener();
         }
     }
 
@@ -390,8 +355,13 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     private void handleBack(ActionEvent event) {
         // Dọn dẹp: dừng countdown, huỷ listener, gửi unwatch
         if (countdownTimeline != null) countdownTimeline.stop();
-        socket.clearBidUpdateListener();
-        if (currentItem != null) sendUnwatchRequest(currentItem.getSessionId());
+        ClientSocket.getInstance().clearBidUpdateListener();
+        if (currentItem != null) try {
+            auctionService.unwatchSession(currentItem.getSessionId());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         ((Stage) btnBack.getScene().getWindow()).close();
     }
 
