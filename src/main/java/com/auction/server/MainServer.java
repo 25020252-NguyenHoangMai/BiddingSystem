@@ -2,6 +2,7 @@ package com.auction.server;
 
 import com.auction.server.controller.*;
 import com.auction.server.dao.*;
+import com.auction.server.factory.ItemFactoryRegistry;
 import com.auction.server.network.SocketServer;
 import com.auction.server.realtime.DashboardObserver;
 import com.auction.server.realtime.DashboardWatchRegistry;
@@ -10,6 +11,8 @@ import com.auction.server.service.*;
 
 public class    MainServer {
     public static void main(String[] args) {
+        ItemFactoryRegistry.initializeDefaultFactories();
+
         ItemDAO itemDAO = new ItemDAO();
         UserDAO userDAO = new UserDAO();
         BidDAO bidDAO = new BidDAO();
