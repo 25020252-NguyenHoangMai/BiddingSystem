@@ -2,7 +2,9 @@ package com.auction.server.service;
 
 import com.auction.exception.UserNotFoundException;
 import com.auction.model.AuctionSession;
+import com.auction.model.AutoBid;
 import com.auction.model.User;
+import com.auction.server.dao.AutoBidDAO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AutoBiddingService {
-    private final Map<String, Map<String, Double>> autoBidsBySession = new ConcurrentHashMap<>();
+    private final AutoBidDAO autoBidDAO;
     private final BidValidationService bidValidationService;
     private final SessionService sessionService;
     private final BidIncrementService bidIncrementService;
@@ -19,7 +21,7 @@ public class AutoBiddingService {
 
     public AutoBiddingService(BidValidationService bidValidationService, SessionService sessionService,
                               BidIncrementService bidIncrementService, BidTransactionExecutor bidTransactionExecutor,
-                              UserService userService) {
+                              UserService userService, AutoBidDAO autoBidDAO) {
         if (bidValidationService == null) {
             throw new IllegalArgumentException("BidValidationService must not be null");
         }
@@ -35,12 +37,16 @@ public class AutoBiddingService {
         if (userService == null) {
             throw new IllegalArgumentException("UserService must not be null");
         }
+        if (autoBidDAO == null) {
+            throw new IllegalArgumentException("AutoBidDAO must not be null");
+        }
 
         this.bidValidationService = bidValidationService;
         this.sessionService = sessionService;
         this.bidIncrementService = bidIncrementService;
         this.bidTransactionExecutor = bidTransactionExecutor;
         this.userService = userService;
+        this.autoBidDAO = autoBidDAO;
     }
 
     public BidResult setAutoBid(String sessionId, String bidderId, double maxAmount) {
@@ -68,7 +74,7 @@ public class AutoBiddingService {
         }
 
         //Lưu vào map
-        autoBidsBySession.computeIfAbsent(sessionId, key -> new ConcurrentHashMap<>()).put(bidderId, maxAmount);
+        autoBidDAO.upsertAutoBid(sessionId, bidderId, maxAmount);
 
         AuctionSession latestSession = sessionService.getSession(sessionId);
         if (latestSession == null) {
@@ -109,17 +115,7 @@ public class AutoBiddingService {
     }
 
     private void removeAutoBid(String sessionId, String bidderId) {
-        Map<String, Double> sessionAutoBids = autoBidsBySession.get(sessionId);
-
-        if (sessionAutoBids == null) {
-            return;
-        }
-
-        sessionAutoBids.remove(bidderId);
-
-        if (sessionAutoBids.isEmpty()) {
-            autoBidsBySession.remove(sessionId);
-        }
+        autoBidDAO.deactivateAutoBid(sessionId, bidderId);
     }
 
     private String resolveWinnerUsername(String winnerId) {
@@ -144,12 +140,12 @@ public class AutoBiddingService {
                     sessionId, 0.0, null, null, null);
         }
 
-        Map<String, Double> sessionAutoBids = autoBidsBySession.get(sessionId);
-        if (sessionAutoBids == null || !sessionAutoBids.containsKey(bidderId)) {
+        AutoBid autoBid = autoBidDAO.getActiveAutoBid(sessionId, bidderId);
+        if (autoBid == null) {
             return buildCurrentStateResult(false, "Auto bid was not found", session);
         }
 
-        double maxAmount = sessionAutoBids.get(bidderId);
+        double maxAmount = autoBid.getMaxBidAmount();
         double autoBidAmount = bidIncrementService.getMinimumNextBid(session.getCurrentPrice());
 
         if (maxAmount < autoBidAmount) {
@@ -220,7 +216,7 @@ public class AutoBiddingService {
             return null;
         }
 
-        Map<String, Double> sessionAutoBids = autoBidsBySession.get(session.getId());
+        List<AutoBid> sessionAutoBids = autoBidDAO.getActiveAutoBidsBySession(session.getId());
         if (sessionAutoBids == null || sessionAutoBids.isEmpty()) {
             return null;
         }
@@ -231,19 +227,21 @@ public class AutoBiddingService {
         String bestBidderId = null;
         double bestMaxAmount = -1.0;
 
-        for (Map.Entry<String, Double> entry : sessionAutoBids.entrySet()) {
-            String bidderId = entry.getKey();
-            Double maxAmountValue = entry.getValue();
+        for (AutoBid autoBid : sessionAutoBids) {
+            if (autoBid == null || !autoBid.isActive()) {
+                continue;
+            }
 
-            if (bidderId == null || bidderId.isBlank() || maxAmountValue == null) {
+            String bidderId = autoBid.getBidderId();
+            double maxAmount = autoBid.getMaxBidAmount();
+
+            if (bidderId == null || bidderId.isBlank()) {
                 continue;
             }
 
             if (bidderId.equals(currentWinnerId)) {
                 continue;
             }
-
-            double maxAmount = maxAmountValue;
 
             if (maxAmount < minimumNextBid) {
                 continue;

@@ -1,5 +1,7 @@
 package com.auction.response;
 
+import com.auction.dto.UserSessionDTO;
+
 public class PlaceBidResponse extends Response {
     private String sessionId;
     private Double currentPrice;
@@ -7,9 +9,11 @@ public class PlaceBidResponse extends Response {
     private String currentWinnerUsername;
     private String status;
     private Double minimumNextBid;
+    private UserSessionDTO updatedUser;
 
     public PlaceBidResponse(boolean success, String message, String sessionId, Double currentPrice,
-                            String currentWinnerId, String currentWinnerUsername, String status, Double minimumNextBid) {
+                            String currentWinnerId, String currentWinnerUsername, String status, Double minimumNextBid,
+                            UserSessionDTO updatedUser) {
         super(success, message);
         this.sessionId = sessionId;
         this.currentPrice = currentPrice;
@@ -17,6 +21,7 @@ public class PlaceBidResponse extends Response {
         this.currentWinnerUsername = currentWinnerUsername;
         this.status = status;
         this.minimumNextBid = minimumNextBid;
+        this.updatedUser = updatedUser;
     }
 
     public String getSessionId() {
@@ -41,6 +46,10 @@ public class PlaceBidResponse extends Response {
 
     public Double getMinimumNextBid() {
         return minimumNextBid;
+    }
+
+    public UserSessionDTO getUpdatedUser() {
+        return updatedUser;
     }
 
 }
