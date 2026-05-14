@@ -1,15 +1,18 @@
 package com.auction.server.service;
 
+import com.auction.exception.AuctionException;
 import com.auction.exception.UserNotFoundException;
 import com.auction.model.AuctionSession;
 import com.auction.model.AutoBid;
 import com.auction.model.User;
 import com.auction.server.dao.AutoBidDAO;
+import com.auction.server.dao.DatabaseManager;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.UUID;
 
 public class AutoBiddingService {
     private final AutoBidDAO autoBidDAO;
@@ -73,8 +76,13 @@ public class AutoBiddingService {
                     "Auto bid max amount must be at least " + minimumNextBid, session);
         }
 
-        //Lưu vào map
-        autoBidDAO.upsertAutoBid(sessionId, bidderId, maxAmount);
+        String autoBidId = UUID.randomUUID().toString();
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            autoBidDAO.upsertAutoBid(conn, autoBidId, sessionId, bidderId, maxAmount);
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to save auto bid: " + e.getMessage());
+        }
 
         AuctionSession latestSession = sessionService.getSession(sessionId);
         if (latestSession == null) {
@@ -115,7 +123,11 @@ public class AutoBiddingService {
     }
 
     private void removeAutoBid(String sessionId, String bidderId) {
-        autoBidDAO.deactivateAutoBid(sessionId, bidderId);
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            autoBidDAO.deactivateAutoBid(conn, sessionId, bidderId);
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to deactivate auto bid: " + e.getMessage());
+        }
     }
 
     private String resolveWinnerUsername(String winnerId) {
@@ -140,7 +152,14 @@ public class AutoBiddingService {
                     sessionId, 0.0, null, null, null);
         }
 
-        AutoBid autoBid = autoBidDAO.getActiveAutoBid(sessionId, bidderId);
+        AutoBid autoBid;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            autoBid = autoBidDAO.getActiveAutoBid(conn, sessionId, bidderId);
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to load auto bid: " + e.getMessage());
+        }
+
         if (autoBid == null) {
             return buildCurrentStateResult(false, "Auto bid was not found", session);
         }
@@ -216,7 +235,14 @@ public class AutoBiddingService {
             return null;
         }
 
-        List<AutoBid> sessionAutoBids = autoBidDAO.getActiveAutoBidsBySession(session.getId());
+        List<AutoBid> sessionAutoBids;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            sessionAutoBids = autoBidDAO.getActiveAutoBidsBySession(conn, session.getId());
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to load active auto bids: " + e.getMessage());
+        }
+
         if (sessionAutoBids == null || sessionAutoBids.isEmpty()) {
             return null;
         }
