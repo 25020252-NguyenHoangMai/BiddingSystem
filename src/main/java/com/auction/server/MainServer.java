@@ -35,7 +35,7 @@ public class    MainServer {
         SessionService sessionService = new SessionService(sessionDAO, userDAO);
         AutoBiddingService autoBiddingService = new AutoBiddingService(bidValidationService, sessionService,
                                                     bidIncrementService, bidTransactionExecutor, userService,
-                                                    autoBidDAO);
+                                                    autoBidDAO, antiSnipingService);
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
                                             bidValidationService, bidTransactionExecutor);
 

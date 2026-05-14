@@ -21,10 +21,11 @@ public class AutoBiddingService {
     private final BidIncrementService bidIncrementService;
     private final BidTransactionExecutor bidTransactionExecutor;
     private final UserService userService;
+    private final AntiSnipingService antiSnipingService;
 
     public AutoBiddingService(BidValidationService bidValidationService, SessionService sessionService,
                               BidIncrementService bidIncrementService, BidTransactionExecutor bidTransactionExecutor,
-                              UserService userService, AutoBidDAO autoBidDAO) {
+                              UserService userService, AutoBidDAO autoBidDAO, AntiSnipingService antiSnipingService) {
         if (bidValidationService == null) {
             throw new IllegalArgumentException("BidValidationService must not be null");
         }
@@ -43,6 +44,9 @@ public class AutoBiddingService {
         if (autoBidDAO == null) {
             throw new IllegalArgumentException("AutoBidDAO must not be null");
         }
+        if (antiSnipingService == null) {
+            throw new IllegalArgumentException("AntiSnipingService must not be null");
+        }
 
         this.bidValidationService = bidValidationService;
         this.sessionService = sessionService;
@@ -50,6 +54,7 @@ public class AutoBiddingService {
         this.bidTransactionExecutor = bidTransactionExecutor;
         this.userService = userService;
         this.autoBidDAO = autoBidDAO;
+        this.antiSnipingService = antiSnipingService;
     }
 
     public BidResult setAutoBid(String sessionId, String bidderId, double maxAmount) {
@@ -187,7 +192,23 @@ public class AutoBiddingService {
                     sessionId, autoBidAmount, bidderId, resolveWinnerUsername(bidderId), null);
         }
 
-        return buildCurrentStateResult(true, "Auto bid placed successfully", updatedSession);
+        boolean extended = false;
+
+        if (antiSnipingService.shouldExtend(updatedSession)) {
+            sessionService.extendSession(sessionId, antiSnipingService.getExtendTime());
+            extended = true;
+
+            AuctionSession extendedSession = sessionService.getSession(sessionId);
+            if (extendedSession != null) {
+                updatedSession = extendedSession;
+            }
+        }
+
+        String successMessage = extended
+                ? "Auto bid placed successfully. Auction time extended due to anti-sniping."
+                : "Auto bid placed successfully";
+
+        return buildCurrentStateResult(true, successMessage, updatedSession);
     }
 
     public List<BidResult> processAutoBidsAfterBid(String sessionId, String triggeringBidderId) {
