@@ -80,8 +80,12 @@ public class BiddingController {
             UserSessionDTO updatedUser = null;
 
             if (result.isSuccess()) {
-                User user = userService.getUserById(request.getBidderId());
-                updatedUser = toUserSessionDTO(user);
+                try {
+                    User user = userService.getUserById(request.getBidderId());
+                    updatedUser = toUserSessionDTO(user);
+                } catch (Exception e) {
+                    System.out.println("Bid succeeded but failed to reload updated user: " + e.getMessage());
+                }
             }
 
             return new PlaceBidResponse(
@@ -236,8 +240,8 @@ public class BiddingController {
         dto.setRole(user.getRole());
 
         if (user instanceof Bidder bidder) {
-            double availableBalance = bidder.getBalance() - bidder.getReservedBalance();
-            dto.setBalance(availableBalance);
+            dto.setBalance(bidder.getBalance());
+            dto.setReservedBalance(bidder.getReservedBalance());
             dto.setSellerEnabled(bidder.isSellerEnabled());
         }
 

@@ -76,4 +76,8 @@ public class UserSessionDTO implements Serializable {
 
     public void setReservedBalance(double reservedBalance) { this.reservedBalance = reservedBalance;
      }
+
+    public double getAvailableBalance() {
+        return balance - reservedBalance;
+    }
 }
