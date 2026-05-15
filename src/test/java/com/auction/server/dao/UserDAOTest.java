@@ -415,13 +415,15 @@ public class UserDAOTest extends BaseDAOTest {
         @Test
         void Success() throws SQLException {
             when(mockPs.executeUpdate()).thenReturn(1);
-            assertDoesNotThrow(() -> userDAO.deductReservedBalance("U1", 100.0));
+
+            assertDoesNotThrow(() -> userDAO.deductReservedBalance(mockConn, "U1", 100.0));
         }
 
         @Test
         void Invalid() throws SQLException {
             when(mockPs.executeUpdate()).thenReturn(0);
-            AuctionException e = assertThrows(AuctionException.class, () -> userDAO.deductReservedBalance("U1", 999.0));
+
+            AuctionException e = assertThrows(AuctionException.class, () -> userDAO.deductReservedBalance(mockConn, "U1", 999.0));
             assertEquals("Invalid reserved balance or user not found.", e.getMessage());
         }
     }
