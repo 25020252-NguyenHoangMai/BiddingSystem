@@ -22,8 +22,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.text.NumberFormat;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AuctionDetailController implements ClientSocket.BidUpdateListener {
@@ -93,6 +92,10 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                     lvBidHistory.getItems().clear();
                     String me = ClientSession.getCurrentUser() != null
                             ? ClientSession.getCurrentUser().getUsername() : "";
+                    List<BidHistoryEntryDTO> history =
+                            new ArrayList<>(res.getHistory());
+
+                    Collections.reverse(history);
                     for (BidHistoryEntryDTO entry : res.getHistory()) {
                         String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
                                 .format(new java.util.Date(entry.getBidTimeMillis()));
@@ -193,7 +196,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                 bidderName,
                 fmt.format(update.getCurrentPrice()));
 
-        lvBidHistory.getItems().add(entry);
+        lvBidHistory.getItems().add(0,entry);
     }
 
     // Vô hiệu hóa tính năng đặt bid nếu là Seller
