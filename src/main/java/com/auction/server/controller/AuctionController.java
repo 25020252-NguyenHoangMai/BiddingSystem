@@ -35,6 +35,9 @@ public class AuctionController {
         if (request instanceof EnableSellerRequest enableSellerRequest) {
             return authController.enableSeller(enableSellerRequest);
         }
+        if (request instanceof GetCurrentUserRequest getCurrentUserRequest) {
+            return authController.getCurrentUser(getCurrentUserRequest);
+        }
 
         if (request instanceof GetAllItemsRequest getAllItemsRequest) {
             return itemController.getAllItems(getAllItemsRequest);

@@ -5,14 +5,8 @@ import com.auction.exception.AuthenticationException;
 import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.dto.UserSessionDTO;
-import com.auction.request.DepositRequest;
-import com.auction.request.EnableSellerRequest;
-import com.auction.request.LoginRequest;
-import com.auction.request.RegisterRequest;
-import com.auction.response.DepositResponse;
-import com.auction.response.EnableSellerResponse;
-import com.auction.response.LoginResponse;
-import com.auction.response.RegisterResponse;
+import com.auction.request.*;
+import com.auction.response.*;
 import com.auction.server.service.UserService;
 //import com.auction.server.factory.UserRegistrationFactory;
 
@@ -135,9 +129,26 @@ public class AuthController {
 
         if (user instanceof Bidder bidder) {
             dto.setBalance(bidder.getBalance());
+            dto.setReservedBalance(bidder.getReservedBalance());
             dto.setSellerEnabled(bidder.isSellerEnabled());
         }
 
         return dto;
+    }
+
+    public GetCurrentUserResponse getCurrentUser(GetCurrentUserRequest request) {
+        try {
+            if (request.getUserId() == null || request.getUserId().isBlank()) {
+                return new GetCurrentUserResponse(false, "User ID is required!", null);
+            }
+
+            User user = userService.getUserById(request.getUserId());
+            UserSessionDTO dto = toUserSessionDTO(user);
+
+            return new GetCurrentUserResponse(true, "Get current user successfully!", dto);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new GetCurrentUserResponse(false, "Get current user failed!", null);
+        }
     }
 }
