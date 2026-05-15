@@ -14,12 +14,12 @@ jobs:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          SA_PASSWORD: ${{ secrets.DB_PASS }}
+          SA_PASSWORD: Stevejobs@14
           ACCEPT_EULA: Y
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P '${{ secrets.DB_PASS }}' -Q 'SELECT 1' || exit 1"
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Stevejobs@14' -Q 'SELECT 1' || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -48,16 +48,16 @@ jobs:
       - name: Wait for SQL Server
         run: |
           for i in {1..30}; do
-            sqlcmd -S localhost -U sa -P "${{ secrets.DB_PASS }}" -C -Q "SELECT 1" && break
+            sqlcmd -S localhost -U sa -P "Stevejobs@14" -C -Q "SELECT 1" && break
             echo "Waiting for SQL Server..."
             sleep 5
           done
 
       - name: Setup database
         run: |
-          sqlcmd -S localhost -U sa -P "${{ secrets.DB_PASS }}" -C -Q "IF DB_ID('BiddingSystem') IS NULL CREATE DATABASE BiddingSystem"
+          sqlcmd -S localhost -U sa -P "Stevejobs@14" -C -Q "IF DB_ID('BiddingSystem') IS NULL CREATE DATABASE BiddingSystem"
 
-          sqlcmd -S localhost -U sa -P "${{ secrets.DB_PASS }}" \
+          sqlcmd -S localhost -U sa -P "Stevejobs@14" \
           -d BiddingSystem -C -i database/init.sql
 
       - name: Build and run tests
@@ -65,7 +65,7 @@ jobs:
         env:
           DB_URL: jdbc:sqlserver://localhost:1433;databaseName=BiddingSystem;encrypt=true;trustServerCertificate=true
           DB_USER: sa
-          DB_PASS: ${{ secrets.DB_PASS }}
+          DB_PASS: Stevejobs@14
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
