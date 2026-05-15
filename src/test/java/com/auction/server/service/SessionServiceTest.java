@@ -142,7 +142,8 @@ public class SessionServiceTest {
 
             assertEquals(1, running.size());
             assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
-            verify(sessionDAO).updateStatus("S1", SessionService.STATUS_RUNNING);
+
+            verify(sessionDAO).updateStatus(any(java.sql.Connection.class), eq("S1"), eq(SessionService.STATUS_RUNNING));
         }
 
         @Test
@@ -157,7 +158,7 @@ public class SessionServiceTest {
 
             assertEquals(0, running.size());
             assertEquals(SessionService.STATUS_FINISHED, session.getStatus());
-            verify(sessionDAO).updateStatus("S2", SessionService.STATUS_FINISHED);
+            verify(sessionDAO).updateStatus(any(java.sql.Connection.class), eq("S2"), eq(SessionService.STATUS_FINISHED));
         }
     }
 
@@ -176,7 +177,7 @@ public class SessionServiceTest {
             sessionService.startSession("S1");
 
             assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
-            verify(sessionDAO).updateStatus("S1", SessionService.STATUS_RUNNING);
+            verify(sessionDAO).updateStatus(any(java.sql.Connection.class), eq("S1"), eq(SessionService.STATUS_RUNNING));
         }
 
         @Test
