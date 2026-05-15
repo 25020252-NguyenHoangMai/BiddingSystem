@@ -2,10 +2,11 @@ package com.auction.client.controller;
 
 import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
-import com.auction.client.service.AuctionService;
+import com.auction.client.service.AuctionService;import com.auction.dto.BidHistoryEntryDTO;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
 import com.auction.response.BidUpdateResponse;
+import com.auction.response.GetBidHistoryResponse;
 import com.auction.response.PlaceBidResponse;
 import com.auction.response.SessionWatchResponse;
 import javafx.animation.KeyFrame;
@@ -76,6 +77,43 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         //updateBidHint(item.getMinimumNextBid());
 
         ClientSocket.getInstance().setBidUpdateListener(this);
+
+        // 6. Load lịch sử bid cũ từ server
+        Task<GetBidHistoryResponse> historyTask = new Task<>() {
+            @Override
+            protected GetBidHistoryResponse call() throws Exception {
+                return auctionService.getBidHistory(item.getSessionId());
+            }
+        };
+
+        historyTask.setOnSucceeded(e -> {
+            GetBidHistoryResponse res = historyTask.getValue();
+            if (res != null && res.isSuccess() && res.getHistory() != null) {
+                Platform.runLater(() -> {
+                    lvBidHistory.getItems().clear();
+                    String me = ClientSession.getCurrentUser() != null
+                            ? ClientSession.getCurrentUser().getUsername() : "";
+                    for (BidHistoryEntryDTO entry : res.getHistory()) {
+                        String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
+                                .format(new java.util.Date(entry.getBidTimeMillis()));
+                        String name = Objects.equals(entry.getBidderUsername(), me)
+                                ? entry.getBidderUsername() + " (you)"
+                                : entry.getBidderUsername();
+                        lvBidHistory.getItems().add(String.format("[%s]  %-18s  %s",
+                                timeStr, name, fmt.format(entry.getBidAmount())));
+                    }
+                });
+            }
+        });
+
+        historyTask.setOnFailed(e -> {
+            System.err.println("[AuctionDetail] Failed to load bid history: "
+                    + historyTask.getException().getMessage());
+        });
+
+        Thread historyThread = new Thread(historyTask);
+        historyThread.setDaemon(true);
+        historyThread.start();
 
         Task<SessionWatchResponse> task = new Task<>() {
             @Override
@@ -155,7 +193,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                 bidderName,
                 fmt.format(update.getCurrentPrice()));
 
-        lvBidHistory.getItems().add(0, entry);
+        lvBidHistory.getItems().add(entry);
     }
 
     // Vô hiệu hóa tính năng đặt bid nếu là Seller

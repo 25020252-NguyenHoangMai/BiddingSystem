@@ -2,10 +2,12 @@ package com.auction.client.service;
 
 import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
+import com.auction.request.GetBidHistoryRequest;
 import com.auction.request.PlaceBidRequest;
 import com.auction.request.UnwatchSessionRequest;
 import com.auction.request.WatchSessionRequest;
 import com.auction.response.BidUpdateResponse;
+import com.auction.response.GetBidHistoryResponse;
 import com.auction.response.PlaceBidResponse;
 import com.auction.response.SessionWatchResponse;
 
@@ -36,6 +38,19 @@ public class AuctionService {
             throw new IllegalStateException("Expected SessionWatchResponse but got: " + raw);
         }
         socket.clearResponseQueue();
+        return response;
+    }
+
+    public GetBidHistoryResponse getBidHistory(String sessionId) throws Exception {
+        socket.connect();
+        socket.sendRequest(new GetBidHistoryRequest(sessionId));
+
+        Object raw = socket.receiveResponse();
+
+        if (!(raw instanceof GetBidHistoryResponse response)) {
+            throw new IllegalStateException("Expected GetBidHistoryResponse but got: " + raw);
+        }
+
         return response;
     }
 
