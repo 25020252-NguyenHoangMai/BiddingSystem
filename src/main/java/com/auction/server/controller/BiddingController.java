@@ -140,7 +140,7 @@ public class BiddingController {
                     result.getStatus(),
                     endTimeMillis,
                     getMinimumNextBid(result.getCurrentPrice(), result.getStatus()),
-                    result.getCurrentWinnerUsername(),
+                    result.getBidderUsername(),
                     result.getBidAmount()
             );
 
