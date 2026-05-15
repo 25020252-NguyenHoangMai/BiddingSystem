@@ -132,7 +132,8 @@ public class BiddingController {
                     result.getCurrentWinnerUsername(),
                     result.getStatus(),
                     endTimeMillis,
-                    getMinimumNextBid(result.getCurrentPrice(), result.getStatus())
+                    getMinimumNextBid(result.getCurrentPrice(), result.getStatus()),
+                    result.getCurrentWinnerUsername()
             );
 
             sessionWatchRegistry.broadcastBidUpdate(result.getSessionId(), update);
