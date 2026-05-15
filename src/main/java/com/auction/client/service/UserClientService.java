@@ -4,8 +4,10 @@ import com.auction.client.network.ClientSocket;
 import com.auction.dto.UserSessionDTO;
 import com.auction.request.DepositRequest;
 import com.auction.request.EnableSellerRequest;
+import com.auction.request.GetCurrentUserRequest;
 import com.auction.response.DepositResponse;
 import com.auction.response.EnableSellerResponse;
+import com.auction.response.GetCurrentUserResponse;
 
 import java.util.List;
 
@@ -131,4 +133,28 @@ public class UserClientService {
 
         return user;
     }
+
+    public UserSessionDTO getCurrentUser(String userId) throws Exception {
+        ClientSocket socket = ClientSocket.getInstance();
+        socket.connect();
+
+        socket.sendRequest(new GetCurrentUserRequest(userId));
+        Object raw = socket.receiveResponse();
+
+        if (!(raw instanceof GetCurrentUserResponse res)) {
+            throw new IllegalStateException("Expected GetCurrentUserResponse but got: "
+                    + (raw == null ? "null" : raw.getClass().getSimpleName()));
+        }
+
+        if (!res.isSuccess()) {
+            throw new Exception(res.getMessage());
+        }
+
+        if (res.getUserSession() == null) {
+            throw new IllegalStateException("GetCurrentUserResponse userSession is null");
+        }
+
+        return res.getUserSession();
+    }
+
 }

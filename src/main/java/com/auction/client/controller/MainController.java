@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -66,6 +67,10 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     private final ProductService productService = ProductService.getInstance();
     private final ClientSocket clientSocket = ClientSocket.getInstance();
 
+    private final Consumer<UserSessionDTO> userChangeListener =
+            user -> Platform.runLater(this::setupUserInfo);
+
+
     // ===== INIT =====
     @FXML
     public void initialize() {
@@ -75,6 +80,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
         // Cập nhật User Info
         setupUserInfo();
+
+        // Đưa vào danh sách listeners
+        ClientSession.addUserChangeListener(userChangeListener);
 
         // Chuyển màn hình Main sang màn hình đấu giá
         setupRowClickToDetail();
@@ -304,6 +312,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         t.start();
 
         closeChildStages();
+        ClientSession.removeUserChangeListener(userChangeListener);
         ClientSession.clear();
         switchScene("/views/login_view.fxml");
     }

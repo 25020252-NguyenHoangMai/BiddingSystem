@@ -1,14 +1,14 @@
 package com.auction.client.controller;
 
 import com.auction.client.ClientSession;
-import com.auction.client.network.ClientSocket;
-import com.auction.client.service.AuctionService;import com.auction.dto.BidHistoryEntryDTO;
+import com.auction.client.service.*;
+import com.auction.client.util.BidHistoryFormatter;
+import com.auction.dto.BidHistoryEntryDTO;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.GetBidHistoryResponse;
 import com.auction.response.PlaceBidResponse;
-import com.auction.response.SessionWatchResponse;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -23,9 +23,8 @@ import javafx.util.Duration;
 
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-public class AuctionDetailController implements ClientSocket.BidUpdateListener {
+public class AuctionDetailController implements AuctionRealtimeService.AuctionUpdateListener {
 
     @FXML private Label lblCategory, lblName, lblTimer, lblCurrentBid, lblLeadingUser,
             lblMinBidHint, lblSeller, lblStartingPrice, lblAvailableBalance;
@@ -39,15 +38,19 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     private ItemDTO currentItem;
     private final AuctionService auctionService = new AuctionService();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
-    //private final ClientSocket socket = ClientSocket.getInstance();
     private Timeline countdownTimeline;
-    private final AtomicBoolean autoBidRunning = new AtomicBoolean(false);
+
+    private final AutoBidService autoBidManager = new AutoBidService(auctionService);
+    private final ClientSessionService sessionManager = new ClientSessionService();
+    private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
+
 
     // ===== INIT =====
     @FXML
     public void initialize() {
         lvBidHistory.setPlaceholder(new Label("No bids yet. Be the first!"));
         updateBalanceLabel();
+        realtimeManager.setListener(this);
     }
 
     // Điền toàn bộ dữ liệu từ ItemDTO lên màn hình
@@ -75,8 +78,6 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         startCountdown(item.getEndTimeMillis());
         //updateBidHint(item.getMinimumNextBid());
 
-        ClientSocket.getInstance().setBidUpdateListener(this);
-
         // 6. Load lịch sử bid cũ từ server
         Task<GetBidHistoryResponse> historyTask = new Task<>() {
             @Override
@@ -92,18 +93,11 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                     lvBidHistory.getItems().clear();
                     String me = ClientSession.getCurrentUser() != null
                             ? ClientSession.getCurrentUser().getUsername() : "";
-                    List<BidHistoryEntryDTO> history =
-                            new ArrayList<>(res.getHistory());
 
+                    List<BidHistoryEntryDTO> history = new ArrayList<>(res.getHistory());
                     Collections.reverse(history);
-                    for (BidHistoryEntryDTO entry : res.getHistory()) {
-                        String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
-                                .format(new java.util.Date(entry.getBidTimeMillis()));
-                        String name = Objects.equals(entry.getBidderUsername(), me)
-                                ? entry.getBidderUsername() + " (you)"
-                                : entry.getBidderUsername();
-                        lvBidHistory.getItems().add(String.format("[%s]  %-18s  %s",
-                                timeStr, name, fmt.format(entry.getBidAmount())));
+                    for (BidHistoryEntryDTO entry : history) {
+                        lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
                     }
                 });
             }
@@ -118,31 +112,36 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         historyThread.setDaemon(true);
         historyThread.start();
 
-        Task<SessionWatchResponse> task = new Task<>() {
+        Task<Void> watchTask = new Task<>() {
             @Override
-            protected SessionWatchResponse call() throws Exception {
+            protected Void call() throws Exception {
                 String userId = ClientSession.getCurrentUser() != null
-                        ? ClientSession.getCurrentUser().getId()
-                        : null;
+                                ? ClientSession.getCurrentUser().getId()
+                                : null;
 
-                return auctionService.watchSession(item.getSessionId(), userId);
+                realtimeManager.watch(item.getSessionId(), userId);
+                return null;
             }
         };
 
-        task.setOnFailed(event -> {
-            Throwable ex = task.getException();
+        watchTask.setOnFailed(event -> {
+            Throwable ex = watchTask.getException();
             ex.printStackTrace();
-            showAlert(Alert.AlertType.ERROR, "Watch Error", "Failed to watch auction: " + ex.getMessage());
+            showAlert(
+                    Alert.AlertType.ERROR,
+                    "Watch Error",
+                    "Failed to watch auction: " + ex.getMessage()
+            );
         });
 
-        Thread thread = new Thread(task);
+        Thread thread = new Thread(watchTask);
         thread.setDaemon(true);
         thread.start();
     }
 
     // ===== OBSERVER CALLBACK — gọi bởi ClientSocket reader thread =====
     @Override
-    public void onBidUpdate(BidUpdateResponse update) {
+    public void onAuctionUpdated(BidUpdateResponse update) {
         if (update == null || currentItem == null) return;
         // Lọc đúng session đang xem
         if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
@@ -155,6 +154,10 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             currentItem.setMinimumNextBid(update.getMinimumNextBid());
 
             boolean isClosed = isClosedStatus(update.getStatus());
+
+            if (isClosed) {
+                sessionManager.refreshCurrentUserIfAffected(currentItem, update, this::updateBalanceLabel, Throwable::printStackTrace);
+            }
 
             if (update.getEndTimeMillis() != null) {
                 currentItem.setEndTimeMillis(update.getEndTimeMillis());
@@ -172,31 +175,23 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         });
     }
 
+
     private void addBidHistoryEntry(BidUpdateResponse update) {
         if (update.getBidderUsername() == null || update.getBidderUsername().isBlank()) {
             return;
         }
 
         String me = ClientSession.getCurrentUser() != null
-                ? ClientSession.getCurrentUser().getUsername()
-                : "";
+                        ? ClientSession.getCurrentUser().getUsername()
+                        : "";
 
-        boolean isMe = Objects.equals(update.getCurrentWinnerUsername(), me);
+        String entry = BidHistoryFormatter.formatRealtime(
+                        update.getBidderUsername(),
+                        update.getCurrentPrice(),
+                        me
+                );
 
-        String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
-                .format(new java.util.Date());
-
-        String bidderName =
-                isMe
-                        ? update.getBidderUsername() + " (you)"
-                        : update.getBidderUsername();
-
-        String entry = String.format("[%s]  %-18s  %s",
-                timeStr,
-                bidderName,
-                fmt.format(update.getCurrentPrice()));
-
-        lvBidHistory.getItems().add(0,entry);
+        lvBidHistory.getItems().add(0, entry);
     }
 
     // Vô hiệu hóa tính năng đặt bid nếu là Seller
@@ -240,10 +235,8 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             lblTimer.setText("CLOSED");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
-            autoBidRunning.set(false);
+            autoBidManager.stop();
             if (countdownTimeline != null) countdownTimeline.stop();
-            // Huỷ listener — phiên đã đóng, không cần nhận thêm
-            ClientSocket.getInstance().clearBidUpdateListener();
         }
     }
 
@@ -293,6 +286,8 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             } else {
                 lblTimer.setText("EXPIRED");
                 btnPlaceBid.setDisable(true);
+                btnAutoBid.setDisable(true);
+                autoBidManager.stop();
                 countdownTimeline.stop();
             }
         }));
@@ -374,6 +369,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                 currentItem.setCurrentPrice(res.getCurrentPrice());
                 currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
                 currentItem.setSessionStatus(res.getStatus());
+                currentItem.setMinimumNextBid(res.getMinimumNextBid());
 
                 refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
                 updateBidHint(res.getMinimumNextBid());
@@ -397,114 +393,48 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
     @FXML
     private void handleAutoBid(ActionEvent event) {
-        if (autoBidRunning.get()) {
-            autoBidRunning.set(false);
-            btnAutoBid.setText("AutoBid");
-            return;
-        }
+        autoBidManager.start(
+                currentItem,
 
-        autoBidRunning.set(true);
-        btnAutoBid.setText("Stop AutoBid");
+                () -> btnAutoBid.setText("Stop AutoBid"),
 
-        Task<Void> autoBidTask = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                while (autoBidRunning.get()) {
-                    if (currentItem == null) break;
+                () -> btnAutoBid.setText("AutoBid"),
 
-                    if (isClosedStatus(currentItem.getSessionStatus())) {break;}
+                res -> {
+                    currentItem.setCurrentPrice(res.getCurrentPrice());
+                    currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
+                    currentItem.setSessionStatus(res.getStatus());
+                    currentItem.setMinimumNextBid(res.getMinimumNextBid());
 
-                    var currentUser = ClientSession.getCurrentUser();
+                    refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
 
-                    if (currentUser == null) {break;}
+                    updateBidHint(res.getMinimumNextBid());
+                    updateBalanceLabel();
+                },
 
-                    double available = currentUser.getBalance() - currentUser.getReservedBalance();
-
-                    Double minBid = currentItem.getMinimumNextBid();
-
-                    if (minBid == null) {
-                        Thread.sleep(1000);
-                        continue;
-                    }
-
-                    if (available < minBid) {
-                        Platform.runLater(() ->
-                                showAlert(Alert.AlertType.INFORMATION,
-                                        "AutoBid",
-                                        "Not enough available balance for next bid."));
-                        break;
-                    }
-
-                    try {
-                        PlaceBidResponse res = auctionService.placeBid(
-                                currentItem.getSessionId(),
-                                currentUser.getId(),
-                                minBid
-                        );
-
-                        if (!res.isSuccess()) {
-                            Thread.sleep(1000);
-                            continue;
-                        }
-
-                        if (res.getUpdatedUser() != null) {
-                            ClientSession.setCurrentUser(res.getUpdatedUser());
-                        }
-
-                        currentItem.setCurrentPrice(res.getCurrentPrice());
-                        currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
-                        currentItem.setSessionStatus(res.getStatus());
-                        currentItem.setMinimumNextBid(res.getMinimumNextBid());
-
-                        Platform.runLater(() -> {
-                            refreshBidState(
-                                    res.getCurrentPrice(),
-                                    res.getCurrentWinnerUsername(),
-                                    res.getStatus()
-                            );
-
-                            updateBidHint(res.getMinimumNextBid());
-                            updateBalanceLabel();
-                        });
-
-                        Thread.sleep(1200);
-
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        Thread.sleep(1500);
-                    }
-                }
-
-                Platform.runLater(() -> {
-                    autoBidRunning.set(false);
-                    btnAutoBid.setText("AutoBid");
-                });
-
-                return null;
-            }
-        };
-
-        Thread thread = new Thread(autoBidTask);
-        thread.setDaemon(true);
-        thread.start();
+                error -> showAlert(
+                        Alert.AlertType.ERROR,
+                        "AutoBid",
+                        error
+                )
+        );
     }
 
     private void resetBidButton() {
-        btnPlaceBid.setDisable(false);
+        boolean isClosed = currentItem != null && isClosedStatus(currentItem.getSessionStatus());
+
+        btnPlaceBid.setDisable(isClosed);
         btnPlaceBid.setText("Place Bid");
     }
 
     @FXML
     private void handleBack(ActionEvent event) {
-        // Dọn dẹp: dừng countdown, huỷ listener, gửi unwatch
-        if (countdownTimeline != null) countdownTimeline.stop();
-        ClientSocket.getInstance().clearBidUpdateListener();
-        if (currentItem != null) try {
-            auctionService.unwatchSession(currentItem.getSessionId());
+        autoBidManager.stop();
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (currentItem != null) {
+            realtimeManager.unwatch(currentItem.getSessionId());
         }
+
         ((Stage) btnBack.getScene().getWindow()).close();
     }
 
