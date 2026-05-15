@@ -1,16 +1,21 @@
 package com.auction.server.controller;
 
+import com.auction.dto.BidHistoryEntryDTO;
 import com.auction.dto.UserSessionDTO;
 import com.auction.exception.InsufficientBalanceException;
 import com.auction.exception.InvalidBidException;
 import com.auction.model.AuctionSession;
+import com.auction.model.BidTransaction;
 import com.auction.model.Bidder;
 import com.auction.model.User;
+import com.auction.request.GetBidHistoryRequest;
 import com.auction.request.PlaceBidRequest;
 import com.auction.request.SetAutoBidRequest;
 import com.auction.response.BidUpdateResponse;
+import com.auction.response.GetBidHistoryResponse;
 import com.auction.response.PlaceBidResponse;
 import com.auction.response.SetAutoBidResponse;
+import com.auction.server.dao.BidDAO;
 import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.*;
 
@@ -24,16 +29,18 @@ public class BiddingController {
     private final AutoBiddingService autoBiddingService;
     private final BidIncrementService bidIncrementService;
     private final UserService userService;
+    private final BidDAO bidDAO;
 
     public BiddingController(BiddingService biddingService, SessionService sessionService,
                              SessionWatchRegistry sessionWatchRegistry, AutoBiddingService autoBiddingService,
-                             BidIncrementService bidIncrementService, UserService userService) {
+                             BidIncrementService bidIncrementService, UserService userService, BidDAO bidDAO) {
         this.biddingService = biddingService;
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.sessionService = sessionService;
         this.autoBiddingService = autoBiddingService;
         this.bidIncrementService = bidIncrementService;
         this.userService = userService;
+        this.bidDAO = bidDAO;
     }
 
     public PlaceBidResponse placeBid(PlaceBidRequest request) {
@@ -247,5 +254,52 @@ public class BiddingController {
         }
 
         return dto;
+    }
+
+    public GetBidHistoryResponse getBidHistory(GetBidHistoryRequest request) {
+        try {
+            if (request.getSessionId() == null || request.getSessionId().isBlank()) {
+                return new GetBidHistoryResponse(false, "Session ID is required", List.of());
+            }
+
+            List<BidTransaction> bids = bidDAO.getBidsBySession(request.getSessionId());
+
+            List<BidHistoryEntryDTO> history = bids.stream()
+                    .map(bid -> {
+                        String username = resolveUsername(bid.getBidderId());
+                        long timeMillis = bid.getBidTime() != null
+                                ? bid.getBidTime()
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()
+                                : 0L;
+
+                        return new BidHistoryEntryDTO(
+                                username,
+                                bid.getBidAmount(),
+                                timeMillis
+                        );
+                    })
+                    .toList();
+
+            return new GetBidHistoryResponse(true, "Get bid history successfully", history);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new GetBidHistoryResponse(false, "Get bid history failed: " + e.getMessage(), List.of());
+        }
+    }
+
+    private String resolveUsername(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return null;
+        }
+
+        try {
+            User user = userService.getUserById(userId);
+            return user.getUsername();
+        } catch (Exception e) {
+            return "Unknown";
+        }
     }
 }
