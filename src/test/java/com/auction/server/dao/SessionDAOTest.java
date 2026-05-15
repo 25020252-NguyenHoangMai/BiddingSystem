@@ -152,7 +152,7 @@ class SessionDAOTest {
         when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
         when(preparedStatement.executeUpdate()).thenReturn(0);
 
-        AuctionException exception = assertThrows(AuctionException.class, () -> sessionDAO.updateStatus("ss1", "CLOSED"));
+        AuctionException exception = assertThrows(AuctionException.class, () -> sessionDAO.updateStatus(connection, "ss1", "CLOSED"));
         assertEquals("Auction session is not found to update status.", exception.getMessage());
     }
 

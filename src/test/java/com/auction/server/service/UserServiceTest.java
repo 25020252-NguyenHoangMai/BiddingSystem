@@ -53,10 +53,6 @@ public class UserServiceTest {
     }
 
 
-
-    //TEST REGISTER
-
-
     @Nested
     class TestRegister {
         @Test
@@ -83,13 +79,13 @@ public class UserServiceTest {
 
             assertEquals(60, testUser.getPassword().length(), "Lỗi: Mật khẩu chưa được băm!");
 
-            // Đảm bảo hàm insertUser đã được gọi đúng 1 lần để lưu xuống DB
+
             verify(userDAO, times(1)).insertUser(testUser);
         }
     }
 
 
-    //TEST LOGIN
+
 
 
     @Nested
@@ -126,21 +122,17 @@ public class UserServiceTest {
     }
 
 
-    //TEST CHANGE PASSWORD
+
 
 
     @Test
     void testChangePassword_ThanhCong() {
         userService.changePassword("U01", "new_password_xịn");
 
-        // Không test được kết quả trực tiếp, nên test xem UserService
-        // có gọi DAO để update mật khẩu (đã băm) thành công không
         verify(userDAO, times(1)).updatePassword(eq("U01"), anyString());
     }
 
 
-
-    //TEST UPDATE PROFILE
 
 
     @Nested
@@ -148,7 +140,7 @@ public class UserServiceTest {
         @Test
         void UsernameDaTonTaiCuaNguoiKhac_PhaiNemLoi() {
 
-            User otherPerson = new Bidder(); // Đổi từ DTO sang Bidder
+            User otherPerson = new Bidder();
             otherPerson.setId("U02");
             otherPerson.setUsername("mai_dao");
 
@@ -174,8 +166,6 @@ public class UserServiceTest {
         }
     }
 
-
-    //TEST GET USER BY ID & USERNAME
 
 
     @Test
