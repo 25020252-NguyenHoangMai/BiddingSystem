@@ -80,7 +80,11 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         Task<SessionWatchResponse> task = new Task<>() {
             @Override
             protected SessionWatchResponse call() throws Exception {
-                return auctionService.watchSession(item.getSessionId());
+                String userId = ClientSession.getCurrentUser() != null
+                        ? ClientSession.getCurrentUser().getId()
+                        : null;
+
+                return auctionService.watchSession(item.getSessionId(), userId);
             }
         };
 
