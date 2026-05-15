@@ -43,7 +43,7 @@ public class    MainServer {
         ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
-                                                userService);
+                                                userService, bidDAO);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
                                                 sessionService, userService, bidIncrementService);
 

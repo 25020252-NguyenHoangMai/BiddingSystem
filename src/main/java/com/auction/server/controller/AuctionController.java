@@ -2,6 +2,7 @@ package com.auction.server.controller;
 
 import com.auction.request.*;
 import com.auction.response.ErrorResponse;
+import com.auction.response.GetBidHistoryResponse;
 import com.auction.response.Response;
 import com.auction.server.realtime.AuctionSessionObserver;
 import com.auction.server.realtime.DashboardObserver;
@@ -50,6 +51,9 @@ public class AuctionController {
         }
         if (request instanceof SetAutoBidRequest setAutoBidRequest) {
             return biddingController.setAutoBid(setAutoBidRequest);
+        }
+        if (request instanceof GetBidHistoryRequest getBidHistoryRequest) {
+            return biddingController.getBidHistory(getBidHistoryRequest);
         }
 
         if (request instanceof WatchSessionRequest watchSessionRequest) {

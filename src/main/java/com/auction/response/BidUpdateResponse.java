@@ -8,10 +8,11 @@ public class BidUpdateResponse extends Response {
     private String status;
     private Long endTimeMillis;
     private Double minimumNextBid;
+    private String bidderUsername;
 
     public BidUpdateResponse(boolean success, String message, String sessionId, Double currentPrice,
                              String currentWinnerId, String currentWinnerUsername, String status, Long endTimeMillis,
-                             Double minimumNextBid) {
+                             Double minimumNextBid, String bidderUsername) {
         super(success, message);
         this.sessionId = sessionId;
         this.currentPrice = currentPrice;
@@ -20,6 +21,7 @@ public class BidUpdateResponse extends Response {
         this.status = status;
         this.endTimeMillis = endTimeMillis;
         this.minimumNextBid = minimumNextBid;
+        this.bidderUsername = bidderUsername;
     }
 
     public String getSessionId() {
@@ -48,5 +50,9 @@ public class BidUpdateResponse extends Response {
 
     public Double getMinimumNextBid() {
         return minimumNextBid;
+    }
+
+    public String getBidderUsername() {
+        return bidderUsername;
     }
 }

@@ -1,5 +1,6 @@
 package com.auction.client.service;
 
+import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
 import com.auction.request.PlaceBidRequest;
 import com.auction.request.UnwatchSessionRequest;
@@ -21,9 +22,13 @@ public class AuctionService {
         return socket.takePlaceBidResponse();
     }
 
-    public SessionWatchResponse watchSession(String sessionId) throws Exception {
+    public SessionWatchResponse watchSession(String sessionId, String userID) throws Exception {
         socket.connect();
-        socket.sendRequest(new WatchSessionRequest(sessionId));
+        String userId = ClientSession.getCurrentUser() != null
+                ? ClientSession.getCurrentUser().getId()
+                : null;
+
+        socket.sendRequest(new WatchSessionRequest(sessionId, userId));
 
         Object raw = socket.receiveResponse();
 
