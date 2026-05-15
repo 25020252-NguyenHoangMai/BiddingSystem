@@ -187,9 +187,11 @@ public class AutoBiddingService {
         }
 
         AuctionSession updatedSession = sessionService.getSession(sessionId);
+        String bidderUsername = resolveWinnerUsername(bidderId);
+
         if (updatedSession == null) {
             return new BidResult(true, "Auto bid placed but failed to reload session",
-                    sessionId, autoBidAmount, bidderId, resolveWinnerUsername(bidderId), null);
+                    sessionId, autoBidAmount, bidderId, bidderUsername, null, bidderUsername, autoBidAmount);
         }
 
         boolean extended = false;
@@ -208,7 +210,17 @@ public class AutoBiddingService {
                 ? "Auto bid placed successfully. Auction time extended due to anti-sniping."
                 : "Auto bid placed successfully";
 
-        return buildCurrentStateResult(true, successMessage, updatedSession);
+        return new BidResult(
+                true,
+                successMessage,
+                updatedSession.getId(),
+                updatedSession.getCurrentPrice(),
+                updatedSession.getCurrentWinnerId(),
+                resolveWinnerUsername(updatedSession.getCurrentWinnerId()),
+                updatedSession.getStatus(),
+                bidderUsername,
+                autoBidAmount
+        );
     }
 
     public List<BidResult> processAutoBidsAfterBid(String sessionId, String triggeringBidderId) {

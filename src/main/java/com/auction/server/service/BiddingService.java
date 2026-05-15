@@ -69,9 +69,11 @@ public class BiddingService { // Xử lí đặt giá
         // sau transaction: reload session mới nhất
         AuctionSession updatedSession = sessionService.getSession(sessionId);
 
+        String bidderUsername = resolveWinnerUsername(bidderId);
+
         if (updatedSession == null) {
             return new BidResult(true,"Bid placed successfully but failed to reload updated session",
-                            sessionId, bidAmount, bidderId, resolveWinnerUsername(bidderId),null);
+                            sessionId, bidAmount, bidderId, bidderUsername,null, bidderUsername, bidAmount);
         }
 
         //antisniping check
@@ -94,7 +96,9 @@ public class BiddingService { // Xử lí đặt giá
                 updatedSession.getCurrentPrice(),
                 updatedSession.getCurrentWinnerId(),
                 resolveWinnerUsername(updatedSession.getCurrentWinnerId()),
-                updatedSession.getStatus()
+                updatedSession.getStatus(),
+                bidderUsername,
+                bidAmount
         );
     }
 
