@@ -4,6 +4,7 @@ import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
 import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
+import com.auction.dto.UserSessionDTO;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.PlaceBidResponse;
 import com.auction.response.SessionWatchResponse;
@@ -27,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AuctionDetailController implements ClientSocket.BidUpdateListener {
 
     @FXML private Label lblCategory, lblName, lblTimer, lblCurrentBid, lblLeadingUser,
-            lblMinBidHint, lblSeller, lblStartingPrice, lblReservedBalance, lblAvailableBalance;
+            lblMinBidHint, lblSeller, lblStartingPrice, lblAvailableBalance;
     @FXML private Text txtDescription;
     @FXML private GridPane gridSpecs;
     @FXML private TextField txtBidAmount;
@@ -127,7 +128,7 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     }
 
     private void addBidHistoryEntry(BidUpdateResponse update) {
-        if (update.getCurrentWinnerUsername() == null || update.getCurrentWinnerUsername().isBlank()) {
+        if (update.getBidderUsername() == null || update.getBidderUsername().isBlank()) {
             return;
         }
 
@@ -140,8 +141,14 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         String timeStr = new java.text.SimpleDateFormat("HH:mm:ss")
                 .format(new java.util.Date());
 
+        String bidderName =
+                isMe
+                        ? update.getBidderUsername() + " (you)"
+                        : update.getBidderUsername();
+
         String entry = String.format("[%s]  %-18s  %s",
                 timeStr,
+                bidderName,
                 isMe ? update.getCurrentWinnerUsername() + " (you)" : update.getCurrentWinnerUsername(),
                 fmt.format(update.getCurrentPrice()));
 
@@ -217,18 +224,13 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
     }
 
     private void updateBalanceLabel() {
-        if (ClientSession.getCurrentUser() != null) {
-            double balance = ClientSession.getCurrentUser().getBalance();
-            double reserved = ClientSession.getCurrentUser().getReservedBalance();
-            double available = balance - reserved;
+        UserSessionDTO user = ClientSession.getCurrentUser();
 
-            lblReservedBalance.setText(fmt.format(reserved));
-            lblAvailableBalance.setText(fmt.format(available));
+        if (user == null) { return; }
 
-        } else {
-            lblReservedBalance.setText("$0.00");
-            lblAvailableBalance.setText("$0.00");
-        }
+        double available = user.getAvailableBalance();
+
+        lblAvailableBalance.setText(String.format("Available Balance: %,.0f", available));
     }
 
     private void startCountdown(long endTimeMillis) {
@@ -319,6 +321,10 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             PlaceBidResponse res = bidTask.getValue();
 
             if (res.isSuccess()) {
+                if (res.getUpdatedUser() != null) {
+                    ClientSession.setCurrentUser(res.getUpdatedUser());
+                }
+
                 currentItem.setCurrentPrice(res.getCurrentPrice());
                 currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
                 currentItem.setSessionStatus(res.getStatus());
@@ -393,6 +399,10 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
                         if (!res.isSuccess()) {
                             Thread.sleep(1000);
                             continue;
+                        }
+
+                        if (res.getUpdatedUser() != null) {
+                            ClientSession.setCurrentUser(res.getUpdatedUser());
                         }
 
                         currentItem.setCurrentPrice(res.getCurrentPrice());
