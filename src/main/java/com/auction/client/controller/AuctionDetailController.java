@@ -170,6 +170,8 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
             btnPlaceBid.setDisable(true);
             btnPlaceBid.setText("Management Mode");
 
+            btnAutoBid.setDisable(true);
+
             lblMinBidHint.setText("Monitoring auction as Seller");
         }
     }
