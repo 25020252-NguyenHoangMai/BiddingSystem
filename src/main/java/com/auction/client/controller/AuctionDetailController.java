@@ -153,7 +153,6 @@ public class AuctionDetailController implements ClientSocket.BidUpdateListener {
         String entry = String.format("[%s]  %-18s  %s",
                 timeStr,
                 bidderName,
-                isMe ? update.getCurrentWinnerUsername() + " (you)" : update.getCurrentWinnerUsername(),
                 fmt.format(update.getCurrentPrice()));
 
         lvBidHistory.getItems().add(0, entry);

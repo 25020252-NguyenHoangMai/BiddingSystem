@@ -35,7 +35,7 @@ public class AuctionService {
         if (!(raw instanceof SessionWatchResponse response)) {
             throw new IllegalStateException("Expected SessionWatchResponse but got: " + raw);
         }
-
+        socket.clearResponseQueue();
         return response;
     }
 
