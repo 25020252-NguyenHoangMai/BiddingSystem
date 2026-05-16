@@ -289,4 +289,12 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
+    public void finalizeExpiredSessions() {
+        for (AuctionSession session : sessionDAO.getAllSessions()) {
+            synchronized (session) {
+                updateStatusByTime(session);
+            }
+        }
+    }
+
 }
