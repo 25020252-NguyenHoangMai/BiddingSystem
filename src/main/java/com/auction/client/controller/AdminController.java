@@ -4,15 +4,14 @@ import com.auction.client.service.ProductService;
 import com.auction.client.service.UserClientService;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.VBox;
 
@@ -76,16 +75,45 @@ public class AdminController {
     }
 
     private void loadDataFromServer() {
-        try {
-            List<ItemDTO> products = productService.getAllProducts();
-            List<UserSessionDTO> users = userService.getAllUsers();
+        itemTable.setPlaceholder(new javafx.scene.control.Label("Đang tải dữ liệu..."));
+        userTable.setPlaceholder(new javafx.scene.control.Label("Đang tải dữ liệu..."));
 
-            masterDataItems.setAll(products);
-            masterDataUsers.setAll(users);
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                List<ItemDTO> products = productService.getAllProducts();
+                List<UserSessionDTO> users = userService.getAllUsers();
 
-        } catch (Exception e) {
-            System.err.println("Lỗi khi tải dữ liệu: " + e.getMessage());
-        }
+                Platform.runLater(() -> {
+                    masterDataItems.setAll(products);
+                    masterDataUsers.setAll(users);
+
+                    if (products.isEmpty()) {
+                        itemTable.setPlaceholder(new javafx.scene.control.Label("Không có sản phẩm nào"));
+                    }
+                    if (users.isEmpty()) {
+                        userTable.setPlaceholder(new javafx.scene.control.Label("Không có người dùng nào"));
+                    }
+                });
+
+                return null;
+            }
+        };
+
+        task.setOnFailed(e -> Platform.runLater(() -> {
+            itemTable.setPlaceholder(new javafx.scene.control.Label("Lỗi tải dữ liệu"));
+            userTable.setPlaceholder(new javafx.scene.control.Label("Lỗi tải dữ liệu"));
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Lỗi");
+            alert.setHeaderText(null);
+            alert.setContentText("Lỗi khi tải dữ liệu: " + task.getException().getMessage());
+            alert.show();
+        }));
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void setupSearchFilters() {

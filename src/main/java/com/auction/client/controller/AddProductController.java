@@ -3,6 +3,7 @@ package com.auction.client.controller;
 import com.auction.client.ClientSession;
 import com.auction.client.service.ProductService;
 import com.auction.dto.ItemDTO;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -66,46 +67,58 @@ public class AddProductController {
 
     @FXML
     private void handleAddAndStart(ActionEvent event) {
-        if (submitting) {
+        if (submitting) return;
+
+        // 1. Validate và build item trên UI thread trước
+        ItemDTO item;
+        try {
+            item = buildItem();
+        } catch (NumberFormatException e) {
+            errorLabel.setText("Giá hoặc Mileage phải là số hợp lệ!");
+            errorLabel.setVisible(true);
+            return;
+        } catch (Exception e) {
+            errorLabel.setText(e.getMessage());
+            errorLabel.setVisible(true);
             return;
         }
 
+        // 2. Gửi network request trên background thread
         submitting = true;
         btnSubmit.setDisable(true);
         btnSubmit.setText("Đang xử lý...");
         errorLabel.setVisible(false);
 
-        try {
-            // 1. Build đối tượng từ form UI
-            ItemDTO item = buildItem();
+        Task<ItemDTO> task = new Task<>() {
+            @Override
+            protected ItemDTO call() throws Exception {
+                return service.addProduct(item);
+            }
+        };
 
-            // 2. Gọi service (nếu thất bại, service sẽ tự throw RuntimeException)
-            ItemDTO savedItem = service.addProduct(item);
-
-            // 3. Thông báo thành công
+        task.setOnSucceeded(e -> {
+            ItemDTO savedItem = task.getValue();
             if (savedItem != null) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Thông báo");
                 alert.setHeaderText(null);
                 alert.setContentText("Đã thêm sản phẩm '" + savedItem.getName() + "' thành công!");
                 alert.showAndWait();
-                close(); // Đóng window hiện tại
+                close();
             }
+        });
 
-        } catch (NumberFormatException e) {
-            errorLabel.setText("Giá hoặc Mileage phải là số hợp lệ!");
-            errorLabel.setVisible(true);
+        task.setOnFailed(e -> {
             submitting = false;
             btnSubmit.setDisable(false);
             btnSubmit.setText("Thêm sản phẩm");
-        } catch (Exception e) {
-            // Hiển thị mọi lỗi từ kết nối, logic server,... lên UI
-            errorLabel.setText(e.getMessage());
+            errorLabel.setText(task.getException().getMessage());
             errorLabel.setVisible(true);
-            submitting = false;
-            btnSubmit.setDisable(false);
-            btnSubmit.setText("Thêm sản phẩm");
-        }
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // Tách riêng logic build + validate
