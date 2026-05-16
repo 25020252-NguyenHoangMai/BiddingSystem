@@ -63,4 +63,27 @@ class AutoBidDAOTest {
         }
     }
 
-}
+    @Nested
+    class TestDeactivateAutoBid {//Deactivate: vô  hiệu hóa
+        @Test
+        void deactivate_Success() throws SQLException {
+            when(mockPs.executeUpdate()).thenReturn(1);
+
+            assertDoesNotThrow(() -> autoBidDAO.deactivateAutoBid(mockConn, "S1", "U1"));
+
+            verify(mockPs).setString(1, "S1");
+            verify(mockPs).setString(2, "U1");
+            verify(mockPs).executeUpdate();
+        }
+
+        @Test
+        void deactivate_ThrowsAuctionException_OnSQLException() throws SQLException {
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("DB lock error"));
+
+            assertThrows(AuctionException.class, () ->
+                    autoBidDAO.deactivateAutoBid(mockConn, "S1", "U1")
+            );
+        }
+    }
+
+    }
