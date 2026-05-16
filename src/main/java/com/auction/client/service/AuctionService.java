@@ -2,14 +2,8 @@ package com.auction.client.service;
 
 import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
-import com.auction.request.GetBidHistoryRequest;
-import com.auction.request.PlaceBidRequest;
-import com.auction.request.UnwatchSessionRequest;
-import com.auction.request.WatchSessionRequest;
-import com.auction.response.BidUpdateResponse;
-import com.auction.response.GetBidHistoryResponse;
-import com.auction.response.PlaceBidResponse;
-import com.auction.response.SessionWatchResponse;
+import com.auction.request.*;
+import com.auction.response.*;
 
 public class AuctionService {
 
@@ -57,5 +51,21 @@ public class AuctionService {
     public void unwatchSession(String sessionId) throws Exception {
         socket.connect();
         socket.sendRequest(new UnwatchSessionRequest(sessionId));
+    }
+
+    public SetAutoBidResponse setAutoBid(String sessionId, String bidderId, double maxAmount) throws Exception {
+        socket.connect();
+
+        socket.sendRequest(new SetAutoBidRequest(sessionId, bidderId, maxAmount));
+
+        Object raw = socket.receiveResponse();
+
+        if (!(raw instanceof SetAutoBidResponse response)) {
+            throw new IllegalStateException(
+                    "Expected SetAutoBidResponse but got: " + raw
+            );
+        }
+
+        return response;
     }
 }

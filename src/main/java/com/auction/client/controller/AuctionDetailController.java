@@ -9,6 +9,7 @@ import com.auction.dto.UserSessionDTO;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.GetBidHistoryResponse;
 import com.auction.response.PlaceBidResponse;
+import com.auction.response.SetAutoBidResponse;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -40,7 +41,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     private Timeline countdownTimeline;
 
-    private final AutoBidService autoBidManager = new AutoBidService(auctionService);
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
 
@@ -235,7 +235,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             lblTimer.setText("CLOSED");
             btnPlaceBid.setDisable(true);
             btnAutoBid.setDisable(true);
-            autoBidManager.stop();
             if (countdownTimeline != null) countdownTimeline.stop();
         }
     }
@@ -287,7 +286,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 lblTimer.setText("EXPIRED");
                 btnPlaceBid.setDisable(true);
                 btnAutoBid.setDisable(true);
-                autoBidManager.stop();
                 countdownTimeline.stop();
             }
         }));
@@ -393,31 +391,58 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     @FXML
     private void handleAutoBid(ActionEvent event) {
-        autoBidManager.start(
-                currentItem,
+        TextInputDialog dialog = new TextInputDialog();
 
-                () -> btnAutoBid.setText("Stop AutoBid"),
+        dialog.setTitle("Auto Bid");
+        dialog.setHeaderText("Enable Auto Bid");
+        dialog.setContentText("Enter maximum auto bid:");
 
-                () -> btnAutoBid.setText("AutoBid"),
+        Optional<String> result = dialog.showAndWait();
 
-                res -> {
-                    currentItem.setCurrentPrice(res.getCurrentPrice());
-                    currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
-                    currentItem.setSessionStatus(res.getStatus());
-                    currentItem.setMinimumNextBid(res.getMinimumNextBid());
+        if (result.isEmpty()) { return; }
 
-                    refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
+        try {
+            double maxBid = Double.parseDouble(result.get());
 
-                    updateBidHint(res.getMinimumNextBid());
-                    updateBalanceLabel();
-                },
+            var currentUser = ClientSession.getCurrentUser();
+            if (currentUser == null) {
+                showAlert(Alert.AlertType.ERROR, "AutoBid", "User session not found.");
+                return;
+            }
 
-                error -> showAlert(
-                        Alert.AlertType.ERROR,
-                        "AutoBid",
-                        error
-                )
-        );
+            Task<SetAutoBidResponse> task = new Task<>() {
+                @Override
+                protected SetAutoBidResponse call() throws Exception {
+                    return auctionService.setAutoBid(
+                            currentItem.getSessionId(),
+                            currentUser.getId(),
+                            maxBid
+                    );
+                }
+            };
+
+            task.setOnSucceeded(e -> {
+                SetAutoBidResponse res = task.getValue();
+
+                if (res.isSuccess()) {
+                    showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
+
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
+                }
+            });
+
+            task.setOnFailed(e -> {
+                showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
+            });
+
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            thread.start();
+
+        } catch (NumberFormatException ex) {
+            showAlert(Alert.AlertType.ERROR, "Invalid Input", "Please enter a valid number.");
+        }
     }
 
     private void resetBidButton() {
@@ -429,8 +454,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     @FXML
     private void handleBack(ActionEvent event) {
-        autoBidManager.stop();
-
         if (currentItem != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
