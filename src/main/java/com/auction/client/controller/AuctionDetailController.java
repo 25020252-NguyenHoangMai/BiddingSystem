@@ -16,6 +16,8 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
@@ -23,6 +25,8 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.text.NumberFormat;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class AuctionDetailController implements AuctionRealtimeService.AuctionUpdateListener {
@@ -34,6 +38,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     @FXML private TextField txtBidAmount;
     @FXML private ListView<String> lvBidHistory;
     @FXML private Button btnBack, btnPlaceBid, btnAutoBid;
+    @FXML private LineChart<String, Number> bidPriceChart;
 
     // ===== STATE =====
     private ItemDTO currentItem;
@@ -41,6 +46,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     private Timeline countdownTimeline;
     private volatile boolean watching = true;
+    private XYChart.Series<String, Number> priceSeries;
+    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
@@ -52,6 +59,13 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         lvBidHistory.setPlaceholder(new Label("No bids yet. Be the first!"));
         updateBalanceLabel();
         realtimeManager.setListener(this);
+
+        // Khởi tạo LineChart
+        priceSeries = new XYChart.Series<>();
+        priceSeries.setName("Bid Price");
+        bidPriceChart.getData().add(priceSeries);
+        bidPriceChart.setLegendVisible(false);
+        bidPriceChart.setCreateSymbols(true);
     }
 
     // Điền toàn bộ dữ liệu từ ItemDTO lên màn hình
@@ -96,6 +110,19 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                             ? ClientSession.getCurrentUser().getUsername() : "";
 
                     List<BidHistoryEntryDTO> history = new ArrayList<>(res.getHistory());
+                    // Thêm vào chart theo thứ tự thời gian (cũ → mới), tối đa 20 điểm gần nhất
+                    List<BidHistoryEntryDTO> chartData = history.size() > 20
+                            ? history.subList(history.size() - 20, history.size())
+                            : history;
+                    for (BidHistoryEntryDTO entry : chartData) {
+                        String timeLabel = LocalTime.ofInstant(
+                                java.time.Instant.ofEpochMilli(entry.getBidTimeMillis()),
+                                java.time.ZoneId.systemDefault()
+                        ).format(TIME_FMT);
+                        priceSeries.getData().add(
+                                new XYChart.Data<>(timeLabel, entry.getBidAmount()));
+                    }
+
                     Collections.reverse(history);
                     for (BidHistoryEntryDTO entry : history) {
                         lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
@@ -196,6 +223,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 );
 
         lvBidHistory.getItems().add(0, entry);
+
+        // Cập nhật LineChart realtime
+        String timeLabel = LocalTime.now().format(TIME_FMT);
+        priceSeries.getData().add(new XYChart.Data<>(timeLabel, update.getCurrentPrice()));
+        // Giữ tối đa 20 điểm gần nhất trên trục X
+        if (priceSeries.getData().size() > 20) {
+            priceSeries.getData().remove(0);
+        }
     }
 
     // Vô hiệu hóa tính năng đặt bid nếu là Seller
