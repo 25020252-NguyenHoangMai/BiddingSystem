@@ -5,6 +5,9 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.LineChart?>
 <GridPane prefHeight="700.0" prefWidth="1050.0" style="-fx-background-color: #f4f7f6;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionDetailController">
 
     <columnConstraints>
@@ -117,19 +120,43 @@
             </VBox>
         </VBox>
 
-        <!-- ============ RIGHT PANEL – Bid History ============ -->
+        <!-- ============ RIGHT PANEL – Bid History + Price Chart ============ -->
         <VBox spacing="15.0" style="-fx-background-color: white;" GridPane.columnIndex="1">
             <padding><Insets bottom="30.0" left="30.0" right="30.0" top="30.0" /></padding>
 
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Bid History" />
-                <Label style="-fx-background-color: #27ae60; -fx-text-fill: white;                               -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="RECENT" />
+                <Label style="-fx-background-color: #27ae60; -fx-text-fill: white;
+                              -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="RECENT" />
             </HBox>
 
             <ListView fx:id="lvBidHistory"
+                      prefHeight="250.0"
                       style="-fx-background-insets: 0; -fx-font-family: 'Courier New'; -fx-font-size: 13px;"
-                      VBox.vgrow="ALWAYS"/>
-        </VBox>
+                      VBox.vgrow="SOMETIMES"/>
 
+            <!-- Price curve chart -->
+            <VBox spacing="6">
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label style="-fx-font-size: 15px; -fx-font-weight: bold;" text="Price Curve" />
+                    <Label style="-fx-background-color: #3498db; -fx-text-fill: white;
+                                  -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="REALTIME" />
+                </HBox>
+
+                <LineChart fx:id="bidPriceChart"
+                           animated="false"
+                           prefHeight="220.0"
+                           style="-fx-background-color: transparent;"
+                           VBox.vgrow="ALWAYS">
+                    <xAxis>
+                        <CategoryAxis label="Time" tickLabelRotation="45" />
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Price ($)" forceZeroInRange="false" />
+                    </yAxis>
+                </LineChart>
+            </VBox>
+
+        </VBox>
     </children>
 </GridPane>
