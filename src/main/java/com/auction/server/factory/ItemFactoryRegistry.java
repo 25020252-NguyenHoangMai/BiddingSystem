@@ -6,6 +6,10 @@ import java.util.Map;
 public class ItemFactoryRegistry {
     private static final Map<String, ItemFactory> factories = new HashMap<>();
 
+    static {
+        initializeDefaultFactories();
+    }
+
     public static void registerFactory(String itemType, ItemFactory factory) {
         factories.put(itemType.toUpperCase(), factory);
     }
