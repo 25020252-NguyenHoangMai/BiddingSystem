@@ -1,10 +1,12 @@
 package com.auction.client.controller;
 
 import com.auction.client.ClientSession;
+import com.auction.client.network.ClientSocket;
 import com.auction.client.service.UserClientService;
 import com.auction.client.util.ImageUtil;
 import com.auction.dto.UserSessionDTO;
 
+import com.auction.request.UnwatchDashboardRequest;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
@@ -168,6 +170,21 @@ public class ProfileController {
 
     @FXML
     private void handleLogout() {
+        // Dọn socket trước khi logout
+        ClientSocket socket = ClientSocket.getInstance();
+        socket.setDashboardUpdateListener(null);
+        socket.clearResponseQueue();
+        Task<Void> unwatch = new Task<>() {
+            @Override
+            protected Void call() {
+                socket.sendRequest(new UnwatchDashboardRequest());
+                return null;
+            }
+        };
+        Thread t = new Thread(unwatch);
+        t.setDaemon(true);
+        t.start();
+
         ClientSession.clear();
         try {
             Stage profileStage = (Stage) fullNameLabel.getScene().getWindow();
