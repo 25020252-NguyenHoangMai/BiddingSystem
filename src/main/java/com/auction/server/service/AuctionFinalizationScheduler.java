@@ -53,7 +53,7 @@ public class AuctionFinalizationScheduler {
             if (finalizedSessions == null || finalizedSessions.isEmpty()) {
                 return;
             }
-            for (AuctionSession auctionSession : sessionService.finalizeExpiredSessions()) {
+            for (AuctionSession auctionSession : finalizedSessions) {
                 try {
                     broadcastSessionFinalized(auctionSession);
                     broadcastDashboardUpdated(auctionSession);

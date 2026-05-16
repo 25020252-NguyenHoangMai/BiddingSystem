@@ -300,7 +300,7 @@ public class SessionService { // Quản lí phiên đấu giá
 
                 String newStatus = session.getStatus();
 
-                if (!(oldStatus.equals(newStatus)) && (newStatus.equals("PAID") || newStatus.equals("FINISHED"))) {
+                if (!(oldStatus.equals(newStatus)) && (STATUS_PAID.equals(newStatus) || STATUS_FINISHED.equals(newStatus))) {
                     finalizedSessions.add(session);
                 }
             }
