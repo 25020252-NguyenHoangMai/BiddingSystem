@@ -7,8 +7,9 @@ import com.auction.response.*;
 
 public class AuctionService {
 
-    private final ClientSocket socket =
-            ClientSocket.getInstance();
+    private final ClientSocket socket = ClientSocket.getInstance();
+    // Tách watch socket riêng
+    private final ClientSocket watchSocket = new ClientSocket();
 
     // ===== PLACE BID =====
     public PlaceBidResponse placeBid(String sessionId, String bidderId, double amount) throws Exception {
@@ -18,20 +19,17 @@ public class AuctionService {
         return socket.takePlaceBidResponse();
     }
 
-    public SessionWatchResponse watchSession(String sessionId, String userID) throws Exception {
-        socket.connect();
-        String userId = ClientSession.getCurrentUser() != null
-                ? ClientSession.getCurrentUser().getId()
-                : null;
+    public SessionWatchResponse watchSession(String sessionId, String userId) throws Exception {
+        watchSocket.connect();
 
-        socket.sendRequest(new WatchSessionRequest(sessionId, userId));
+        watchSocket.sendRequest(new WatchSessionRequest(sessionId, userId));
 
-        Object raw = socket.receiveResponse();
+        Object raw = watchSocket.receiveResponse();
 
         if (!(raw instanceof SessionWatchResponse response)) {
             throw new IllegalStateException("Expected SessionWatchResponse but got: " + raw);
         }
-        socket.clearResponseQueue();
+        //socket.clearResponseQueue();
         return response;
     }
 
@@ -49,8 +47,8 @@ public class AuctionService {
     }
 
     public void unwatchSession(String sessionId) throws Exception {
-        socket.connect();
-        socket.sendRequest(new UnwatchSessionRequest(sessionId));
+        watchSocket.connect();
+        watchSocket.sendRequest(new UnwatchSessionRequest(sessionId));
     }
 
     public SetAutoBidResponse setAutoBid(String sessionId, String bidderId, double maxAmount) throws Exception {
@@ -67,5 +65,11 @@ public class AuctionService {
         }
 
         return response;
+    }
+
+    public void closeWatchSocket() {
+        try {
+            watchSocket.close();
+        } catch (Exception ignored) {}
     }
 }

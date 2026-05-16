@@ -40,6 +40,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final AuctionService auctionService = new AuctionService();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     private Timeline countdownTimeline;
+    private volatile boolean watching = true;
 
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
@@ -142,6 +143,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     // ===== OBSERVER CALLBACK — gọi bởi ClientSocket reader thread =====
     @Override
     public void onAuctionUpdated(BidUpdateResponse update) {
+        if (!watching) return;
+
         if (update == null || currentItem == null) return;
         // Lọc đúng session đang xem
         if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
@@ -172,6 +175,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     update.getStatus());
             updateBidHint(update.getMinimumNextBid());
             addBidHistoryEntry(update);
+            updateBalanceLabel();
         });
     }
 
@@ -364,13 +368,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     ClientSession.setCurrentUser(res.getUpdatedUser());
                 }
 
-                currentItem.setCurrentPrice(res.getCurrentPrice());
-                currentItem.setCurrentWinnerUsername(res.getCurrentWinnerUsername());
-                currentItem.setSessionStatus(res.getStatus());
-                currentItem.setMinimumNextBid(res.getMinimumNextBid());
-
-                refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
-                updateBidHint(res.getMinimumNextBid());
                 updateBalanceLabel();
                 txtBidAmount.clear();
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
@@ -410,6 +407,9 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 return;
             }
 
+            btnAutoBid.setDisable(true);
+            btnAutoBid.setText("Processing...");
+
             Task<SetAutoBidResponse> task = new Task<>() {
                 @Override
                 protected SetAutoBidResponse call() throws Exception {
@@ -422,6 +422,9 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             };
 
             task.setOnSucceeded(e -> {
+                btnAutoBid.setDisable(false);
+                btnAutoBid.setText("Auto Bid");
+
                 SetAutoBidResponse res = task.getValue();
 
                 if (res.isSuccess()) {
@@ -433,6 +436,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             });
 
             task.setOnFailed(e -> {
+                btnAutoBid.setDisable(false);
+                btnAutoBid.setText("Auto Bid");
                 showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
             });
 
@@ -448,15 +453,23 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private void resetBidButton() {
         boolean isClosed = currentItem != null && isClosedStatus(currentItem.getSessionStatus());
 
-        btnPlaceBid.setDisable(isClosed);
+        var currentUser = ClientSession.getCurrentUser();
+
+        boolean isSeller = currentUser != null && Objects.equals(currentUser.getId(), currentItem.getSellerId());
+
+        btnPlaceBid.setDisable(isClosed || isSeller);
         btnPlaceBid.setText("Place Bid");
     }
 
     @FXML
     private void handleBack(ActionEvent event) {
+        watching = false;
+
         if (currentItem != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
+
+        auctionService.closeWatchSocket();
 
         ((Stage) btnBack.getScene().getWindow()).close();
     }

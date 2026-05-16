@@ -18,7 +18,7 @@ public class ClientSocket {
     private ObjectInputStream in;
     private Thread readerThread;
 
-    private ClientSocket() {}
+    public ClientSocket() {}
 
     public static ClientSocket getInstance() {
         if (instance == null) {
