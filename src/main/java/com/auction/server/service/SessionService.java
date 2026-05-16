@@ -289,12 +289,24 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
-    public void finalizeExpiredSessions() {
+    public List<AuctionSession> finalizeExpiredSessions() {
+        List<AuctionSession> finalizedSessions = new ArrayList<>();
+
         for (AuctionSession session : sessionDAO.getAllSessions()) {
             synchronized (session) {
+                String oldStatus = session.getStatus();
+
                 updateStatusByTime(session);
+
+                String newStatus = session.getStatus();
+
+                if (!(oldStatus.equals(newStatus)) && (newStatus.equals("PAID") || newStatus.equals("FINISHED"))) {
+                    finalizedSessions.add(session);
+                }
             }
         }
+
+        return finalizedSessions;
     }
 
 }
