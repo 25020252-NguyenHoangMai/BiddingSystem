@@ -124,6 +124,69 @@ class AutoBidDAOTest {
             );
         }
     }
+    @Nested
+    class TestGetActiveAutoBid {
+        @Test
+        void getActiveBid_Found_ReturnsAutoBid() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(true);
 
+            when(mockRs.getString("id")).thenReturn("AB2");
+            when(mockRs.getString("sessionId")).thenReturn("S1");
+            when(mockRs.getString("bidderId")).thenReturn("U2");
+            when(mockRs.getDouble("maxBidAmount")).thenReturn(4500.0);
+            when(mockRs.getBoolean("isActive")).thenReturn(true);
+
+            AutoBid result = autoBidDAO.getActiveAutoBid(mockConn, "S1", "U2");
+
+            assertNotNull(result);
+            assertEquals("AB2", result.getId());
+            assertEquals(4500.0, result.getMaxBidAmount());
+
+            verify(mockPs).setString(1, "S1");
+            verify(mockPs).setString(2, "U2");
+        }
+
+        @Test
+        void getActiveBid_NotFound_ReturnsNull() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(false);
+
+            AutoBid result = autoBidDAO.getActiveAutoBid(mockConn, "S1", "U2");
+
+            assertNull(result);
+        }
+
+        @Test
+        void getActiveBid_ThrowsAuctionException_OnSQLException() throws SQLException {
+            when(mockPs.executeQuery()).thenThrow(new SQLException("Connection lost"));
+
+            assertThrows(AuctionException.class, () ->
+                    autoBidDAO.getActiveAutoBid(mockConn, "S1", "U2")
+            );
+        }
+    }
+
+    @Nested
+    class TestDeactivateAutoBidsBySession {
+        @Test
+        void deactivateAll_Success() throws SQLException {
+            when(mockPs.executeUpdate()).thenReturn(5); //giả sử tắt thành công 5 cấu hình tự động đặt giá
+
+            assertDoesNotThrow(() -> autoBidDAO.deactivateAutoBidsBySession(mockConn, "S1"));
+
+            verify(mockPs).setString(1, "S1");
+            verify(mockPs).executeUpdate();
+        }
+
+        @Test
+        void deactivateAll_ThrowsAuctionException_OnSQLException() throws SQLException {
+            when(mockPs.executeUpdate()).thenThrow(new SQLException("Query fail"));
+
+            assertThrows(AuctionException.class, () ->
+                    autoBidDAO.deactivateAutoBidsBySession(mockConn, "S1")
+            );
+        }
+    }
 
     }
