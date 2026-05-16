@@ -85,5 +85,45 @@ class AutoBidDAOTest {
             );
         }
     }
+    @Nested
+    class TestGetActiveAutoBidsBySession {
+        @Test
+        void getActiveBids_ReturnsList_Success() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+
+            when(mockRs.next()).thenReturn(true, false);
+
+
+            when(mockRs.getString("id")).thenReturn("AB1");
+            when(mockRs.getString("sessionId")).thenReturn("S1");
+            when(mockRs.getString("bidderId")).thenReturn("U1");
+            when(mockRs.getDouble("maxBidAmount")).thenReturn(3000.0);
+            when(mockRs.getBoolean("isActive")).thenReturn(true);
+
+            Timestamp now = Timestamp.valueOf(LocalDateTime.now());
+            when(mockRs.getTimestamp("createdAt")).thenReturn(now);
+            when(mockRs.getTimestamp("updatedAt")).thenReturn(now);
+
+            List<AutoBid> result = autoBidDAO.getActiveAutoBidsBySession(mockConn, "S1");
+
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertEquals("AB1", result.get(0).getId());
+            assertEquals(3000.0, result.get(0).getMaxBidAmount());
+            assertTrue(result.get(0).isActive());
+
+            verify(mockPs).setString(1, "S1");
+        }
+
+        @Test
+        void getActiveBids_ThrowsAuctionException_OnSQLException() throws SQLException {
+            when(mockPs.executeQuery()).thenThrow(new SQLException("Timeout"));
+
+            assertThrows(AuctionException.class, () ->
+                    autoBidDAO.getActiveAutoBidsBySession(mockConn, "S1")
+            );
+        }
+    }
+
 
     }
