@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.util.concurrent.*;
 
 public class ClientSocket {
-    private static ClientSocket instance;
+    private static volatile ClientSocket instance;
 
     private Socket socket;
     private ObjectOutputStream out;
@@ -22,7 +22,11 @@ public class ClientSocket {
 
     public static ClientSocket getInstance() {
         if (instance == null) {
-            instance = new ClientSocket();
+            synchronized (ClientSocket.class) {
+                if (instance == null) {
+                    instance = new ClientSocket();
+                }
+            }
         }
         return instance;
     }
