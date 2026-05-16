@@ -11,7 +11,7 @@ import com.auction.server.service.*;
 
 public class    MainServer {
     public static void main(String[] args) {
-        ItemFactoryRegistry.initializeDefaultFactories();
+//        ItemFactoryRegistry.initializeDefaultFactories();
 
         ItemDAO itemDAO = new ItemDAO();
         UserDAO userDAO = new UserDAO();
