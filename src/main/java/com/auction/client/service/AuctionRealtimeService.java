@@ -32,7 +32,7 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
             );
         }
 
-        ClientSocket.getInstance().setBidUpdateListener(this);
+        auctionService.getWatchSocket().setBidUpdateListener(this);
     }
 
     public void unwatch(String sessionId) {

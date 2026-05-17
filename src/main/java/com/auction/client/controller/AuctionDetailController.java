@@ -147,12 +147,26 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         Task<Void> watchTask = new Task<>() {
             @Override
-            protected Void call() throws Exception {
-                String userId = ClientSession.getCurrentUser() != null
-                                ? ClientSession.getCurrentUser().getId()
-                                : null;
+            protected Void call() {
+                try {
+                    String userId = ClientSession.getCurrentUser() != null
+                            ? ClientSession.getCurrentUser().getId()
+                            : null;
 
-                realtimeManager.watch(item.getSessionId(), userId);
+                    realtimeManager.watch(item.getSessionId(), userId);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                    Platform.runLater(() -> {
+                        showAlert(
+                                Alert.AlertType.ERROR,
+                                "Connection Error",
+                                "Cannot connect to realtime auction server."
+                        );
+                    });
+                }
+
                 return null;
             }
         };

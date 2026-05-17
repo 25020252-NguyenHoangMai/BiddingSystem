@@ -88,9 +88,9 @@ public class ClientSocket {
             startReaderThread();
 
             System.out.println("Connected to server");
-
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[ClientSocket] connect failed: " + e.getMessage());
+            closeSilently();
         }
     }
 
@@ -148,7 +148,9 @@ public class ClientSocket {
     }
 
     public synchronized void sendRequest(Object request) {
-        connect();
+        if (!isConnected()) {
+            connect();
+        }
 
         if (!isConnected()) {
             throw new IllegalStateException("Socket is not connected");

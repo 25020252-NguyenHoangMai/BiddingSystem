@@ -9,7 +9,7 @@ public class AuctionService {
 
     private final ClientSocket socket = ClientSocket.getInstance();
     // Tách watch socket riêng
-    private final ClientSocket watchSocket = new ClientSocket();
+    private final ClientSocket watchSocket = ClientSocket.getInstance();
 
     // ===== PLACE BID =====
     public PlaceBidResponse placeBid(String sessionId, String bidderId, double amount) throws Exception {
@@ -71,5 +71,9 @@ public class AuctionService {
         try {
             watchSocket.close();
         } catch (Exception ignored) {}
+    }
+
+    public ClientSocket getWatchSocket() {
+        return watchSocket;
     }
 }
