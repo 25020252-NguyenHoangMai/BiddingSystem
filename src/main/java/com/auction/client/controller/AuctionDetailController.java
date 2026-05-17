@@ -47,6 +47,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private Timeline countdownTimeline;
     private volatile boolean watching = true;
     private XYChart.Series<String, Number> priceSeries;
+    private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final ClientSessionService sessionManager = new ClientSessionService();
@@ -65,7 +66,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         priceSeries.setName("Bid Price");
         bidPriceChart.getData().add(priceSeries);
         bidPriceChart.setLegendVisible(false);
-        bidPriceChart.setCreateSymbols(true);
+
+        bidPriceChart.setAnimated(false);
+
+        // Tắt animation axis
+        bidPriceChart.getXAxis().setAnimated(false);
+        bidPriceChart.getYAxis().setAnimated(false);
+
+        bidPriceChart.setCreateSymbols(false);
     }
 
     // Điền toàn bộ dữ liệu từ ItemDTO lên màn hình
@@ -105,7 +113,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             GetBidHistoryResponse res = historyTask.getValue();
             if (res != null && res.isSuccess() && res.getHistory() != null) {
                 Platform.runLater(() -> {
+                    // Chỉ load history 1 lần đầu
+                    if (historyLoaded) { return; }
+
+                    historyLoaded = true;
+
                     lvBidHistory.getItems().clear();
+                    priceSeries.getData().clear();
+
                     String me = ClientSession.getCurrentUser() != null
                             ? ClientSession.getCurrentUser().getUsername() : "";
 
@@ -122,14 +137,28 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                                 java.time.Instant.ofEpochMilli(entry.getBidTimeMillis()),
                                 java.time.ZoneId.systemDefault()
                         ).format(TIME_FMT);
-                        priceSeries.getData().add(
-                                new XYChart.Data<>(timeLabel, entry.getBidAmount()));
+
+                        boolean exists = priceSeries.getData().stream()
+                                .anyMatch(d ->
+                                        Objects.equals(d.getXValue(), timeLabel)
+                                                && Objects.equals(d.getYValue(), entry.getBidAmount()));
+
+                        if (!exists) {
+                            priceSeries.getData().add(
+                                    new XYChart.Data<>(timeLabel, entry.getBidAmount()));
+                        }
                     }
 
                     // ListView: mới → cũ
                     List<BidHistoryEntryDTO> sortedDesc = new ArrayList<>(sortedAsc);
                     Collections.reverse(sortedDesc);
-                    for (BidHistoryEntryDTO entry : sortedDesc) {
+
+                    List<BidHistoryEntryDTO> limitedHistory =
+                            sortedDesc.size() > 30
+                                    ? sortedDesc.subList(0, 30)
+                                    : sortedDesc;
+
+                    for (BidHistoryEntryDTO entry : limitedHistory) {
                         lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
                     }
                 });
@@ -241,13 +270,25 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                         me
                 );
 
-        lvBidHistory.getItems().add(0, entry);
+        if (!lvBidHistory.getItems().contains(entry)) {
+            if (lvBidHistory.getItems().size() > 20) {
+                lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
+            }
+        }
 
         // Cập nhật LineChart realtime
         String timeLabel = LocalTime.now().format(TIME_FMT);
-        priceSeries.getData().add(new XYChart.Data<>(timeLabel, update.getCurrentPrice()));
-        // Giữ tối đa 20 điểm gần nhất trên trục X
-        if (priceSeries.getData().size() > 20) {
+        // Tránh duplicate chart point
+        boolean exists = priceSeries.getData().stream()
+                .anyMatch(d ->
+                        Objects.equals(d.getYValue(), update.getCurrentPrice()));
+
+        if (!exists) {
+            priceSeries.getData().add(
+                    new XYChart.Data<>(timeLabel, update.getCurrentPrice()));
+        }
+        // Giữ tối đa 12 điểm gần nhất trên trục X
+        if (priceSeries.getData().size() > 12) {
             priceSeries.getData().remove(0);
         }
     }
