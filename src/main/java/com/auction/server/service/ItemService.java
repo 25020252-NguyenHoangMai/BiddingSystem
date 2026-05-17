@@ -6,6 +6,7 @@ import com.auction.model.AuctionSession;
 import com.auction.model.Bidder;
 import com.auction.model.Item;
 import com.auction.model.User;
+import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.ItemDAO;
 import com.auction.dto.ItemDTO;
 import com.auction.server.dao.SessionDAO;
@@ -13,6 +14,8 @@ import com.auction.server.dao.UserDAO;
 import com.auction.server.factory.ItemFromDTOFactory;
 
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -134,39 +137,11 @@ public class ItemService {
     }
 
     public List<ItemDTO> getAllItemDTOS() {
-        List<ItemDTO> items = itemDAO.getAllItems();
-        for (ItemDTO dto : items) {
-            // THÊM: lookup tên seller
-            if (dto.getSellerId() != null && !dto.getSellerId().isBlank()) {
-                try {
-                    com.auction.model.User seller = userService.getUserById(dto.getSellerId());
-                    dto.setSellerUsername(seller.getUsername());
-                } catch (Exception ignored) {}
-            }
-
-            List<AuctionSession> sessions = sessionDAO.getSessionsByItemId(dto.getId());
-            if (!sessions.isEmpty()) {
-                AuctionSession latestSession = sessions.get(0);
-                dto.setSessionId(latestSession.getId());
-                dto.setCurrentPrice(latestSession.getCurrentPrice());
-                dto.setSessionStatus(latestSession.getStatus());
-                if (latestSession.getEndTime() != null) {
-                    dto.setEndTimeMillis(
-                            latestSession.getEndTime()
-                                    .atZone(java.time.ZoneId.systemDefault())
-                                    .toInstant().toEpochMilli()
-                    );
-                }
-                String winnerId = latestSession.getCurrentWinnerId();
-                if (winnerId != null && !winnerId.isBlank()) {
-                    try {
-                        com.auction.model.User winner = userService.getUserById(winnerId);
-                        dto.setCurrentWinnerUsername(winner.getUsername());
-                    } catch (Exception ignored) {}
-                }
-            }
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            return itemDAO.getAllItemsForDashboard(conn);
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting dashboard items: " + e.getMessage());
         }
-        return items;
     }
 
     //=============== hiển thị sản phẩm (qua id) ===============
