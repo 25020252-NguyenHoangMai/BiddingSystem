@@ -5,9 +5,11 @@ import com.auction.response.DashboardUpdateResponse;
 import com.auction.response.DashboardWatchResponse;
 import com.auction.response.PlaceBidResponse;
 
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Properties;
 import java.util.concurrent.*;
 
 public class ClientSocket {
@@ -65,6 +67,40 @@ public class ClientSocket {
         return dashboardWatching;
     }
 
+    private String getServerHost() {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            Properties props = new Properties();
+
+            if (input == null) {
+                System.err.println("[ClientSocket] config.properties not found, using 127.0.0.1");
+                return "127.0.0.1";
+            }
+
+            props.load(input);
+            return props.getProperty("server.host", "127.0.0.1");
+        } catch (Exception e) {
+            System.err.println("[ClientSocket] Cannot read server.host: " + e.getMessage());
+            return "127.0.0.1";
+        }
+    }
+
+    private int getServerPort() {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            Properties props = new Properties();
+
+            if (input == null) {
+                System.err.println("[ClientSocket] config.properties not found, using 5000");
+                return 5000;
+            }
+
+            props.load(input);
+            return Integer.parseInt(props.getProperty("server.port", "5000"));
+        } catch (Exception e) {
+            System.err.println("[ClientSocket] Cannot read server.port: " + e.getMessage());
+            return 5000;
+        }
+    }
+
     public synchronized void connect() {
         try {
             if (isConnected()) {
@@ -74,7 +110,12 @@ public class ClientSocket {
 
             closeSilently();
 
-            socket = new Socket("127.0.0.1", 5000);
+            String host = getServerHost();
+            int port = getServerPort();
+
+            System.out.println("[ClientSocket] Connecting to server: " + host + ":" + port);
+
+            socket = new Socket(host, port);
 
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
@@ -87,7 +128,7 @@ public class ClientSocket {
 
             startReaderThread();
 
-            System.out.println("Connected to server");
+            System.out.println("[ClientSocket] Connected to server: " + host + ":" + port);
         } catch (Exception e) {
             System.err.println("[ClientSocket] connect failed: " + e.getMessage());
             closeSilently();

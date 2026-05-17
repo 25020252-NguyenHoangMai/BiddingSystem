@@ -34,7 +34,7 @@ public class SocketServer {
     public void startServer() {
         running = true;
         try {
-            ServerSocket serverSocket = new ServerSocket(port);
+            serverSocket = new ServerSocket(port);
             System.out.println("Server started on port " + port);
 
             while (running) {
