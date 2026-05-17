@@ -70,11 +70,22 @@ public class LoginController implements Initializable {
 
                 ClientSession.setCurrentUser(response.getUser());
 
-                com.auction.client.util.SceneUtil.changeScene(
-                        event,
-                        "/views/main.fxml",
-                        "Auction Dashboard"
-                );
+                String role = response.getUser().getRole();
+
+                if ("ADMIN".equalsIgnoreCase(role)) {
+                    com.auction.client.util.SceneUtil.changeScene(
+                            event,
+                            "/views/admin_dashboard.fxml",
+                            "Admin Dashboard"
+                    );
+
+                } else {
+                    com.auction.client.util.SceneUtil.changeScene(
+                            event,
+                            "/views/main.fxml",
+                            "Auction Dashboard"
+                    );
+                }
             } else {
                 showError(response.getMessage());
             }
