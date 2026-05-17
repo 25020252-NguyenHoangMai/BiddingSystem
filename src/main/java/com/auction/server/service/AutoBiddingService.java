@@ -285,6 +285,7 @@ public class AutoBiddingService {
 
         String bestBidderId = null;
         double bestMaxAmount = -1.0;
+        AutoBid bestAutoBid = null;
 
         for (AutoBid autoBid : sessionAutoBids) {
             if (autoBid == null || !autoBid.isActive()) {
@@ -306,12 +307,55 @@ public class AutoBiddingService {
                 continue;
             }
 
-            if (bestBidderId == null || maxAmount > bestMaxAmount) {
+            if (bestAutoBid == null) {
+                bestAutoBid = autoBid;
+                bestBidderId = bidderId;
+                bestMaxAmount = maxAmount;
+                continue;
+            }
+
+            if (maxAmount > bestMaxAmount) {
+                bestAutoBid = autoBid;
+                bestBidderId = bidderId;
+                bestMaxAmount = maxAmount;
+                continue;
+            }
+
+            if (Double.compare(maxAmount, bestMaxAmount) == 0 && isEarlier(autoBid, bestAutoBid)) {
+                bestAutoBid = autoBid;
                 bestBidderId = bidderId;
                 bestMaxAmount = maxAmount;
             }
         }
 
         return bestBidderId;
+    }
+
+    private boolean isEarlier(AutoBid candidate, AutoBid currentBest) {
+        if (candidate.getCreatedAt() == null && currentBest.getCreatedAt() == null) {
+            return compareStableTieBreaker(candidate, currentBest) < 0;
+        }
+
+        if (candidate.getCreatedAt() == null) {
+            return false;
+        }
+
+        if (currentBest.getCreatedAt() == null) {
+            return true;
+        }
+
+        int createdAtCompare = candidate.getCreatedAt().compareTo(currentBest.getCreatedAt());
+
+        if (createdAtCompare != 0) {
+            return createdAtCompare < 0;
+        }
+
+        return compareStableTieBreaker(candidate, currentBest) < 0;
+    }
+
+    private int compareStableTieBreaker(AutoBid left, AutoBid right) {
+        String leftId = left.getId() == null ? "" : left.getId();
+        String rightId = right.getId() == null ? "" : right.getId();
+        return leftId.compareTo(rightId);
     }
 }
