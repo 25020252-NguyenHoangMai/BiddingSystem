@@ -109,11 +109,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     String me = ClientSession.getCurrentUser() != null
                             ? ClientSession.getCurrentUser().getUsername() : "";
 
-                    List<BidHistoryEntryDTO> history = new ArrayList<>(res.getHistory());
-                    // Thêm vào chart theo thứ tự thời gian (cũ → mới), tối đa 20 điểm gần nhất
-                    List<BidHistoryEntryDTO> chartData = history.size() > 20
-                            ? history.subList(history.size() - 20, history.size())
-                            : history;
+                    // Tạo 2 list riêng biệt để tránh reverse ảnh hưởng lẫn nhau
+                    List<BidHistoryEntryDTO> sortedAsc = new ArrayList<>(res.getHistory());
+                    sortedAsc.sort(Comparator.comparingLong(BidHistoryEntryDTO::getBidTimeMillis));
+
+                    // Chart: cũ → mới
+                    List<BidHistoryEntryDTO> chartData = sortedAsc.size() > 20
+                            ? sortedAsc.subList(sortedAsc.size() - 20, sortedAsc.size())
+                            : sortedAsc;
                     for (BidHistoryEntryDTO entry : chartData) {
                         String timeLabel = LocalTime.ofInstant(
                                 java.time.Instant.ofEpochMilli(entry.getBidTimeMillis()),
@@ -123,8 +126,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                                 new XYChart.Data<>(timeLabel, entry.getBidAmount()));
                     }
 
-                    Collections.reverse(history);
-                    for (BidHistoryEntryDTO entry : history) {
+                    // ListView: mới → cũ
+                    List<BidHistoryEntryDTO> sortedDesc = new ArrayList<>(sortedAsc);
+                    Collections.reverse(sortedDesc);
+                    for (BidHistoryEntryDTO entry : sortedDesc) {
                         lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
                     }
                 });
@@ -405,6 +410,27 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
                 updateBalanceLabel();
                 txtBidAmount.clear();
+
+                // Cập nhật UI ngay không chờ server push
+                String me = ClientSession.getCurrentUser() != null
+                        ? ClientSession.getCurrentUser().getUsername() : "";
+                String timeLabel = LocalTime.now().format(TIME_FMT);
+
+                // Thêm vào đầu danh sách bid history
+                String entry = BidHistoryFormatter.formatRealtime(me, amount, me);
+                lvBidHistory.getItems().add(0, entry);
+
+                // Thêm điểm vào LineChart
+                priceSeries.getData().add(new XYChart.Data<>(timeLabel, amount));
+                if (priceSeries.getData().size() > 20) {
+                    priceSeries.getData().remove(0);
+                }
+
+                // Cập nhật label current bid và leading user
+                currentItem.setCurrentPrice(amount);
+                currentItem.setCurrentWinnerUsername(me);
+                refreshBidState(amount, me, currentItem.getSessionStatus());
+
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
             } else {
                 showAlert(Alert.AlertType.ERROR, "Fail", res.getMessage());
