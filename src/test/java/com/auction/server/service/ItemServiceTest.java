@@ -16,13 +16,13 @@ import org.mockito.MockitoAnnotations;
 import com.auction.server.dao.DatabaseManager;
 import static org.mockito.Mockito.mockStatic;
 
-import java.time.LocalDateTime;
+
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+
 import static org.mockito.Mockito.*;
 
 public class ItemServiceTest {
@@ -330,20 +330,20 @@ public class ItemServiceTest {
 
     @Nested
     class GetItemByIdTests {
-        @Test void getItemById_idNull_ThrowsException() {
+        @Test void idNull_ThrowsException() {
             assertThrows(AuctionException.class, () -> itemService.getItemById(null));
         }
 
-        @Test void getItemById_idBlank_ThrowsException() {
+        @Test void idBlank_ThrowsException() {
             assertThrows(AuctionException.class, () -> itemService.getItemById("  "));
         }
 
-        @Test void getItemById_notFound_ThrowsException() {
+        @Test void notFound_ThrowsException() {
             when(itemDAO.getItemById("I1")).thenReturn(null);
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemById("I1"));
         }
 
-        @Test void getItemById_success_ReturnsItem() {
+        @Test void success_ReturnsItem() {
             ItemDTO dto = new ItemDTO(); dto.setId("I1"); dto.setItemType("VEHICLE");
             when(itemDAO.getItemById("I1")).thenReturn(dto);
 
@@ -356,17 +356,17 @@ public class ItemServiceTest {
 
     @Nested
     class GetItemByNameTests {
-        @Test void getItemByName_nameNullOrBlank_ThrowsException() {
+        @Test void nameNullOrBlank_ThrowsException() {
             assertThrows(AuctionException.class, () -> itemService.getItemByName(null));
             assertThrows(AuctionException.class, () -> itemService.getItemByName("   "));
         }
 
-        @Test void getItemByName_emptyList_ThrowsException() {
+        @Test void emptyList_ThrowsException() {
             when(itemDAO.getItemByName("Laptop")).thenReturn(Collections.emptyList());
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemByName("Laptop"));
         }
 
-        @Test void getItemByName_success_ReturnsMappedItems() {
+        @Test void success_ReturnsMappedItems() {
             ItemDTO dto = new ItemDTO(); dto.setItemType("ELECTRONICS");
             when(itemDAO.getItemByName("Laptop")).thenReturn(List.of(dto, dto));
 
@@ -378,17 +378,17 @@ public class ItemServiceTest {
 
     @Nested
     class GetItemByTypeTests {
-        @Test void getItemByType_typeNullOrBlank_ThrowsException() {
+        @Test void typeNullOrBlank_ThrowsException() {
             assertThrows(AuctionException.class, () -> itemService.getItemByItemType(null));
             assertThrows(AuctionException.class, () -> itemService.getItemByItemType("   "));
         }
 
-        @Test void getItemByType_emptyList_ThrowsException() {
+        @Test void emptyList_ThrowsException() {
             when(itemDAO.getItemByItemType("ART")).thenReturn(Collections.emptyList());
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemByItemType("ART"));
         }
 
-        @Test void getItemByType_success_ReturnsMappedItems() {
+        @Test void success_ReturnsMappedItems() {
             ItemDTO dto = new ItemDTO(); dto.setItemType("ART");
             when(itemDAO.getItemByItemType("ART")).thenReturn(List.of(dto));
 
@@ -400,17 +400,17 @@ public class ItemServiceTest {
 
     @Nested
     class RemoveItemTests {
-        @Test void removeItem_idNullOrBlank_ThrowsException() {
+        @Test void idNullOrBlank_ThrowsException() {
             assertThrows(AuctionException.class, () -> itemService.removeItem(null));
             assertThrows(AuctionException.class, () -> itemService.removeItem("  "));
         }
 
-        @Test void removeItem_notFound_ThrowsException() {
+        @Test void notFound_ThrowsException() {
             when(itemDAO.getItemById("I1")).thenReturn(null);
             assertThrows(ItemNotFoundException.class, () -> itemService.removeItem("I1"));
         }
 
-        @Test void removeItem_hasSession_ThrowsException() {
+        @Test void hasSession_ThrowsException() {
             when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
             when(sessionDAO.existsSessionByItemId("I1")).thenReturn(true);
 
@@ -418,7 +418,7 @@ public class ItemServiceTest {
             assertTrue(e.getMessage().contains("already been used in an auction session"));
         }
 
-        @Test void removeItem_success_CallsDelete() {
+        @Test void success_CallsDelete() {
             when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
             when(sessionDAO.existsSessionByItemId("I1")).thenReturn(false);
 
