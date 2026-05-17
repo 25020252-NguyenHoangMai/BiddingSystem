@@ -21,7 +21,7 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
         this.listener = listener;
     }
 
-    public void watch(String sessionId, String userId) throws Exception {
+    public SessionWatchResponse watch(String sessionId, String userId) throws Exception {
         SessionWatchResponse response = auctionService.watchSession(sessionId, userId);
 
         if (response == null || !response.isSuccess()) {
@@ -33,6 +33,7 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
         }
 
         auctionService.getWatchSocket().setBidUpdateListener(this);
+        return response;
     }
 
     public void unwatch(String sessionId) {

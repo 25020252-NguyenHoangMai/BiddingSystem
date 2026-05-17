@@ -6,10 +6,7 @@ import com.auction.client.util.BidHistoryFormatter;
 import com.auction.dto.BidHistoryEntryDTO;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
-import com.auction.response.BidUpdateResponse;
-import com.auction.response.GetBidHistoryResponse;
-import com.auction.response.PlaceBidResponse;
-import com.auction.response.SetAutoBidResponse;
+import com.auction.response.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -182,7 +179,25 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                             ? ClientSession.getCurrentUser().getId()
                             : null;
 
-                    realtimeManager.watch(item.getSessionId(), userId);
+                    SessionWatchResponse watchResponse = realtimeManager.watch(item.getSessionId(), userId);
+
+                    Platform.runLater(() -> {
+                        currentItem.setCurrentPrice(watchResponse.getCurrentPrice());
+                        currentItem.setCurrentWinnerUsername(watchResponse.getCurrentWinnerUsername());
+                        currentItem.setSessionStatus(watchResponse.getStatus());
+
+                        refreshBidState(
+                                watchResponse.getCurrentPrice(),
+                                watchResponse.getCurrentWinnerUsername(),
+                                watchResponse.getStatus()
+                        );
+
+                        updateBidHint(watchResponse.getMinimumNextBid());
+
+                        if (watchResponse.getEndTimeMillis() != null) {
+                            startCountdown(watchResponse.getEndTimeMillis());
+                        }
+                    });
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -467,26 +482,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 updateBalanceLabel();
                 txtBidAmount.clear();
 
-                // Cập nhật UI ngay không chờ server push
-                String me = ClientSession.getCurrentUser() != null
-                        ? ClientSession.getCurrentUser().getUsername() : "";
-                String timeLabel = LocalTime.now().format(TIME_FMT);
-
-                // Thêm vào đầu danh sách bid history
-                String entry = BidHistoryFormatter.formatRealtime(me, amount, me);
-                lvBidHistory.getItems().add(0, entry);
-
-                // Thêm điểm vào LineChart
-                priceSeries.getData().add(new XYChart.Data<>(timeLabel, amount));
-                if (priceSeries.getData().size() > 20) {
-                    priceSeries.getData().remove(0);
-                }
-
-                // Cập nhật label current bid và leading user
-                currentItem.setCurrentPrice(amount);
-                currentItem.setCurrentWinnerUsername(me);
-                refreshBidState(amount, me, currentItem.getSessionStatus());
-
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
             } else {
                 showAlert(Alert.AlertType.ERROR, "Fail", res.getMessage());
@@ -585,8 +580,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         if (currentItem != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
-
-        auctionService.closeWatchSocket();
 
         ((Stage) btnBack.getScene().getWindow()).close();
     }

@@ -9,7 +9,7 @@
             <children>
                 <Label style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;" text="ADMIN" />
                 <Region HBox.hgrow="ALWAYS" />
-                <Label fx:id="lblAdminStatus" style="-fx-text-fill: #2ecc71;" text="● Hệ thống trực tuyến" />
+                <Label fx:id="lblAdminStatus" style="-fx-text-fill: #2ecc71;"/>
             </children>
         </HBox>
 
@@ -54,7 +54,6 @@
                                                 </VBox>
                                             </content>
                                         </ScrollPane>
-                                        <Button fx:id="btnEditItem" maxWidth="1.7976931348623157E308" onAction="#handleEditItem" prefHeight="40.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="THAY ĐỔI THÔNG TIN" />
                                     </children>
                                 </VBox>
                             </items>
@@ -100,7 +99,6 @@
                                                 </VBox>
                                             </content>
                                         </ScrollPane>
-                                        <Button fx:id="btnEditUser" maxWidth="1.7976931348623157E308" onAction="#handleEditUser" prefHeight="40.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="THAY ĐỔI THÔNG TIN" />
                                     </children>
                                 </VBox>
                             </items>

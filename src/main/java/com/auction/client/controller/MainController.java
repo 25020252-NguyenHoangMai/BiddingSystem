@@ -297,23 +297,15 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     // ===== ACTIONS =====
     @FXML
     private void handleLogout() {
-        // Hủy đăng ký dashboard watch trước khi logout
-        clientSocket.setDashboardUpdateListener(null);
-        clientSocket.clearResponseQueue();
-        Task<Void> unwatch = new Task<>() {
-            @Override
-            protected Void call() {
-                clientSocket.sendRequest(new UnwatchDashboardRequest());
-                return null;
-            }
-        };
-        Thread t = new Thread(unwatch);
-        t.setDaemon(true);
-        t.start();
-
         closeChildStages();
+
+        clientSocket.setDashboardUpdateListener(null);
+        clientSocket.clearBidUpdateListener();
+        clientSocket.close();
+
         ClientSession.removeUserChangeListener(userChangeListener);
         ClientSession.clear();
+
         switchScene("/views/login_view.fxml");
     }
 
