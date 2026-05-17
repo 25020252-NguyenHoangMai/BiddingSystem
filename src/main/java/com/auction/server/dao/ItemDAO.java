@@ -220,7 +220,7 @@ public class ItemDAO {
 
         String sql = """
         SELECT 
-            *,
+            i.*,
             seller.username AS sellerUsername,
             s.id AS sessionId,
             s.currentPrice,
