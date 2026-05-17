@@ -271,6 +271,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 );
 
         if (!lvBidHistory.getItems().contains(entry)) {
+            lvBidHistory.getItems().add(0, entry);
             if (lvBidHistory.getItems().size() > 20) {
                 lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
             }
