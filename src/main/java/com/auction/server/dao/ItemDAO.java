@@ -4,10 +4,7 @@ import com.auction.exception.AuctionException;
 import com.auction.model.*;
 import com.auction.dto.ItemDTO;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -213,6 +210,56 @@ public class ItemDAO {
 
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while getting items by item type: " + e.getMessage());
+        }
+
+        return list;
+    }
+
+    public List<ItemDTO> getAllItemsForDashboard(Connection conn) {
+        List<ItemDTO> list = new ArrayList<>();
+
+        String sql = """
+        SELECT 
+            *,
+            seller.username AS sellerUsername,
+            s.id AS sessionId,
+            s.currentPrice,
+            s.status AS sessionStatus,
+            s.endTime,
+            winner.username AS currentWinnerUsername
+        FROM Item i
+        LEFT JOIN Users seller ON i.sellerId = seller.id
+        OUTER APPLY (
+            SELECT TOP 1 *
+            FROM AuctionSession s
+            WHERE s.itemId = i.id
+            ORDER BY s.startTime DESC
+        ) s
+        LEFT JOIN Users winner ON s.currentWinnerId = winner.id
+        """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                ItemDTO dto = mapToDTO(rs);
+
+                dto.setSellerUsername(rs.getString("sellerUsername"));
+                dto.setSessionId(rs.getString("sessionId"));
+                dto.setCurrentPrice(rs.getDouble("currentPrice"));
+                dto.setSessionStatus(rs.getString("sessionStatus"));
+                dto.setCurrentWinnerUsername(rs.getString("currentWinnerUsername"));
+
+                Timestamp endTime = rs.getTimestamp("endTime");
+                if (endTime != null) {
+                    dto.setEndTimeMillis(endTime.getTime());
+                }
+
+                list.add(dto);
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting dashboard items: " + e.getMessage());
         }
 
         return list;
