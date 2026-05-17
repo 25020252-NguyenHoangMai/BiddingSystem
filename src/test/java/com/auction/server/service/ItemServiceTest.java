@@ -13,6 +13,8 @@ import com.auction.server.dao.SessionDAO;
 import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import com.auction.server.dao.DatabaseManager;
+import static org.mockito.Mockito.mockStatic;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -261,6 +263,7 @@ public class ItemServiceTest {
 
     @Nested
     class GetAllItemsTests {
+
         @Test void emptyList_ReturnsEmpty() {
             when(itemDAO.getAllItems()).thenReturn(Collections.emptyList());
             assertTrue(itemService.getAllItems().isEmpty());
@@ -280,124 +283,47 @@ public class ItemServiceTest {
 
     @Nested
     class GetAllItemDTOsTests {
-        @Test void emptyList_ReturnsEmpty() {
-            when(itemDAO.getAllItems()).thenReturn(Collections.emptyList());
-            assertTrue(itemService.getAllItemDTOS().isEmpty());
-        }
 
-        @Test void sellerIdNull_DoesNotCallUserService() {
-            ItemDTO dto = new ItemDTO(); dto.setSellerId(null);
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
+        @Test
+        void success_ReturnsDashboardItems() throws Exception {
 
-            itemService.getAllItemDTOS();
-            verify(userService, never()).getUserById(anyString());
-        }
+            ItemDTO mockDto = new ItemDTO();
+            mockDto.setId("I1");
+            mockDto.setName("Siêu xe UET");
+            List<ItemDTO> expectedList = List.of(mockDto);
 
-        @Test void sellerIdBlank_DoesNotCallUserService() {
-            ItemDTO dto = new ItemDTO(); dto.setSellerId("  ");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
+            //giả vờ có Connection
+            java.sql.Connection mockConn = mock(java.sql.Connection.class);
+            DatabaseManager mockDbManager = mock(DatabaseManager.class);
 
-            itemService.getAllItemDTOS();
-            verify(userService, never()).getUserById(anyString());
-        }
+            when(mockDbManager.getConnection()).thenReturn(mockConn);
+            when(itemDAO.getAllItemsForDashboard(mockConn)).thenReturn(expectedList);
 
-        @Test void lookupSellerSuccess_SetsUsername() {
-            ItemDTO dto = new ItemDTO(); dto.setSellerId("U1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            when(userService.getUserById("U1")).thenReturn(validSeller); // validSeller có user "seller_minh"
 
-            List<ItemDTO> result = itemService.getAllItemDTOS();
-            assertEquals("seller_minh", result.get(0).getSellerUsername());
-        }
+            try (org.mockito.MockedStatic<DatabaseManager> mockedStaticDbManager = mockStatic(DatabaseManager.class)) {
+                mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
 
-        @Test void lookupSellerThrowsException_IgnoresAndContinues() {
-            ItemDTO dto = new ItemDTO(); dto.setSellerId("U1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            when(userService.getUserById("U1")).thenThrow(new RuntimeException("DB Error"));
-
-            assertDoesNotThrow(() -> {
+                //gọi hàm thật
                 List<ItemDTO> result = itemService.getAllItemDTOS();
-                assertNull(result.get(0).getSellerUsername());
-            });
+
+
+                assertEquals(1, result.size());
+                assertEquals("I1", result.get(0).getId());
+            }
         }
 
-        @Test void noSession_DoesNotSetSessionFields() {
-            ItemDTO dto = new ItemDTO(); dto.setId("I1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(Collections.emptyList());
+        @Test
+        void throwsException_OnSQLException() throws Exception {
+            DatabaseManager mockDbManager = mock(DatabaseManager.class);
 
-            List<ItemDTO> result = itemService.getAllItemDTOS();
-            assertNull(result.get(0).getSessionId());
-        }
+            when(mockDbManager.getConnection()).thenThrow(new java.sql.SQLException("DB Timeout"));
 
-        @Test void hasSession_SetsSessionFieldsAndEndTime() {
-            ItemDTO dto = new ItemDTO(); dto.setId("I1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
+            try (org.mockito.MockedStatic<DatabaseManager> mockedStaticDbManager = mockStatic(DatabaseManager.class)) {
+                mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
 
-            AuctionSession session = new AuctionSession();
-            session.setId("S1");
-            session.setCurrentPrice(500.0);
-            session.setStatus(SessionService.STATUS_RUNNING);
-            session.setEndTime(LocalDateTime.now());
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(session));
-
-            List<ItemDTO> result = itemService.getAllItemDTOS();
-            ItemDTO resDto = result.get(0);
-            assertEquals("S1", resDto.getSessionId());
-            assertEquals(500.0, resDto.getCurrentPrice());
-            assertEquals(SessionService.STATUS_RUNNING, resDto.getSessionStatus());
-            assertNotNull(resDto.getEndTimeMillis());
-        }
-
-        @Test void hasSession_EndTimeNull_DoesNotSetMillis() {
-            ItemDTO dto = new ItemDTO(); dto.setId("I1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            AuctionSession session = new AuctionSession();
-            session.setEndTime(null); // Không có giờ kết thúc
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(session));
-
-            List<ItemDTO> result = itemService.getAllItemDTOS();
-
-            assertEquals(0L, result.get(0).getEndTimeMillis(), "Khi endTime null, giá trị millis mặc định phải là 0");
-        }
-
-        @Test void winnerIdNullOrBlank_DoesNotCallUserService() {
-            ItemDTO dto = new ItemDTO(); dto.setId("I1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            AuctionSession session = new AuctionSession();
-            session.setCurrentWinnerId(" ");
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(session));
-
-            itemService.getAllItemDTOS();
-            verify(userService, never()).getUserById(anyString());
-        }
-
-        @Test void lookupWinnerSuccess_SetsWinnerUsername() {
-            ItemDTO dto = new ItemDTO(); dto.setId("I1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            AuctionSession session = new AuctionSession();
-            session.setCurrentWinnerId("W1");
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(session));
-
-            User winner = new Bidder("W1", "winner_bro", "pass", "Name", "BIDDER", 0, 0);
-            when(userService.getUserById("W1")).thenReturn(winner);
-
-            List<ItemDTO> result = itemService.getAllItemDTOS();
-            assertEquals("winner_bro", result.get(0).getCurrentWinnerUsername());
-        }
-
-        @Test void lookupWinnerThrowsException_IgnoresAndContinues() {
-            ItemDTO dto = new ItemDTO(); dto.setId("I1");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto));
-            AuctionSession session = new AuctionSession();
-            session.setCurrentWinnerId("W1");
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(session));
-            when(userService.getUserById("W1")).thenThrow(new RuntimeException("Network error"));
-
-            assertDoesNotThrow(() -> {
-                List<ItemDTO> result = itemService.getAllItemDTOS();
-                assertNull(result.get(0).getCurrentWinnerUsername());
-            });
+                AuctionException exception = assertThrows(AuctionException.class, () -> itemService.getAllItemDTOS());
+                assertTrue(exception.getMessage().contains("getting dashboard items"));
+            }
         }
     }
 
