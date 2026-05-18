@@ -55,9 +55,14 @@ public class AuctionService {
         return response;
     }
 
-    public void unwatchSession(String sessionId) throws Exception {
-        watchSocket.connect();
-        watchSocket.sendRequest(new UnwatchSessionRequest(sessionId));
+    public void unwatchSession(String sessionId) {
+        try {
+            if (!watchSocket.isConnectedPublic()) {
+                return;
+            }
+
+            watchSocket.sendRequest(new UnwatchSessionRequest(sessionId));
+        } catch (Exception ignored) {}
     }
 
     public SetAutoBidResponse setAutoBid(String sessionId, String bidderId, double maxAmount) throws Exception {

@@ -276,6 +276,8 @@ public class ClientSocket {
             readerThread.interrupt();
         }
 
+        callbackExecutor.shutdownNow();
+
         // 2. Đóng luồng và socket
         closeSilently();
 
