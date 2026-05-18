@@ -36,8 +36,7 @@ public class ClientSocket {
     // BidUpdateResponse do server push — không liên quan request nào
     private final BlockingQueue<BidUpdateResponse> bidUpdateQueue = new LinkedBlockingQueue<>();
 
-    // Callback nhận BidUpdateResponse — set bởi AuctionDetailController
-    private volatile BidUpdateListener bidUpdateListener;
+    private final ConcurrentHashMap<String, BidUpdateListener> bidUpdateListeners = new ConcurrentHashMap<>();
 
     // Callback nhận DashboardUpdateResponse — set bởi MainController
     private volatile DashboardUpdateListener dashboardUpdateListener;
@@ -166,7 +165,7 @@ public class ClientSocket {
                     if (obj instanceof PlaceBidResponse placeBidResponse) {
                         placeBidQueue.offer(placeBidResponse);
                     } else if (obj instanceof BidUpdateResponse update) {
-                        BidUpdateListener cb = bidUpdateListener;
+                        BidUpdateListener cb = bidUpdateListeners.get(update.getSessionId());
 
                         if (cb != null) {
                             callbackExecutor.execute(() -> cb.onBidUpdate(update));
@@ -273,22 +272,25 @@ public class ClientSocket {
     }
 
     // ===== BID UPDATE LISTENER =====
-    // Đăng ký listener — gọi khi mở AuctionDetail
-    public void setBidUpdateListener(BidUpdateListener listener) {
-        this.bidUpdateListener = listener;
+    public void setBidUpdateListener(String sessionId, BidUpdateListener listener) {
+        bidUpdateListeners.put(sessionId, listener);
 
-        if (listener != null) {
-            BidUpdateResponse pending;
-            while ((pending = bidUpdateQueue.poll()) != null) {
+        BidUpdateResponse pending;
+
+        while ((pending = bidUpdateQueue.poll()) != null) {
+
+            if (pending.getSessionId().equals(sessionId)) {
                 listener.onBidUpdate(pending);
+            } else {
+                bidUpdateQueue.offer(pending);
+                break;
             }
         }
     }
 
     // Huỷ listener — gọi khi đóng AuctionDetail
-    public void clearBidUpdateListener() {
-        this.bidUpdateListener = null;
-        bidUpdateQueue.clear();
+    public void clearBidUpdateListener(String sessionId) {
+        bidUpdateListeners.remove(sessionId);
     }
 
     // ===== DASHBOARD UPDATE LISTENER =====
@@ -315,7 +317,7 @@ public class ClientSocket {
         dashboardWatchQueue.clear();
         placeBidQueue.clear();
         dashboardWatching = false;
-        bidUpdateListener = null;
+        bidUpdateListeners.clear();
         dashboardUpdateListener = null;
     }
 

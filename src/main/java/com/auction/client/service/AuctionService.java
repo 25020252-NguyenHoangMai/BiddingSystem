@@ -79,22 +79,9 @@ public class AuctionService {
         return response;
     }
 
-    public void closeWatchSocket() {
-        try {
-            socket.clearBidUpdateListener();
-            socket.close();
-        } catch (Exception ignored) {}
-    }
-
-    public ClientSocket getWatchSocket() {
-        return socket;
-    }
-
     public void closeAllSockets() {
         try {
             socket.close();
         } catch (Exception ignored) {}
-
-        closeWatchSocket();
     }
 }

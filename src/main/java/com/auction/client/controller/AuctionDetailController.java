@@ -219,7 +219,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
                     Platform.runLater(() -> {
                         try {
-                            auctionService.closeWatchSocket();
+                            auctionService.unwatchSession(item.getSessionId());
                         } catch (Exception ignored) {}
 
                         showAlert(

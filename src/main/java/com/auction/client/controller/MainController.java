@@ -301,7 +301,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         closeChildStages();
 
         clientSocket.setDashboardUpdateListener(null);
-        clientSocket.clearBidUpdateListener();
         clientSocket.close();
 
         auctionService.closeAllSockets();
