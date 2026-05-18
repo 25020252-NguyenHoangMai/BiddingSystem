@@ -36,7 +36,7 @@ public class ClientSocket {
 
     private final BlockingQueue<DashboardWatchResponse> dashboardWatchQueue = new LinkedBlockingQueue<>();
 
-    private final ExecutorService callbackExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
     private volatile boolean dashboardWatching = false;
 
@@ -52,6 +52,16 @@ public class ClientSocket {
 
     public boolean isDashboardWatching() {
         return dashboardWatching;
+    }
+
+    private boolean isSocketAlive() {
+        return socket != null
+                && socket.isConnected()
+                && !socket.isClosed()
+                && !socket.isInputShutdown()
+                && !socket.isOutputShutdown()
+                && out != null
+                && in != null;
     }
 
     private String getServerHost() {
@@ -90,7 +100,7 @@ public class ClientSocket {
 
     public synchronized void connect() {
         try {
-            if (isConnected()) {
+            if (isSocketAlive()) {
                 startReaderThread();
                 return;
             }
@@ -102,7 +112,12 @@ public class ClientSocket {
 
             System.out.println("[ClientSocket] Connecting to server: " + host + ":" + port);
 
-            socket = new Socket(host, port);
+            socket = new Socket();
+
+            socket.connect(new java.net.InetSocketAddress(host, port), 5000);
+
+            socket.setKeepAlive(true);
+            socket.setTcpNoDelay(true);
 
             out = new ObjectOutputStream(socket.getOutputStream());
             out.flush();
@@ -123,18 +138,19 @@ public class ClientSocket {
     }
 
     private boolean isConnected() {
-        return socket != null && socket.isConnected() && !socket.isClosed()
-                && out != null && in != null;
+        return isSocketAlive()
+                && readerThread != null
+                && readerThread.isAlive();
     }
 
     // ===== READER THREAD — 1 thread duy nhất đọc stream =====
     private synchronized void startReaderThread() {
-        if (!isConnected()) { return; }
+        if (!isSocketAlive()) { return; }
 
         if (readerThread != null && readerThread.isAlive()) { return; }
 
         Thread reader = new Thread(() -> {
-            while (isConnected()) {
+            while (isSocketAlive()) {
                 try {
                     Object obj = in.readObject();
                     System.out.println("[ClientSocket] received from server: " + obj.getClass().getSimpleName());
@@ -162,10 +178,11 @@ public class ClientSocket {
                     }
                 } catch (java.io.EOFException | java.net.SocketException e) {
                     System.out.println("[ClientSocket] Connection closed.");
+                    handleDisconnect();
                     break;
                 } catch (Exception e) {
                     System.err.println("[ClientSocket] Reader error: " + e.getMessage());
-                    close();
+                    handleDisconnect();
                     break;
                 }
             }
@@ -176,22 +193,24 @@ public class ClientSocket {
     }
 
     public synchronized void sendRequest(Object request) {
-        if (!isConnected()) {
-            connect();
-        }
-
-        if (!isConnected()) {
-            throw new IllegalStateException("Socket is not connected");
-        }
-
         try {
+            if (!isConnected()) {
+                throw new IllegalStateException("Socket is not connected");
+            }
+
             out.writeObject(request);
             out.flush();
 
-            System.out.println("[ClientSocket] sent request: " + request.getClass().getSimpleName());
+            System.out.println("[ClientSocket] sent request: "
+                    + request.getClass().getSimpleName());
+
         } catch (Exception e) {
-            System.err.println("[ClientSocket] sendRequest failed: " + e.getMessage());
-            close();
+            System.err.println("[ClientSocket] sendRequest failed: "
+                    + e.getMessage());
+
+            handleDisconnect();
+
+            throw new RuntimeException("[ClientSocket] sendRequest failed", e);
         }
     }
 
@@ -242,6 +261,7 @@ public class ClientSocket {
     // Huỷ listener — gọi khi đóng AuctionDetail
     public void clearBidUpdateListener() {
         this.bidUpdateListener = null;
+        bidUpdateQueue.clear();
     }
 
     // ===== DASHBOARD UPDATE LISTENER =====
@@ -270,7 +290,7 @@ public class ClientSocket {
         dashboardUpdateListener = null;
     }
 
-    public void closeSilently() {
+    public synchronized void closeSilently() {
         try { if (in  != null) in.close();  } catch (Exception ignored) {}
         try { if (out != null) out.close();  } catch (Exception ignored) {}
         try { if (socket != null) socket.close(); } catch (Exception ignored) {}
@@ -292,5 +312,22 @@ public class ClientSocket {
         }
 
         return response;
+    }
+
+    private synchronized void handleDisconnect() {
+        closeSilently();
+
+        readerThread = null;
+
+        responseQueue.clear();
+        bidUpdateQueue.clear();
+        dashboardWatchQueue.clear();
+        placeBidQueue.clear();
+
+        dashboardWatching = false;
+    }
+
+    public boolean isConnectedPublic() {
+        return isConnected();
     }
 }

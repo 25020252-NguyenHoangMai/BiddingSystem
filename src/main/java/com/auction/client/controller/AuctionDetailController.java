@@ -42,7 +42,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final AuctionService auctionService = new AuctionService();
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     private Timeline countdownTimeline;
-    private volatile boolean watching = true;
+    private volatile boolean watching = false;
     private XYChart.Series<String, Number> priceSeries;
     private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -184,6 +184,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     + historyTask.getException().getMessage());
         });
 
+        if (watching) { return; }
+        watching = true;
 
         Task<Void> watchTask = new Task<>() {
             @Override
@@ -216,9 +218,12 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 } catch (Exception e) {
                     e.printStackTrace();
                     watching = false;
-                    auctionService.closeWatchSocket();
 
                     Platform.runLater(() -> {
+                        try {
+                            auctionService.closeWatchSocket();
+                        } catch (Exception ignored) {}
+
                         showAlert(
                                 Alert.AlertType.ERROR,
                                 "Connection Error",

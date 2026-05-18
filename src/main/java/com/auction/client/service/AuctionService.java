@@ -20,20 +20,26 @@ public class AuctionService {
     public SessionWatchResponse watchSession(String sessionId, String userId) throws Exception {
         watchSocket.connect();
 
+        watchSocket.clearResponseQueue();
+
         watchSocket.sendRequest(new WatchSessionRequest(sessionId, userId));
 
-        Object raw = watchSocket.receiveResponse();
+        long timeout = System.currentTimeMillis() + 10000;
 
-        if (!(raw instanceof SessionWatchResponse response)) {
-            throw new IllegalStateException(
-                    "Expected SessionWatchResponse but got: " +
-                            (raw == null
-                                    ? "null"
-                                    : raw.getClass().getName())
+        while (System.currentTimeMillis() < timeout) {
+            Object raw = watchSocket.receiveResponse();
+
+            if (raw instanceof SessionWatchResponse response) {
+                return response;
+            }
+
+            System.out.println(
+                    "[AuctionService] Skip unexpected response: "
+                            + raw.getClass().getSimpleName()
             );
         }
-        //socket.clearResponseQueue();
-        return response;
+
+        throw new Exception("Watch session timeout");
     }
 
     public GetBidHistoryResponse getBidHistory(String sessionId) throws Exception {
