@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.network.ClientSocket;
+import com.auction.client.service.AuctionService;
 import com.auction.client.service.ProductService;
 import com.auction.client.ClientSession;
 import com.auction.dto.ItemDTO;
@@ -65,8 +66,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== SERVICE =====
     private final ProductService productService = ProductService.getInstance();
-    private final ClientSocket clientSocket = ClientSocket.getInstance();
-
+    private final ClientSocket clientSocket = new ClientSocket();
+    private final AuctionService auctionService = new AuctionService();
     private final Consumer<UserSessionDTO> userChangeListener =
             user -> Platform.runLater(this::setupUserInfo);
 
@@ -302,6 +303,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         clientSocket.setDashboardUpdateListener(null);
         clientSocket.clearBidUpdateListener();
         clientSocket.close();
+
+        auctionService.closeAllSockets();
 
         ClientSession.removeUserChangeListener(userChangeListener);
         ClientSession.clear();

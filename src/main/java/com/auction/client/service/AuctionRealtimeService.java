@@ -43,7 +43,7 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
             ex.printStackTrace();
         }
 
-        ClientSocket.getInstance().clearBidUpdateListener();
+        auctionService.getWatchSocket().clearBidUpdateListener();
     }
 
     @Override

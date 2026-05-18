@@ -10,7 +10,7 @@ import javafx.stage.Stage;
 public class MainApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
-        ClientSocket.getInstance().connect();
+        //ClientSocket.getInstance().connect();
         Parent root = FXMLLoader.load(getClass().getResource("/views/login_view.fxml"));
 
         primaryStage.setTitle("UET Bidding System");

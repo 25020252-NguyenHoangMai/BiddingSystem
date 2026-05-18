@@ -13,25 +13,12 @@ import java.util.Properties;
 import java.util.concurrent.*;
 
 public class ClientSocket {
-    private static volatile ClientSocket instance;
-
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private Thread readerThread;
 
     public ClientSocket() {}
-
-    public static ClientSocket getInstance() {
-        if (instance == null) {
-            synchronized (ClientSocket.class) {
-                if (instance == null) {
-                    instance = new ClientSocket();
-                }
-            }
-        }
-        return instance;
-    }
 
     // Response bình thường cho Request-Response
     private final BlockingQueue<Object> responseQueue  = new LinkedBlockingQueue<>();
@@ -130,8 +117,8 @@ public class ClientSocket {
 
             System.out.println("[ClientSocket] Connected to server: " + host + ":" + port);
         } catch (Exception e) {
-            System.err.println("[ClientSocket] connect failed: " + e.getMessage());
             closeSilently();
+            throw new RuntimeException("[ClientSocket] connect failed", e);
         }
     }
 

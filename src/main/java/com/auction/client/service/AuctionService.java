@@ -6,10 +6,8 @@ import com.auction.request.*;
 import com.auction.response.*;
 
 public class AuctionService {
-
-    private final ClientSocket socket = ClientSocket.getInstance();
-    // Tách watch socket riêng
-    private final ClientSocket watchSocket = ClientSocket.getInstance();
+    private final ClientSocket socket = new ClientSocket();
+    private final ClientSocket watchSocket = new ClientSocket();
 
     // ===== PLACE BID =====
     public PlaceBidResponse placeBid(String sessionId, String bidderId, double amount) throws Exception {
@@ -27,7 +25,12 @@ public class AuctionService {
         Object raw = watchSocket.receiveResponse();
 
         if (!(raw instanceof SessionWatchResponse response)) {
-            throw new IllegalStateException("Expected SessionWatchResponse but got: " + raw);
+            throw new IllegalStateException(
+                    "Expected SessionWatchResponse but got: " +
+                            (raw == null
+                                    ? "null"
+                                    : raw.getClass().getName())
+            );
         }
         //socket.clearResponseQueue();
         return response;
@@ -40,7 +43,7 @@ public class AuctionService {
         Object raw = socket.receiveResponse();
 
         if (!(raw instanceof GetBidHistoryResponse response)) {
-            throw new IllegalStateException("Expected GetBidHistoryResponse but got: " + raw);
+            throw new IllegalStateException("Expected GetBidHistoryResponse but got: " + (raw == null ? "null" : raw.getClass().getName()));
         }
 
         return response;
@@ -60,8 +63,7 @@ public class AuctionService {
 
         if (!(raw instanceof SetAutoBidResponse response)) {
             throw new IllegalStateException(
-                    "Expected SetAutoBidResponse but got: " + raw
-            );
+                    "Expected SetAutoBidResponse but got: " + (raw == null ? "null" : raw.getClass().getName()));
         }
 
         return response;
@@ -69,11 +71,20 @@ public class AuctionService {
 
     public void closeWatchSocket() {
         try {
+            watchSocket.clearBidUpdateListener();
             watchSocket.close();
         } catch (Exception ignored) {}
     }
 
     public ClientSocket getWatchSocket() {
         return watchSocket;
+    }
+
+    public void closeAllSockets() {
+        try {
+            socket.close();
+        } catch (Exception ignored) {}
+
+        closeWatchSocket();
     }
 }

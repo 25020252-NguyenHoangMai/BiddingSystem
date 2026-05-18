@@ -71,6 +71,24 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         bidPriceChart.getYAxis().setAnimated(false);
 
         bidPriceChart.setCreateSymbols(false);
+
+        Platform.runLater(() -> {
+            Stage stage = (Stage) btnBack.getScene().getWindow();
+
+            stage.setOnCloseRequest(event -> {
+                watching = false;
+
+                if (currentItem != null) {
+                    realtimeManager.unwatch(currentItem.getSessionId());
+                }
+
+                auctionService.closeWatchSocket();
+
+                if (countdownTimeline != null) {
+                    countdownTimeline.stop();
+                }
+            });
+        });
     }
 
     // Điền toàn bộ dữ liệu từ ItemDTO lên màn hình
@@ -167,10 +185,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     + historyTask.getException().getMessage());
         });
 
-        Thread historyThread = new Thread(historyTask);
-        historyThread.setDaemon(true);
-        historyThread.start();
-
         Task<Void> watchTask = new Task<>() {
             @Override
             protected Void call() {
@@ -201,6 +215,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
                 } catch (Exception e) {
                     e.printStackTrace();
+                    watching = false;
+                    auctionService.closeWatchSocket();
 
                     Platform.runLater(() -> {
                         showAlert(
@@ -225,9 +241,16 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             );
         });
 
-        Thread thread = new Thread(watchTask);
-        thread.setDaemon(true);
-        thread.start();
+        Thread watchThread = new Thread(watchTask);
+        watchThread.setDaemon(true);
+        watchTask.setOnSucceeded(e -> {
+
+            Thread historyThread = new Thread(historyTask);
+            historyThread.setDaemon(true);
+            historyThread.start();
+        });
+
+        watchThread.start();
     }
 
     // ===== OBSERVER CALLBACK — gọi bởi ClientSocket reader thread =====
@@ -401,6 +424,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 lblTimer.setText("EXPIRED");
                 btnPlaceBid.setDisable(true);
                 btnAutoBid.setDisable(true);
+
+                watching = false;
+                auctionService.closeWatchSocket();
+
                 countdownTimeline.stop();
             }
         }));
@@ -580,6 +607,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         if (currentItem != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
+
+        auctionService.closeWatchSocket();
 
         ((Stage) btnBack.getScene().getWindow()).close();
     }

@@ -23,7 +23,7 @@ public class ProductService {
     }
 
     public List<ItemDTO> getAllProducts() {
-        ClientSocket socket = ClientSocket.getInstance();
+        ClientSocket socket = new ClientSocket();
         try {
             socket.connect();
 
@@ -66,7 +66,7 @@ public class ProductService {
     }
 
     public ItemDTO addProduct(ItemDTO item) {
-        ClientSocket socket = ClientSocket.getInstance();
+        ClientSocket socket = new ClientSocket();
         try {
             // 1. Lấy kết nối Socket
             socket.connect();
