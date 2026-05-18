@@ -1,5 +1,9 @@
 package com.auction.server.network;
 
+import com.auction.protocol.BaseMessage;
+import com.auction.protocol.EventMessage;
+import com.auction.protocol.RequestMessage;
+import com.auction.protocol.ResponseMessage;
 import com.auction.request.Request;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.DashboardUpdateResponse;
@@ -55,26 +59,43 @@ public class ClientHandler implements Runnable, AuctionSessionObserver, Dashboar
                     break;
                 } catch (StreamCorruptedException e) {
                     System.out.println("Corrupted stream from client: " + socket);
-                    safeSendResponse(new ErrorResponse("Corrupted request stream"));
+                    safeSendMessage(new ResponseMessage("unknown",
+                            new ErrorResponse("Corrupted request stream")));
                     break;
                 } catch (InvalidClassException e) {
                     System.out.println("Invalid class sent by client: " + socket);
-                    safeSendResponse(new ErrorResponse("Invalid request class"));
+                    safeSendMessage(new ResponseMessage("unknown",
+                            new ErrorResponse("Invalid request class")));
                     break;
                 } catch (OptionalDataException e) {
                     System.out.println("Unexpected raw data from client: " + socket);
-                    safeSendResponse(new ErrorResponse("Unexpected data format"));
+                    safeSendMessage(new ResponseMessage("unknown",
+                            new ErrorResponse("Unexpected data format")));
                     break;
                 } catch (ClassNotFoundException e) {
                     System.out.println("Unknown class from client: " + socket);
-                    safeSendResponse(new ErrorResponse("Unknown request type"));
+                    safeSendMessage(new ResponseMessage("unknown", new ErrorResponse("Unknown request type")));
                     break;
                 }
 
+                if (!(obj instanceof RequestMessage requestMessage)) {
+                    System.out.println("Received non-request protocol message from client: " + socket);
+                    safeSendMessage(new ResponseMessage("unknown",
+                            new ErrorResponse("Invalid request message")));
+                    break;
+                }
 
-                if (!(obj instanceof Request request)) {
-                    System.out.println("Received non-request object from client: " + socket);
-                    safeSendResponse(new ErrorResponse("Invalid request object"));
+                String requestId = requestMessage.getRequestId();
+                if (requestId == null || requestId.isBlank()) {
+                    System.out.println("Received request without requestId from client: " + socket);
+                    safeSendMessage(new ResponseMessage("unknown", new ErrorResponse("Missing requestId")));
+                    break;
+                }
+
+                Object payload = requestMessage.getPayload();
+                if (!(payload instanceof Request request)) {
+                    System.out.println("Received invalid payload from client: " + socket);
+                    safeSendMessage(new ResponseMessage(requestId, new ErrorResponse("Invalid request payload")));
                     break;
                 }
 
@@ -93,7 +114,7 @@ public class ClientHandler implements Runnable, AuctionSessionObserver, Dashboar
                     response = new ErrorResponse("Internal server error");
                 }
 
-                safeSendResponse(response);
+                safeSendMessage(new ResponseMessage(requestId, response));
             }
         } catch (IOException e) {
             System.out.println("I/O error while handling client: " + socket);
@@ -108,17 +129,17 @@ public class ClientHandler implements Runnable, AuctionSessionObserver, Dashboar
         }
     }
 
-    private synchronized boolean safeSendResponse(Response response) {
+    private synchronized boolean safeSendMessage(BaseMessage message) {
         if (out == null) {
             return false;
         }
 
         try {
-            out.writeObject(response);
+            out.writeObject(message);
             out.flush();
             return true;
         } catch (IOException e) {
-            System.out.println("Failed to send response to client: " + socket);
+            System.out.println("Failed to send message to client: " + socket);
             return false;
         }
     }
@@ -129,7 +150,7 @@ public class ClientHandler implements Runnable, AuctionSessionObserver, Dashboar
             return false;
         }
 
-        return safeSendResponse(update);
+        return safeSendMessage(new EventMessage(update));
     }
 
     @Override
@@ -138,7 +159,7 @@ public class ClientHandler implements Runnable, AuctionSessionObserver, Dashboar
             return false;
         }
 
-        return safeSendResponse(update);
+        return safeSendMessage(new EventMessage(update));
     }
 
     private void closeResources() {
