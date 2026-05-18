@@ -21,8 +21,6 @@ public class ClientSocket {
     private ObjectInputStream in;
     private Thread readerThread;
 
-    private final Object requestLock = new Object();
-
     private static final ClientSocket INSTANCE = new ClientSocket();
 
     public static ClientSocket getInstance() {
@@ -31,24 +29,14 @@ public class ClientSocket {
 
     private ClientSocket() {}
 
-    // Response bình thường cho Request-Response
-    private final BlockingQueue<Object> responseQueue  = new LinkedBlockingQueue<>();
-
-    private final BlockingQueue<PlaceBidResponse> placeBidQueue = new LinkedBlockingQueue<>();
-
-    // BidUpdateResponse do server push — không liên quan request nào
-    private final BlockingQueue<BidUpdateResponse> bidUpdateQueue = new LinkedBlockingQueue<>();
-
     private final ConcurrentHashMap<String, BidUpdateListener> bidUpdateListeners = new ConcurrentHashMap<>();
 
     // Callback nhận DashboardUpdateResponse — set bởi MainController
     private volatile DashboardUpdateListener dashboardUpdateListener;
 
-    private final BlockingQueue<DashboardWatchResponse> dashboardWatchQueue = new LinkedBlockingQueue<>();
-
     private final ConcurrentHashMap<String, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
 
-    private ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
+    private ExecutorService callbackExecutor = Executors.newCachedThreadPool();
 
     private volatile boolean dashboardWatching = false;
 
@@ -141,11 +129,6 @@ public class ClientSocket {
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
 
-            responseQueue.clear();
-            bidUpdateQueue.clear();
-            dashboardWatchQueue.clear();
-            placeBidQueue.clear();
-
             startReaderThread();
 
             System.out.println("[ClientSocket] Connected to server: " + host + ":" + port);
@@ -230,25 +213,6 @@ public class ClientSocket {
         }
     }
 
-    public <T> T sendAndReceive(Object request, Class<T> expectedType) throws Exception {
-        synchronized (requestLock) {
-            sendRequest(request);
-
-            Object response = takeResponse();
-
-            if (!expectedType.isInstance(response)) {
-                throw new IllegalStateException(
-                        "Expected "
-                                + expectedType.getSimpleName()
-                                + " but got "
-                                + response.getClass().getSimpleName()
-                );
-            }
-
-            return expectedType.cast(response);
-        }
-    }
-
     public <T extends Response> T sendRequestAndWait(Request request, Class<T> expectedType) throws Exception {
         connect();
 
@@ -287,54 +251,10 @@ public class ClientSocket {
         }
     }
 
-    public Object takeResponse() throws Exception {
-        Object obj = responseQueue.poll(30, TimeUnit.SECONDS);
-        if (obj == null) {
-            System.err.println("[ClientSocket] Timeout waiting for server response");
-            throw new Exception("Server response timeout");
-        }
-
-        System.out.println(
-                "[ClientSocket] takeResponse received: "
-                        + obj.getClass().getSimpleName());
-
-        return obj;
-    }
-
-    public DashboardWatchResponse receiveDashboardWatchResponse() throws Exception {
-        DashboardWatchResponse r = dashboardWatchQueue.poll(30, TimeUnit.SECONDS);
-        if (r == null) {
-            throw new Exception("DashboardWatch response timeout");
-        }
-
-        dashboardWatching = r.isSuccess();
-
-        System.out.println("[ClientSocket] dashboardWatching = " + dashboardWatching);
-
-        return r;
-    }
-
-    public Object receiveResponse() throws Exception {
-        return takeResponse();
-    }
-
     // ===== BID UPDATE LISTENER =====
     public void setBidUpdateListener(String sessionId, BidUpdateListener listener) {
         bidUpdateListeners.put(sessionId, listener);
-
-        BidUpdateResponse pending;
-
-        while ((pending = bidUpdateQueue.poll()) != null) {
-
-            if (pending.getSessionId().equals(sessionId)) {
-                listener.onBidUpdate(pending);
-            } else {
-                bidUpdateQueue.offer(pending);
-                break;
-            }
-        }
     }
-
     // Huỷ listener — gọi khi đóng AuctionDetail
     public void clearBidUpdateListener(String sessionId) {
         bidUpdateListeners.remove(sessionId);
@@ -365,38 +285,32 @@ public class ClientSocket {
 
         // 3. Xóa sạch trạng thái
         readerThread = null;
-        responseQueue.clear();
-        bidUpdateQueue.clear();
-        dashboardWatchQueue.clear();
-        placeBidQueue.clear();
         dashboardWatching = false;
         bidUpdateListeners.clear();
         dashboardUpdateListener = null;
     }
 
-    public synchronized void closeSilently() {
-        try { if (in  != null) in.close();  } catch (Exception ignored) {}
-        try { if (out != null) out.close();  } catch (Exception ignored) {}
-        try { if (socket != null) socket.close(); } catch (Exception ignored) {}
+    public void closeSilently() {
+        synchronized (writeLock) {
+            try {
+                if (in != null) { in.close(); }
+            } catch (Exception ignored) {}
 
-        in = null;
-        out = null;
-        socket = null;
-    }
+            try {
+                if (out != null) { out.close(); }
+            } catch (Exception ignored) {}
 
-    public void clearResponseQueue() {
-        responseQueue.clear();
-    }
+            try {
+                if (socket != null) { socket.close(); }
+            } catch (Exception ignored) {}
 
-    public PlaceBidResponse takePlaceBidResponse() throws Exception {
-        PlaceBidResponse response = placeBidQueue.poll(30, TimeUnit.SECONDS);
-
-        if (response == null) {
-            throw new Exception("Server response timeout");
+            in = null;
+            out = null;
+            socket = null;
         }
-
-        return response;
     }
+
+    public void clearResponseQueue() {}
 
     private synchronized void handleDisconnect() {
         for (CompletableFuture<Response> future : pendingRequests.values()) {
@@ -408,11 +322,6 @@ public class ClientSocket {
         closeSilently();
 
         readerThread = null;
-
-        responseQueue.clear();
-        bidUpdateQueue.clear();
-        dashboardWatchQueue.clear();
-        placeBidQueue.clear();
 
         dashboardWatching = false;
     }
