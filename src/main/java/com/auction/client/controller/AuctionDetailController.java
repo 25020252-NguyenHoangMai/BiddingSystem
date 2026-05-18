@@ -95,6 +95,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     public void setItemData(ItemDTO item) {
         if (item == null) return;
         this.currentItem = item;
+        historyLoaded = false;
 
         // 1. Thông tin cơ bản
         lblCategory.setText(item.getItemType());
@@ -126,64 +127,63 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         historyTask.setOnSucceeded(e -> {
             GetBidHistoryResponse res = historyTask.getValue();
-            if (res != null && res.isSuccess() && res.getHistory() != null) {
-                Platform.runLater(() -> {
-                    // Chỉ load history 1 lần đầu
-                    if (historyLoaded) { return; }
 
-                    historyLoaded = true;
+            // Nếu user đã back hoặc history đã load rồi thì bỏ qua
+            if (!watching || historyLoaded) return;
+            if (res == null || !res.isSuccess() || res.getHistory() == null) return;
 
-                    lvBidHistory.getItems().clear();
-                    priceSeries.getData().clear();
+            historyLoaded = true;
 
-                    String me = ClientSession.getCurrentUser() != null
-                            ? ClientSession.getCurrentUser().getUsername() : "";
+            Platform.runLater(() -> {
+                lvBidHistory.getItems().clear();
+                priceSeries.getData().clear();
 
-                    // Tạo 2 list riêng biệt để tránh reverse ảnh hưởng lẫn nhau
-                    List<BidHistoryEntryDTO> sortedAsc = new ArrayList<>(res.getHistory());
-                    sortedAsc.sort(Comparator.comparingLong(BidHistoryEntryDTO::getBidTimeMillis));
+                String me = ClientSession.getCurrentUser() != null
+                        ? ClientSession.getCurrentUser().getUsername() : "";
 
-                    // Chart: cũ → mới
-                    List<BidHistoryEntryDTO> chartData = sortedAsc.size() > 20
-                            ? sortedAsc.subList(sortedAsc.size() - 20, sortedAsc.size())
-                            : sortedAsc;
-                    for (BidHistoryEntryDTO entry : chartData) {
-                        String timeLabel = LocalTime.ofInstant(
-                                java.time.Instant.ofEpochMilli(entry.getBidTimeMillis()),
-                                java.time.ZoneId.systemDefault()
-                        ).format(TIME_FMT);
+                // Sắp xếp tăng dần theo thời gian
+                List<BidHistoryEntryDTO> sortedAsc = new ArrayList<>(res.getHistory());
+                sortedAsc.sort(Comparator.comparingLong(BidHistoryEntryDTO::getBidTimeMillis));
 
-                        boolean exists = priceSeries.getData().stream()
-                                .anyMatch(d ->
-                                        Objects.equals(d.getXValue(), timeLabel)
-                                                && Objects.equals(d.getYValue(), entry.getBidAmount()));
+                // Chart: hiển thị tối đa 20 điểm gần nhất (cũ → mới)
+                List<BidHistoryEntryDTO> chartData = sortedAsc.size() > 20
+                        ? sortedAsc.subList(sortedAsc.size() - 20, sortedAsc.size())
+                        : sortedAsc;
 
-                        if (!exists) {
-                            priceSeries.getData().add(
-                                    new XYChart.Data<>(timeLabel, entry.getBidAmount()));
-                        }
+                for (BidHistoryEntryDTO entry : chartData) {
+                    String timeLabel = LocalTime.ofInstant(
+                            java.time.Instant.ofEpochMilli(entry.getBidTimeMillis()),
+                            java.time.ZoneId.systemDefault()
+                    ).format(TIME_FMT);
+
+                    boolean exists = priceSeries.getData().stream()
+                            .anyMatch(d -> Objects.equals(d.getXValue(), timeLabel)
+                                    && Objects.equals(d.getYValue(), entry.getBidAmount()));
+
+                    if (!exists) {
+                        priceSeries.getData().add(new XYChart.Data<>(timeLabel, entry.getBidAmount()));
                     }
+                }
 
-                    // ListView: mới → cũ
-                    List<BidHistoryEntryDTO> sortedDesc = new ArrayList<>(sortedAsc);
-                    Collections.reverse(sortedDesc);
+                // ListView: hiển thị tối đa 30 bản ghi, mới → cũ
+                List<BidHistoryEntryDTO> sortedDesc = new ArrayList<>(sortedAsc);
+                Collections.reverse(sortedDesc);
 
-                    List<BidHistoryEntryDTO> limitedHistory =
-                            sortedDesc.size() > 30
-                                    ? sortedDesc.subList(0, 30)
-                                    : sortedDesc;
+                List<BidHistoryEntryDTO> limited = sortedDesc.size() > 30
+                        ? sortedDesc.subList(0, 30)
+                        : sortedDesc;
 
-                    for (BidHistoryEntryDTO entry : limitedHistory) {
-                        lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
-                    }
-                });
-            }
+                for (BidHistoryEntryDTO entry : limited) {
+                    lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
+                }
+            });
         });
 
         historyTask.setOnFailed(e -> {
             System.err.println("[AuctionDetail] Failed to load bid history: "
                     + historyTask.getException().getMessage());
         });
+
 
         Task<Void> watchTask = new Task<>() {
             @Override
@@ -241,15 +241,12 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             );
         });
 
+        Thread historyThread = new Thread(historyTask);
+        historyThread.setDaemon(true);
+        historyThread.start();
+
         Thread watchThread = new Thread(watchTask);
         watchThread.setDaemon(true);
-        watchTask.setOnSucceeded(e -> {
-
-            Thread historyThread = new Thread(historyTask);
-            historyThread.setDaemon(true);
-            historyThread.start();
-        });
-
         watchThread.start();
     }
 
