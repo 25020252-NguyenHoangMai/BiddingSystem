@@ -27,6 +27,10 @@ public class ItemDTO implements Serializable {
     private String currentWinnerUsername;
     private String sessionStatus;
     private Double minimumNextBid;
+    private String material;
+    private String gemstone;
+    private String weight;
+
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
 
@@ -166,6 +170,30 @@ public class ItemDTO implements Serializable {
 
     public void setSessionStatus(String s) { this.sessionStatus = s; }
 
+    public String getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(String material) {
+        this.material = material;
+    }
+
+    public String getGemstone() {
+        return gemstone;
+    }
+
+    public void setGemstone(String gemstone) {
+        this.gemstone = gemstone;
+    }
+
+    public String getWeight() {
+        return weight;
+    }
+
+    public void setWeight(String weight) {
+        this.weight = weight;
+    }
+
     public String calculateTimeLeft() {
         long now = System.currentTimeMillis();
         long diff = endTimeMillis - now;
@@ -182,4 +210,7 @@ public class ItemDTO implements Serializable {
     public Double getMinimumNextBid() { return minimumNextBid;}
 
     public void setMinimumNextBid(Double minimumNextBid) { this.minimumNextBid = minimumNextBid;}
+
+
+
 }
