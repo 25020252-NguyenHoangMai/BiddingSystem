@@ -27,7 +27,7 @@ public class UserClientService {
 
     // Lấy toàn bộ danh sách người dùng từ Server
     public List<UserSessionDTO> getAllUsers() {
-        ClientSocket socket = new ClientSocket();
+        ClientSocket socket = ClientSocket.getInstance();
         try {
             // gửi request
             socket.sendRequest("GET_ALL_USERS");
@@ -58,7 +58,7 @@ public class UserClientService {
 
     // Gửi yêu cầu xóa người dùng theo ID
     public boolean deleteUser(int userId) {
-        ClientSocket socket = new ClientSocket();
+        ClientSocket socket = ClientSocket.getInstance();
         try {
             socket.sendRequest("DELETE_USER:" + userId);
 
@@ -84,7 +84,7 @@ public class UserClientService {
 
     // Gửi EnableSellerRequest lên Server
     public UserSessionDTO enableSeller(String userId) throws Exception {
-        ClientSocket socket = new ClientSocket();
+        ClientSocket socket = ClientSocket.getInstance();
         socket.connect();
 
         socket.sendRequest(new EnableSellerRequest(userId));
@@ -107,7 +107,7 @@ public class UserClientService {
 
     // Gửi DepositRequest
     public UserSessionDTO deposit(String userId, double amount) throws Exception {
-        ClientSocket socket = new ClientSocket();
+        ClientSocket socket = ClientSocket.getInstance();
         socket.connect();
 
         socket.sendRequest(new DepositRequest(userId, amount));
@@ -135,7 +135,7 @@ public class UserClientService {
     }
 
     public UserSessionDTO getCurrentUser(String userId) throws Exception {
-        ClientSocket socket = new ClientSocket();
+        ClientSocket socket = ClientSocket.getInstance();
         socket.connect();
 
         socket.sendRequest(new GetCurrentUserRequest(userId));

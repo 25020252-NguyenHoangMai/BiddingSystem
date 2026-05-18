@@ -6,8 +6,7 @@ import com.auction.request.*;
 import com.auction.response.*;
 
 public class AuctionService {
-    private final ClientSocket socket = new ClientSocket();
-    private final ClientSocket watchSocket = new ClientSocket();
+    private final ClientSocket socket = ClientSocket.getInstance();
 
     // ===== PLACE BID =====
     public PlaceBidResponse placeBid(String sessionId, String bidderId, double amount) throws Exception {
@@ -18,16 +17,16 @@ public class AuctionService {
     }
 
     public SessionWatchResponse watchSession(String sessionId, String userId) throws Exception {
-        watchSocket.connect();
+        socket.connect();
 
-        watchSocket.clearResponseQueue();
+        socket.clearResponseQueue();
 
-        watchSocket.sendRequest(new WatchSessionRequest(sessionId, userId));
+        socket.sendRequest(new WatchSessionRequest(sessionId, userId));
 
         long timeout = System.currentTimeMillis() + 10000;
 
         while (System.currentTimeMillis() < timeout) {
-            Object raw = watchSocket.receiveResponse();
+            Object raw = socket.receiveResponse();
 
             if (raw instanceof SessionWatchResponse response) {
                 return response;
@@ -57,11 +56,11 @@ public class AuctionService {
 
     public void unwatchSession(String sessionId) {
         try {
-            if (!watchSocket.isConnectedPublic()) {
+            if (!socket.isConnectedPublic()) {
                 return;
             }
 
-            watchSocket.sendRequest(new UnwatchSessionRequest(sessionId));
+            socket.sendRequest(new UnwatchSessionRequest(sessionId));
         } catch (Exception ignored) {}
     }
 
@@ -82,13 +81,13 @@ public class AuctionService {
 
     public void closeWatchSocket() {
         try {
-            watchSocket.clearBidUpdateListener();
-            watchSocket.close();
+            socket.clearBidUpdateListener();
+            socket.close();
         } catch (Exception ignored) {}
     }
 
     public ClientSocket getWatchSocket() {
-        return watchSocket;
+        return socket;
     }
 
     public void closeAllSockets() {

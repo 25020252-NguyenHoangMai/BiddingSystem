@@ -171,7 +171,7 @@ public class ProfileController {
     @FXML
     private void handleLogout() {
         // Dọn socket trước khi logout
-        ClientSocket socket = new ClientSocket();
+        ClientSocket socket = ClientSocket.getInstance();
         socket.setDashboardUpdateListener(null);
         socket.clearResponseQueue();
         Task<Void> unwatch = new Task<>() {

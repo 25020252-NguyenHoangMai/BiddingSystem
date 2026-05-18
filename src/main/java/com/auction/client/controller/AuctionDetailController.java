@@ -82,8 +82,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     realtimeManager.unwatch(currentItem.getSessionId());
                 }
 
-                auctionService.closeWatchSocket();
-
                 if (countdownTimeline != null) {
                     countdownTimeline.stop();
                 }
@@ -428,7 +426,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 btnAutoBid.setDisable(true);
 
                 watching = false;
-                auctionService.closeWatchSocket();
 
                 countdownTimeline.stop();
             }
@@ -609,8 +606,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         if (currentItem != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
-
-        auctionService.closeWatchSocket();
 
         ((Stage) btnBack.getScene().getWindow()).close();
     }

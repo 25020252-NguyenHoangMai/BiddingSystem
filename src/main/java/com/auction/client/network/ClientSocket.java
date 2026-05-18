@@ -18,6 +18,12 @@ public class ClientSocket {
     private ObjectInputStream in;
     private Thread readerThread;
 
+    private static final ClientSocket INSTANCE = ClientSocket.getInstance();
+
+    public static ClientSocket getInstance() {
+        return INSTANCE;
+    }
+
     public ClientSocket() {}
 
     // Response bình thường cho Request-Response

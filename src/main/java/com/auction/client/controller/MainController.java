@@ -66,7 +66,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== SERVICE =====
     private final ProductService productService = ProductService.getInstance();
-    private final ClientSocket clientSocket = new ClientSocket();
+    private final ClientSocket clientSocket = ClientSocket.getInstance();
     private final AuctionService auctionService = new AuctionService();
     private final Consumer<UserSessionDTO> userChangeListener =
             user -> Platform.runLater(this::setupUserInfo);

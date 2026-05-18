@@ -8,7 +8,7 @@ import com.auction.response.RegisterResponse;
 
 public class AuthService {
     private static AuthService instance;
-    private final ClientSocket clientSocket = new ClientSocket();
+    private final ClientSocket clientSocket = ClientSocket.getInstance();
 
     private AuthService() {}
 
