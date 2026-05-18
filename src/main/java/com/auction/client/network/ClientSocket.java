@@ -18,7 +18,9 @@ public class ClientSocket {
     private ObjectInputStream in;
     private Thread readerThread;
 
-    private static final ClientSocket INSTANCE = ClientSocket.getInstance();
+    private final Object requestLock = new Object();
+
+    private static final ClientSocket INSTANCE = new ClientSocket();
 
     public static ClientSocket getInstance() {
         return INSTANCE;
@@ -217,6 +219,25 @@ public class ClientSocket {
             handleDisconnect();
 
             throw new RuntimeException("[ClientSocket] sendRequest failed", e);
+        }
+    }
+
+    public <T> T sendAndReceive(Object request, Class<T> expectedType) throws Exception {
+        synchronized (requestLock) {
+            sendRequest(request);
+
+            Object response = takeResponse();
+
+            if (!expectedType.isInstance(response)) {
+                throw new IllegalStateException(
+                        "Expected "
+                                + expectedType.getSimpleName()
+                                + " but got "
+                                + response.getClass().getSimpleName()
+                );
+            }
+
+            return expectedType.cast(response);
         }
     }
 

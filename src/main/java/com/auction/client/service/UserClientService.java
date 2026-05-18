@@ -12,22 +12,15 @@ import com.auction.response.GetCurrentUserResponse;
 import java.util.List;
 
 public class UserClientService {
-
-    // Áp dụng Singleton để AdminController dễ gọi
-    private static UserClientService instance;
-
     private UserClientService() {}
 
-    public static UserClientService getInstance() {
-        if (instance == null) {
-            instance = new UserClientService();
-        }
-        return instance;
-    }
+    private static final UserClientService INSTANCE = new UserClientService();
+    public static UserClientService getInstance() { return INSTANCE; }
 
     // Lấy toàn bộ danh sách người dùng từ Server
     public List<UserSessionDTO> getAllUsers() {
         ClientSocket socket = ClientSocket.getInstance();
+        socket.connect();
         try {
             // gửi request
             socket.sendRequest("GET_ALL_USERS");
@@ -59,6 +52,7 @@ public class UserClientService {
     // Gửi yêu cầu xóa người dùng theo ID
     public boolean deleteUser(int userId) {
         ClientSocket socket = ClientSocket.getInstance();
+        socket.connect();
         try {
             socket.sendRequest("DELETE_USER:" + userId);
 

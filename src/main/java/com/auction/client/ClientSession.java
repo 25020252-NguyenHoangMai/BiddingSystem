@@ -7,7 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 public class ClientSession {
-    private static UserSessionDTO currentUser;
+    private static volatile UserSessionDTO currentUser;
     private static final List<Consumer<UserSessionDTO>> listeners = new CopyOnWriteArrayList<>();
 
     public static UserSessionDTO getCurrentUser() {

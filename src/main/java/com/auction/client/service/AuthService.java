@@ -7,17 +7,12 @@ import com.auction.response.LoginResponse;
 import com.auction.response.RegisterResponse;
 
 public class AuthService {
-    private static AuthService instance;
     private final ClientSocket clientSocket = ClientSocket.getInstance();
 
     private AuthService() {}
 
-    public static AuthService getInstance() {
-        if (instance == null) {
-            instance = new AuthService();
-        }
-        return instance;
-    }
+    private static final AuthService INSTANCE = new AuthService();
+    public static AuthService getInstance() { return INSTANCE; }
 
     /**
      * Xử lý gửi yêu cầu đăng ký
