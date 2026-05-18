@@ -5,9 +5,7 @@ import com.auction.dto.ItemDTO;
 import com.auction.request.AddItemRequest;
 import com.auction.request.GetAllItemsRequest;
 import com.auction.response.AddItemResponse;
-import com.auction.response.ErrorResponse;
 import com.auction.response.GetAllItemsResponse;
-import com.auction.response.Response;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,38 +23,18 @@ public class ProductService {
     public List<ItemDTO> getAllProducts() {
         ClientSocket socket = ClientSocket.getInstance();
         try {
-            socket.connect();
+            GetAllItemsResponse response =
+                    socket.sendRequestAndWait(new GetAllItemsRequest(), GetAllItemsResponse.class);
 
-            GetAllItemsRequest request = new GetAllItemsRequest();
-            socket.sendRequest(request);
-
-            Object response = socket.receiveResponse();
-
-            if (response instanceof GetAllItemsResponse itemResponse) {
-                if (!itemResponse.isSuccess()) {
-                    throw new RuntimeException(itemResponse.getMessage());
-                }
-
-                List<ItemDTO> items = itemResponse.getItems();
-
-                return items != null
-                        ? items
-                        : new ArrayList<>();
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
             }
 
-            if (response instanceof ErrorResponse err) {
-                throw new RuntimeException(err.getMessage());
-            }
+            List<ItemDTO> items = response.getItems();
 
-            if (response instanceof Response res) {
-                throw new RuntimeException(res.getMessage());
-            }
-
-            throw new IllegalStateException("Expected GetAllItemsResponse but got: "
-                            + (response == null
-                            ? "null"
-                            : response.getClass().getSimpleName())
-            );
+            return items != null
+                    ? items
+                    : new ArrayList<>();
 
         } catch (Exception e) {
             System.err.println("[ProductService] getAllProducts failed: " + e.getMessage());
@@ -71,27 +49,19 @@ public class ProductService {
             // 1. Lấy kết nối Socket
             socket.connect();
 
-            // 2. Gửi gói tin AddItemRequest chứa đối tượng item
             AddItemRequest request = new AddItemRequest(item.getSellerId(), item, item.getDurationHours());
-            socket.sendRequest(request);
 
-            // 3. Nhận phản hồi từ Server
-            Object response = socket.receiveResponse();
+            AddItemResponse response =
+                    socket.sendRequestAndWait(
+                            request,
+                            AddItemResponse.class
+                    );
 
-            // 4. Kiểm tra xem Server trả về đúng kiểu AddItemResponse không
-            if (!(response instanceof AddItemResponse res)) {
-                throw new IllegalStateException("Expected AddItemResponse but got: "
-                                + (response == null
-                                ? "null"
-                                : response.getClass().getSimpleName())
-                );
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
             }
 
-            if (!res.isSuccess()) {
-                throw new RuntimeException(res.getMessage());
-            }
-
-            ItemDTO savedItem = res.getItemDTO();
+            ItemDTO savedItem = response.getItemDTO();
 
             if (savedItem == null) {
                 throw new IllegalStateException("AddItemResponse itemDTO is null");
@@ -101,7 +71,9 @@ public class ProductService {
 
         } catch (Exception e) {
             System.err.println("[ProductService] addProduct failed: " + e.getMessage());
+
             e.printStackTrace();
+
             throw new RuntimeException("Lỗi thêm sản phẩm: " + e.getMessage(), e);
         }
     }

@@ -10,48 +10,19 @@ public class AuctionService {
 
     // ===== PLACE BID =====
     public PlaceBidResponse placeBid(String sessionId, String bidderId, double amount) throws Exception {
-        socket.connect();
-        socket.sendRequest(new PlaceBidRequest(sessionId, bidderId, amount));
-
-        return socket.takePlaceBidResponse();
+        return socket.sendRequestAndWait(
+                new PlaceBidRequest(sessionId, bidderId, amount), PlaceBidResponse.class
+        );
     }
 
     public SessionWatchResponse watchSession(String sessionId, String userId) throws Exception {
-        socket.connect();
-
-        socket.clearResponseQueue();
-
-        socket.sendRequest(new WatchSessionRequest(sessionId, userId));
-
-        long timeout = System.currentTimeMillis() + 10000;
-
-        while (System.currentTimeMillis() < timeout) {
-            Object raw = socket.receiveResponse();
-
-            if (raw instanceof SessionWatchResponse response) {
-                return response;
-            }
-
-            System.out.println(
-                    "[AuctionService] Skip unexpected response: "
-                            + raw.getClass().getSimpleName()
-            );
-        }
-
-        throw new Exception("Watch session timeout");
+        return socket.sendRequestAndWait(
+                new WatchSessionRequest(sessionId, userId), SessionWatchResponse.class);
     }
 
     public GetBidHistoryResponse getBidHistory(String sessionId) throws Exception {
-        socket.connect();
-        socket.sendRequest(new GetBidHistoryRequest(sessionId));
-
-        Object raw = socket.receiveResponse();
-
-        if (!(raw instanceof GetBidHistoryResponse response)) {
-            throw new IllegalStateException("Expected GetBidHistoryResponse but got: " + (raw == null ? "null" : raw.getClass().getName()));
-        }
-
-        return response;
+        return socket.sendRequestAndWait(
+                new GetBidHistoryRequest(sessionId), GetBidHistoryResponse.class);
     }
 
     public void unwatchSession(String sessionId) {
@@ -65,18 +36,8 @@ public class AuctionService {
     }
 
     public SetAutoBidResponse setAutoBid(String sessionId, String bidderId, double maxAmount) throws Exception {
-        socket.connect();
-
-        socket.sendRequest(new SetAutoBidRequest(sessionId, bidderId, maxAmount));
-
-        Object raw = socket.receiveResponse();
-
-        if (!(raw instanceof SetAutoBidResponse response)) {
-            throw new IllegalStateException(
-                    "Expected SetAutoBidResponse but got: " + (raw == null ? "null" : raw.getClass().getName()));
-        }
-
-        return response;
+        return socket.sendRequestAndWait(
+                new SetAutoBidRequest(sessionId, bidderId, maxAmount), SetAutoBidResponse.class);
     }
 
     public void closeAllSockets() {

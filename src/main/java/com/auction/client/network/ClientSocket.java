@@ -1,15 +1,18 @@
 package com.auction.client.network;
 
-import com.auction.response.BidUpdateResponse;
-import com.auction.response.DashboardUpdateResponse;
-import com.auction.response.DashboardWatchResponse;
-import com.auction.response.PlaceBidResponse;
+import com.auction.protocol.EventMessage;
+import com.auction.protocol.RequestMessage;
+import com.auction.protocol.ResponseMessage;
+import com.auction.request.Request;
+import com.auction.response.*;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.*;
 
 public class ClientSocket {
@@ -26,7 +29,7 @@ public class ClientSocket {
         return INSTANCE;
     }
 
-    public ClientSocket() {}
+    private ClientSocket() {}
 
     // Response bình thường cho Request-Response
     private final BlockingQueue<Object> responseQueue  = new LinkedBlockingQueue<>();
@@ -43,9 +46,13 @@ public class ClientSocket {
 
     private final BlockingQueue<DashboardWatchResponse> dashboardWatchQueue = new LinkedBlockingQueue<>();
 
-    private final ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
+    private final ConcurrentHashMap<String, CompletableFuture<Response>> pendingRequests = new ConcurrentHashMap<>();
+
+    private ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
     private volatile boolean dashboardWatching = false;
+
+    private final Object writeLock = new Object();
 
     // Interface Observer — AuctionDetailController implement
     public interface BidUpdateListener {
@@ -114,6 +121,10 @@ public class ClientSocket {
 
             closeSilently();
 
+            if (callbackExecutor == null || callbackExecutor.isShutdown()) {
+                callbackExecutor = Executors.newSingleThreadExecutor();
+            }
+
             String host = getServerHost();
             int port = getServerPort();
 
@@ -160,28 +171,24 @@ public class ClientSocket {
             while (isSocketAlive()) {
                 try {
                     Object obj = in.readObject();
-                    System.out.println("[ClientSocket] received from server: " + obj.getClass().getSimpleName());
 
-                    if (obj instanceof PlaceBidResponse placeBidResponse) {
-                        placeBidQueue.offer(placeBidResponse);
-                    } else if (obj instanceof BidUpdateResponse update) {
-                        BidUpdateListener cb = bidUpdateListeners.get(update.getSessionId());
+                    if (obj instanceof ResponseMessage responseMessage) {
+                        String requestId = responseMessage.getRequestId();
 
-                        if (cb != null) {
-                            callbackExecutor.execute(() -> cb.onBidUpdate(update));
+                        CompletableFuture<Response> future = pendingRequests.remove(requestId);
+
+                        if (future != null) {
+                            future.complete(responseMessage.getPayload());
                         } else {
-                            bidUpdateQueue.offer(update);
+                            System.err.println("No pending request for requestId: " +  requestId);
                         }
-                    } else if (obj instanceof DashboardUpdateResponse dashboardUpdate) {
-                        DashboardUpdateListener dcb = dashboardUpdateListener;
 
-                        if (dcb != null) {
-                            callbackExecutor.execute(() -> dcb.onDashboardUpdate(dashboardUpdate));
-                        }
-                    } else if (obj instanceof DashboardWatchResponse dwr) {
-                        dashboardWatchQueue.offer(dwr);
+                    } else if (obj instanceof EventMessage eventMessage) {
+                        handleEvent(eventMessage.getPayload());
+
                     } else {
-                        responseQueue.offer(obj);
+
+                        throw new IOException("Unknown protocol message: " + obj.getClass().getName());
                     }
                 } catch (java.io.EOFException | java.net.SocketException e) {
                     System.out.println("[ClientSocket] Connection closed.");
@@ -205,8 +212,10 @@ public class ClientSocket {
                 throw new IllegalStateException("Socket is not connected");
             }
 
-            out.writeObject(request);
-            out.flush();
+            synchronized (writeLock) {
+                out.writeObject(request);
+                out.flush();
+            }
 
             System.out.println("[ClientSocket] sent request: "
                     + request.getClass().getSimpleName());
@@ -237,6 +246,44 @@ public class ClientSocket {
             }
 
             return expectedType.cast(response);
+        }
+    }
+
+    public <T extends Response> T sendRequestAndWait(Request request, Class<T> expectedType) throws Exception {
+        connect();
+
+        String requestId = UUID.randomUUID().toString();
+
+        CompletableFuture<Response> future = new CompletableFuture<>();
+
+        pendingRequests.put(requestId, future);
+
+        try {
+            RequestMessage message = new RequestMessage(requestId, request);
+
+            synchronized (writeLock) {
+                out.writeObject(message);
+                out.flush();
+            }
+
+            Response response = future.get(30, TimeUnit.SECONDS);
+
+            if (!expectedType.isInstance(response)) {
+                throw new IOException(
+                        "Expected "
+                                + expectedType.getSimpleName()
+                                + " but got "
+                                + response.getClass().getSimpleName()
+                );
+            }
+
+            return expectedType.cast(response);
+
+        } catch (TimeoutException e) {
+            throw new IOException("Server response timeout", e);
+
+        } finally {
+            pendingRequests.remove(requestId);
         }
     }
 
@@ -300,6 +347,12 @@ public class ClientSocket {
 
     // ===== CLOSE =====
     public synchronized void close() {
+        for (CompletableFuture<Response> future : pendingRequests.values()) {
+            future.completeExceptionally(new IOException("Socket closed"));
+        }
+
+        pendingRequests.clear();
+
         // 1. Dừng luồng đọc trước
         if (readerThread != null) {
             readerThread.interrupt();
@@ -346,6 +399,12 @@ public class ClientSocket {
     }
 
     private synchronized void handleDisconnect() {
+        for (CompletableFuture<Response> future : pendingRequests.values()) {
+            future.completeExceptionally(new IOException("Connection lost"));
+        }
+
+        pendingRequests.clear();
+
         closeSilently();
 
         readerThread = null;
@@ -360,5 +419,55 @@ public class ClientSocket {
 
     public boolean isConnectedPublic() {
         return isConnected();
+    }
+
+    private void handleEvent(Object payload) {
+        if (payload instanceof BidUpdateResponse bidUpdate) {
+            dispatchBidUpdate(bidUpdate);
+
+        } else if (payload instanceof DashboardUpdateResponse dashboardUpdate) {
+            dispatchDashboardUpdate(dashboardUpdate);
+
+        } else {
+            System.err.println("Unknown event payload: " + payload.getClass().getName());
+        }
+    }
+
+    private void dispatchBidUpdate(BidUpdateResponse update) {
+        BidUpdateListener listener = bidUpdateListeners.get(update.getSessionId());
+
+        if (listener == null) {
+            return;
+        }
+
+        callbackExecutor.execute(() -> {
+            try {
+                listener.onBidUpdate(update);
+            } catch (Exception e) {
+                System.err.println(
+                        "[ClientSocket] BidUpdate listener error: "
+                                + e.getMessage()
+                );
+            }
+        });
+    }
+
+    private void dispatchDashboardUpdate(DashboardUpdateResponse update) {
+        DashboardUpdateListener listener = dashboardUpdateListener;
+
+        if (listener == null) {
+            return;
+        }
+
+        callbackExecutor.execute(() -> {
+            try {
+                listener.onDashboardUpdate(update);
+            } catch (Exception e) {
+                System.err.println(
+                        "[ClientSocket] Dashboard listener error: "
+                                + e.getMessage()
+                );
+            }
+        });
     }
 }

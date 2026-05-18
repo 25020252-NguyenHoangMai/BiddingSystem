@@ -79,47 +79,35 @@ public class UserClientService {
     // Gửi EnableSellerRequest lên Server
     public UserSessionDTO enableSeller(String userId) throws Exception {
         ClientSocket socket = ClientSocket.getInstance();
-        socket.connect();
 
-        socket.sendRequest(new EnableSellerRequest(userId));
-        Object raw = socket.receiveResponse();
+        EnableSellerResponse response =
+                socket.sendRequestAndWait(
+                        new EnableSellerRequest(userId),
+                        EnableSellerResponse.class
+                );
 
-        if (!(raw instanceof EnableSellerResponse res)) {
-            throw new IllegalStateException("Expected EnableSellerResponse but got: "
-                            + (raw == null
-                            ? "null"
-                            : raw.getClass().getSimpleName())
-            );
+        if (!response.isSuccess()) {
+            throw new Exception(response.getMessage());
         }
 
-        if (!res.isSuccess()) {
-            throw new Exception(res.getMessage());
-        }
-
-        return res.getUserSession();
+        return response.getUserSession();
     }
 
     // Gửi DepositRequest
     public UserSessionDTO deposit(String userId, double amount) throws Exception {
         ClientSocket socket = ClientSocket.getInstance();
-        socket.connect();
 
-        socket.sendRequest(new DepositRequest(userId, amount));
-        Object raw = socket.receiveResponse();
+        DepositResponse response =
+                socket.sendRequestAndWait(
+                        new DepositRequest(userId, amount),
+                        DepositResponse.class
+                );
 
-        if (!(raw instanceof DepositResponse res)) {
-            throw new IllegalStateException("Expected DepositResponse but got: "
-                            + (raw == null
-                            ? "null"
-                            : raw.getClass().getSimpleName())
-            );
+        if (!response.isSuccess()) {
+            throw new Exception(response.getMessage());
         }
 
-        if (!res.isSuccess()) {
-            throw new Exception(res.getMessage());
-        }
-
-        UserSessionDTO user = res.getUserSession();
+        UserSessionDTO user = response.getUserSession();
 
         if (user == null) {
             throw new IllegalStateException("DepositResponse userSession is null");
@@ -130,25 +118,22 @@ public class UserClientService {
 
     public UserSessionDTO getCurrentUser(String userId) throws Exception {
         ClientSocket socket = ClientSocket.getInstance();
-        socket.connect();
 
-        socket.sendRequest(new GetCurrentUserRequest(userId));
-        Object raw = socket.receiveResponse();
+        GetCurrentUserResponse response =
+                socket.sendRequestAndWait(
+                        new GetCurrentUserRequest(userId),
+                        GetCurrentUserResponse.class
+                );
 
-        if (!(raw instanceof GetCurrentUserResponse res)) {
-            throw new IllegalStateException("Expected GetCurrentUserResponse but got: "
-                    + (raw == null ? "null" : raw.getClass().getSimpleName()));
+        if (!response.isSuccess()) {
+            throw new Exception(response.getMessage());
         }
 
-        if (!res.isSuccess()) {
-            throw new Exception(res.getMessage());
-        }
-
-        if (res.getUserSession() == null) {
+        if (response.getUserSession() == null) {
             throw new IllegalStateException("GetCurrentUserResponse userSession is null");
         }
 
-        return res.getUserSession();
+        return response.getUserSession();
     }
 
 }

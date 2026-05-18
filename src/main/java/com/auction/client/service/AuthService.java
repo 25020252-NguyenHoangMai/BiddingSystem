@@ -18,47 +18,19 @@ public class AuthService {
      * Xử lý gửi yêu cầu đăng ký
      */
     public RegisterResponse register(String fullName, String username, String password, String confirmPassword) throws Exception {
-        clientSocket.connect();
 
         RegisterRequest request = new RegisterRequest(fullName, username, password, confirmPassword);
 
-        clientSocket.sendRequest(request);
-
-        Object response = clientSocket.receiveResponse();
-
-        if (response instanceof RegisterResponse regRes) {
-            return regRes;
-        }
-
-        throw new IllegalStateException(
-                "Invalid server response: "
-                        + (response == null
-                        ? "null"
-                        : response.getClass().getSimpleName())
-        );
+        return clientSocket.sendRequestAndWait(request, RegisterResponse.class);
     }
 
     /**
      * Xử lý gửi yêu cầu đăng nhập
      */
     public LoginResponse login(String username, String password) throws Exception {
-        clientSocket.connect();
 
         LoginRequest request = new LoginRequest(username, password);
 
-        clientSocket.sendRequest(request);
-
-        Object response = clientSocket.receiveResponse();
-
-        if (response instanceof LoginResponse loginRes) {
-            return loginRes;
-        }
-
-        throw new IllegalStateException(
-                "Invalid server response: "
-                        + (response == null
-                        ? "null"
-                        : response.getClass().getSimpleName())
-        );
+        return clientSocket.sendRequestAndWait(request, LoginResponse.class);
     }
 }

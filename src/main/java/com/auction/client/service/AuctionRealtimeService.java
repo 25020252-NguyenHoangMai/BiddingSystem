@@ -11,7 +11,7 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
     }
 
     private final AuctionService auctionService;
-    private AuctionUpdateListener listener;
+    private volatile AuctionUpdateListener listener;
 
     public AuctionRealtimeService(AuctionService auctionService) {
         this.auctionService = auctionService;

@@ -22,7 +22,9 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.text.NumberFormat;
+import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -74,18 +76,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         Platform.runLater(() -> {
             Stage stage = (Stage) btnBack.getScene().getWindow();
-
-            stage.setOnCloseRequest(event -> {
-                watching = false;
-
-                if (currentItem != null) {
-                    realtimeManager.unwatch(currentItem.getSessionId());
-                }
-
-                if (countdownTimeline != null) {
-                    countdownTimeline.stop();
-                }
-            });
+            stage.setOnCloseRequest(event -> cleanupWatching());
         });
     }
 
@@ -95,27 +86,42 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         this.currentItem = item;
         historyLoaded = false;
 
-        // 1. Thông tin cơ bản
+        populateBasicInfo(item);
+
+        // Hiển thị thông số kỹ thuật
+        setupDynamicSpecs(item);
+
+        // Chặn Seller tự đấu giá mặt hàng của bản thân
+        checkSellerPrivileges(item);
+
+        // Đếm ngược (Sử dụng thời gian thực từ Server)
+        startCountdown(item.getEndTimeMillis());
+
+        startHistoryLoading(item);
+
+        startRealtimeWatching(item);
+    }
+
+    private void populateBasicInfo(ItemDTO item) {
         lblCategory.setText(item.getItemType());
         lblName.setText(item.getName());
         txtDescription.setText(item.getDescription());
-        lblSeller.setText(item.getSellerUsername() != null ? item.getSellerUsername() : "Unknown");
+        lblSeller.setText(
+                item.getSellerUsername() != null
+                        ? item.getSellerUsername()
+                        : "Unknown"
+        );
+
         lblStartingPrice.setText(fmt.format(item.getStartingPrice()));
 
-        // 2. Cập nhật trạng thái bid hiện tại
-        refreshBidState(item.getCurrentPrice(), item.getCurrentWinnerUsername(), item.getSessionStatus());
+        refreshBidState(
+                item.getCurrentPrice(),
+                item.getCurrentWinnerUsername(),
+                item.getSessionStatus()
+        );
+    }
 
-        // 3. Hiển thị thông số kỹ thuật động (xe, điện tử, nghệ thuật...)
-        setupDynamicSpecs(item);
-
-        // 4. Chặn Seller tự đấu giá mặt hàng của bản thân
-        checkSellerPrivileges(item);
-
-        // 5. Đếm ngược (Sử dụng thời gian thực từ Server)
-        startCountdown(item.getEndTimeMillis());
-        //updateBidHint(item.getMinimumNextBid());
-
-        // 6. Load lịch sử bid cũ từ server
+    private void startHistoryLoading(ItemDTO item) {
         Task<GetBidHistoryResponse> historyTask = new Task<>() {
             @Override
             protected GetBidHistoryResponse call() throws Exception {
@@ -126,62 +132,82 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         historyTask.setOnSucceeded(e -> {
             GetBidHistoryResponse res = historyTask.getValue();
 
-            // Nếu user đã back hoặc history đã load rồi thì bỏ qua
             if (!watching || historyLoaded) return;
-            if (res == null || !res.isSuccess() || res.getHistory() == null) return;
+
+            if (res == null
+                    || !res.isSuccess()
+                    || res.getHistory() == null) {
+                return;
+            }
 
             historyLoaded = true;
 
-            Platform.runLater(() -> {
-                lvBidHistory.getItems().clear();
-                priceSeries.getData().clear();
+            lvBidHistory.getItems().clear();
+            priceSeries.getData().clear();
 
-                String me = ClientSession.getCurrentUser() != null
-                        ? ClientSession.getCurrentUser().getUsername() : "";
+            String me = ClientSession.getCurrentUser() != null
+                    ? ClientSession.getCurrentUser().getUsername()
+                    : "";
 
-                // Sắp xếp tăng dần theo thời gian
-                List<BidHistoryEntryDTO> sortedAsc = new ArrayList<>(res.getHistory());
-                sortedAsc.sort(Comparator.comparingLong(BidHistoryEntryDTO::getBidTimeMillis));
+            List<BidHistoryEntryDTO> sortedAsc = new ArrayList<>(res.getHistory());
 
-                // Chart: hiển thị tối đa 20 điểm gần nhất (cũ → mới)
-                List<BidHistoryEntryDTO> chartData = sortedAsc.size() > 20
-                        ? sortedAsc.subList(sortedAsc.size() - 20, sortedAsc.size())
-                        : sortedAsc;
+            sortedAsc.sort(
+                    Comparator.comparingLong(
+                            BidHistoryEntryDTO::getBidTimeMillis
+                    )
+            );
 
-                for (BidHistoryEntryDTO entry : chartData) {
-                    String timeLabel = LocalTime.ofInstant(
-                            java.time.Instant.ofEpochMilli(entry.getBidTimeMillis()),
-                            java.time.ZoneId.systemDefault()
-                    ).format(TIME_FMT);
+            List<BidHistoryEntryDTO> chartData =
+                    sortedAsc.size() > 20
+                            ? sortedAsc.subList(sortedAsc.size() - 20, sortedAsc.size())
+                            : sortedAsc;
 
-                    boolean exists = priceSeries.getData().stream()
-                            .anyMatch(d -> Objects.equals(d.getXValue(), timeLabel)
-                                    && Objects.equals(d.getYValue(), entry.getBidAmount()));
+            for (BidHistoryEntryDTO entry : chartData) {
+                String timeLabel = LocalTime.ofInstant(
+                        Instant.ofEpochMilli(entry.getBidTimeMillis()),
+                        ZoneId.systemDefault()
+                ).format(TIME_FMT);
 
-                    if (!exists) {
-                        priceSeries.getData().add(new XYChart.Data<>(timeLabel, entry.getBidAmount()));
-                    }
+                boolean exists = priceSeries.getData().stream()
+                        .anyMatch(d ->
+                                Objects.equals(d.getXValue(), timeLabel)
+                                        && Objects.equals(d.getYValue(), entry.getBidAmount())
+                        );
+
+                if (!exists) {
+                    priceSeries.getData().add(new XYChart.Data<>(timeLabel, entry.getBidAmount()));
                 }
+            }
 
-                // ListView: hiển thị tối đa 30 bản ghi, mới → cũ
-                List<BidHistoryEntryDTO> sortedDesc = new ArrayList<>(sortedAsc);
-                Collections.reverse(sortedDesc);
+            List<BidHistoryEntryDTO> sortedDesc = new ArrayList<>(sortedAsc);
 
-                List<BidHistoryEntryDTO> limited = sortedDesc.size() > 30
-                        ? sortedDesc.subList(0, 30)
-                        : sortedDesc;
+            Collections.reverse(sortedDesc);
 
-                for (BidHistoryEntryDTO entry : limited) {
-                    lvBidHistory.getItems().add(BidHistoryFormatter.format(entry, me));
-                }
-            });
+            List<BidHistoryEntryDTO> limited =
+                    sortedDesc.size() > 30
+                            ? sortedDesc.subList(0, 30)
+                            : sortedDesc;
+
+            for (BidHistoryEntryDTO entry : limited) {
+                lvBidHistory.getItems().add(
+                        BidHistoryFormatter.format(entry, me)
+                );
+            }
         });
 
         historyTask.setOnFailed(e -> {
-            System.err.println("[AuctionDetail] Failed to load bid history: "
-                    + historyTask.getException().getMessage());
+            System.err.println(
+                    "[AuctionDetail] Failed to load bid history: "
+                            + historyTask.getException().getMessage()
+            );
         });
 
+        Thread historyThread = new Thread(historyTask);
+        historyThread.setDaemon(true);
+        historyThread.start();
+    }
+
+    private void startRealtimeWatching(ItemDTO item) {
         if (watching) { return; }
         watching = true;
 
@@ -189,11 +215,13 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             @Override
             protected Void call() {
                 try {
-                    String userId = ClientSession.getCurrentUser() != null
-                            ? ClientSession.getCurrentUser().getId()
-                            : null;
+                    String userId =
+                            ClientSession.getCurrentUser() != null
+                                    ? ClientSession.getCurrentUser().getId()
+                                    : null;
 
-                    SessionWatchResponse watchResponse = realtimeManager.watch(item.getSessionId(), userId);
+                    SessionWatchResponse watchResponse =
+                            realtimeManager.watch(item.getSessionId(), userId);
 
                     Platform.runLater(() -> {
                         currentItem.setCurrentPrice(watchResponse.getCurrentPrice());
@@ -215,18 +243,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                    watching = false;
 
                     Platform.runLater(() -> {
-                        try {
-                            auctionService.unwatchSession(item.getSessionId());
-                        } catch (Exception ignored) {}
-
-                        showAlert(
-                                Alert.AlertType.ERROR,
-                                "Connection Error",
-                                "Cannot connect to realtime auction server."
-                        );
+                        cleanupWatching();
+                        showAlert(Alert.AlertType.ERROR, "Connection Error", "Cannot connect to realtime auction server.");
                     });
                 }
 
@@ -237,16 +257,13 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         watchTask.setOnFailed(event -> {
             Throwable ex = watchTask.getException();
             ex.printStackTrace();
+
             showAlert(
                     Alert.AlertType.ERROR,
                     "Watch Error",
                     "Failed to watch auction: " + ex.getMessage()
             );
         });
-
-        Thread historyThread = new Thread(historyTask);
-        historyThread.setDaemon(true);
-        historyThread.start();
 
         Thread watchThread = new Thread(watchTask);
         watchThread.setDaemon(true);
@@ -287,7 +304,9 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     update.getCurrentWinnerUsername(),
                     update.getStatus());
             updateBidHint(update.getMinimumNextBid());
+
             addBidHistoryEntry(update);
+            updateRealtimeChart(update);
             updateBalanceLabel();
         });
     }
@@ -314,19 +333,22 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
             }
         }
+    }
 
-        // Cập nhật LineChart realtime
+    private void updateRealtimeChart(BidUpdateResponse update) {
         String timeLabel = LocalTime.now().format(TIME_FMT);
-        // Tránh duplicate chart point
+
         boolean exists = priceSeries.getData().stream()
                 .anyMatch(d ->
-                        Objects.equals(d.getYValue(), update.getCurrentPrice()));
+                        Objects.equals(d.getYValue(), update.getCurrentPrice())
+                );
 
         if (!exists) {
             priceSeries.getData().add(
-                    new XYChart.Data<>(timeLabel, update.getCurrentPrice()));
+                    new XYChart.Data<>(timeLabel, update.getCurrentPrice())
+            );
         }
-        // Giữ tối đa 12 điểm gần nhất trên trục X
+
         if (priceSeries.getData().size() > 12) {
             priceSeries.getData().remove(0);
         }
@@ -358,22 +380,16 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             lblLeadingUser.setText("Leading: No bids yet");
         }
 
-        // Kiểm tra xem phiên đấu giá đã kết thúc chưa
         boolean isClosed = isClosedStatus(status);
 
-        // Chỉ Enable nút đặt giá nếu (Không phải Seller) VÀ (Phiên chưa đóng)
-        var currentUser = ClientSession.getCurrentUser();
-        boolean isSeller = (currentUser != null && Objects.equals(currentUser.getId(), currentItem.getSellerId()));
-
-        if (!isSeller) {
-            btnPlaceBid.setDisable(isClosed);
-        }
+        updateBidButtonsState();
 
         if (isClosed) {
             lblTimer.setText("CLOSED");
-            btnPlaceBid.setDisable(true);
-            btnAutoBid.setDisable(true);
-            if (countdownTimeline != null) countdownTimeline.stop();
+
+            if (countdownTimeline != null) {
+                countdownTimeline.stop();
+            }
         }
     }
 
@@ -410,28 +426,38 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     }
 
     private void startCountdown(long endTimeMillis) {
-        if (countdownTimeline != null) countdownTimeline.stop();
+        if (countdownTimeline != null) cleanupWatching();
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             long remaining = endTimeMillis - System.currentTimeMillis();
             if (remaining > 0) {
-                long hours   = remaining / 3_600_000;
-                long minutes = (remaining % 3_600_000) / 60_000;
-                long seconds = (remaining % 60_000) / 1_000;
-                lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
-
+                updateCountdownLabel(remaining);
             } else {
-                lblTimer.setText("EXPIRED");
-                btnPlaceBid.setDisable(true);
-                btnAutoBid.setDisable(true);
-
-                watching = false;
-
-                countdownTimeline.stop();
+                handleAuctionExpired();
             }
         }));
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
+    }
+
+    private void updateCountdownLabel(long remainingMillis) {
+        long hours = remainingMillis / 3_600_000;
+        long minutes = (remainingMillis % 3_600_000) / 60_000;
+        long seconds = (remainingMillis % 60_000) / 1_000;
+
+        lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+    }
+
+    private void handleAuctionExpired() {
+        lblTimer.setText("EXPIRED");
+
+        updateBidButtonsState();
+
+        watching = false;
+
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+        }
     }
 
     private void setupDynamicSpecs(ItemDTO item) {
@@ -461,71 +487,75 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     @FXML
     private void handlePlaceBid(ActionEvent event) {
+        Double amount = validateBidAmount();
+
+        if (amount == null) { return; }
+
+        prepareBidButton();
+
+        Task<PlaceBidResponse> bidTask = createPlaceBidTask(amount);
+
+        configureBidTaskHandlers(bidTask);
+
+        Thread thread = new Thread(bidTask);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private Double validateBidAmount() {
         String amountText = txtBidAmount.getText().trim();
+
         if (amountText.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, "Missing input", "Please enter a bid amount.");
-            return;
+            return null;
         }
 
         double amount;
+
         try {
             amount = Double.parseDouble(amountText);
+
         } catch (NumberFormatException e) {
             showAlert(Alert.AlertType.WARNING, "Invalid input", "Bid amount must be a valid number.");
-            return;
+            return null;
         }
 
         if (amount <= 0) {
             showAlert(Alert.AlertType.WARNING, "Invalid input", "Bid amount must be greater than zero.");
-            return;
+            return null;
         }
 
-        // Khóa nút để tránh spam click
-        btnPlaceBid.setDisable(true);
-        btnPlaceBid.setText("Placing...");
-
-        Task<PlaceBidResponse> bidTask = new Task<>() {
-            @Override
-            protected PlaceBidResponse call() throws Exception {
-                return auctionService.placeBid(
-                        currentItem.getSessionId(),
-                        ClientSession.getCurrentUser().getId(),
-                        amount
-                );
-            }
-        };
-
-        // 2. Xử lý khi thành công (Tự động chạy trên UI Thread)
-        bidTask.setOnSucceeded(e -> {
-            resetBidButton();
-            PlaceBidResponse res = bidTask.getValue();
-
-            if (res.isSuccess()) {
-                if (res.getUpdatedUser() != null) {
-                    ClientSession.setCurrentUser(res.getUpdatedUser());
-                }
-
-                updateBalanceLabel();
-                txtBidAmount.clear();
-
-                showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
-            } else {
-                showAlert(Alert.AlertType.ERROR, "Fail", res.getMessage());
-            }
-        });
-
-        // 3. Xử lý khi lỗi (Tự động chạy trên UI Thread)
-        bidTask.setOnFailed(e -> {
-            resetBidButton();
-            showAlert(Alert.AlertType.ERROR, "Connection Error", bidTask.getException().getMessage());
-        });
-
-        // Chạy task
-        new Thread(bidTask).start();
+        return amount;
     }
 
     @FXML
     private void handleAutoBid(ActionEvent event) {
+        Double maxBid = requestAutoBidAmount();
+
+        if (maxBid == null) {
+            return;
+        }
+
+        UserSessionDTO currentUser = ClientSession.getCurrentUser();
+
+        if (currentUser == null) {
+            showAlert(Alert.AlertType.ERROR, "AutoBid", "User session not found.");
+            return;
+        }
+
+        prepareAutoBidButton();
+
+        Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
+
+        configureAutoBidHandlers(task);
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+
+    private Double requestAutoBidAmount() {
         TextInputDialog dialog = new TextInputDialog();
 
         dialog.setTitle("Auto Bid");
@@ -534,79 +564,155 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         Optional<String> result = dialog.showAndWait();
 
-        if (result.isEmpty()) { return; }
+        if (result.isEmpty()) {
+            return null;
+        }
 
         try {
             double maxBid = Double.parseDouble(result.get());
 
-            var currentUser = ClientSession.getCurrentUser();
-            if (currentUser == null) {
-                showAlert(Alert.AlertType.ERROR, "AutoBid", "User session not found.");
-                return;
+            if (maxBid <= 0) {
+                throw new NumberFormatException();
             }
 
-            btnAutoBid.setDisable(true);
-            btnAutoBid.setText("Processing...");
-
-            Task<SetAutoBidResponse> task = new Task<>() {
-                @Override
-                protected SetAutoBidResponse call() throws Exception {
-                    return auctionService.setAutoBid(
-                            currentItem.getSessionId(),
-                            currentUser.getId(),
-                            maxBid
-                    );
-                }
-            };
-
-            task.setOnSucceeded(e -> {
-                btnAutoBid.setDisable(false);
-                btnAutoBid.setText("Auto Bid");
-
-                SetAutoBidResponse res = task.getValue();
-
-                if (res.isSuccess()) {
-                    showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
-
-                } else {
-                    showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
-                }
-            });
-
-            task.setOnFailed(e -> {
-                btnAutoBid.setDisable(false);
-                btnAutoBid.setText("Auto Bid");
-                showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
-            });
-
-            Thread thread = new Thread(task);
-            thread.setDaemon(true);
-            thread.start();
+            return maxBid;
 
         } catch (NumberFormatException ex) {
             showAlert(Alert.AlertType.ERROR, "Invalid Input", "Please enter a valid number.");
+            return null;
         }
     }
 
+    private void prepareAutoBidButton() {
+        btnAutoBid.setDisable(true);
+        btnAutoBid.setText("Processing...");
+    }
+
+    private void resetAutoBidButton() {
+        updateBidButtonsState();
+        btnAutoBid.setText("Auto Bid");
+    }
+
+    private Task<SetAutoBidResponse> createAutoBidTask(UserSessionDTO currentUser, double maxBid) {
+        return new Task<>() {
+            @Override
+            protected SetAutoBidResponse call() throws Exception {
+                return auctionService.setAutoBid(
+                        currentItem.getSessionId(),
+                        currentUser.getId(),
+                        maxBid
+                );
+            }
+        };
+    }
+
+    private void configureAutoBidHandlers(Task<SetAutoBidResponse> task) {
+        task.setOnSucceeded(e -> {
+            resetAutoBidButton();
+
+            SetAutoBidResponse res = task.getValue();
+
+            if (res.isSuccess()) {
+                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
+
+            } else {
+                showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
+            }
+        });
+
+        task.setOnFailed(e -> {
+            resetAutoBidButton();
+
+            showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
+        });
+    }
+
+    private void prepareBidButton() {
+        btnPlaceBid.setDisable(true);
+        btnPlaceBid.setText("Placing...");
+    }
+
+    private Task<PlaceBidResponse> createPlaceBidTask(double amount) {
+        return new Task<>() {
+            @Override
+            protected PlaceBidResponse call() throws Exception {
+
+                return auctionService.placeBid(
+                        currentItem.getSessionId(),
+                        ClientSession.getCurrentUser().getId(),
+                        amount
+                );
+            }
+        };
+    }
+
+    private void configureBidTaskHandlers(Task<PlaceBidResponse> bidTask) {
+        bidTask.setOnSucceeded(e -> {
+            resetBidButton();
+
+            PlaceBidResponse res = bidTask.getValue();
+
+            if (res.isSuccess()) {
+                if (res.getUpdatedUser() != null) {
+                    ClientSession.setCurrentUser(res.getUpdatedUser());
+                }
+
+                updateBalanceLabel();
+
+                txtBidAmount.clear();
+
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Fail", res.getMessage());
+            }
+        });
+
+        bidTask.setOnFailed(e -> {
+            resetBidButton();
+            showAlert(Alert.AlertType.ERROR, "Connection Error", bidTask.getException().getMessage());
+        });
+    }
+
     private void resetBidButton() {
-        boolean isClosed = currentItem != null && isClosedStatus(currentItem.getSessionStatus());
-
-        var currentUser = ClientSession.getCurrentUser();
-
-        boolean isSeller = currentUser != null && Objects.equals(currentUser.getId(), currentItem.getSellerId());
-
-        btnPlaceBid.setDisable(isClosed || isSeller);
+        updateBidButtonsState();
         btnPlaceBid.setText("Place Bid");
     }
 
-    @FXML
-    private void handleBack(ActionEvent event) {
+    private void cleanupWatching() {
         watching = false;
 
         if (currentItem != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
 
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+        }
+    }
+
+    private void updateBidButtonsState() {
+        if (currentItem == null) {
+            return;
+        }
+
+        boolean isClosed = isClosedStatus(currentItem.getSessionStatus());
+
+        UserSessionDTO currentUser = ClientSession.getCurrentUser();
+
+        boolean isSeller =
+                currentUser != null
+                        && Objects.equals(
+                        currentUser.getId(),
+                        currentItem.getSellerId()
+                );
+
+        btnPlaceBid.setDisable(isClosed || isSeller);
+        btnAutoBid.setDisable(isClosed || isSeller);
+    }
+
+    @FXML
+    private void handleBack(ActionEvent event) {
+        cleanupWatching();
         ((Stage) btnBack.getScene().getWindow()).close();
     }
 
