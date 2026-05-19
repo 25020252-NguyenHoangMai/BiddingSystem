@@ -102,7 +102,7 @@ public class ClientSocket {
 
     public synchronized void connect() {
         try {
-            if (isSocketAlive()) {
+            if (isConnected()) {
                 startReaderThread();
                 return;
             }
@@ -110,7 +110,7 @@ public class ClientSocket {
             closeSilently();
 
             if (callbackExecutor == null || callbackExecutor.isShutdown()) {
-                callbackExecutor = Executors.newSingleThreadExecutor();
+                callbackExecutor = Executors.newCachedThreadPool();
             }
 
             String host = getServerHost();
@@ -215,7 +215,11 @@ public class ClientSocket {
     }
 
     public <T extends Response> T sendRequestAndWait(Request request, Class<T> expectedType) throws Exception {
-        connect();
+        synchronized (writeLock) {
+            if (!isConnected()) {
+                connect();
+            }
+        }
 
         String requestId = UUID.randomUUID().toString();
 
@@ -244,8 +248,9 @@ public class ClientSocket {
 
             return expectedType.cast(response);
 
-        } catch (TimeoutException e) {
-            throw new IOException("Server response timeout", e);
+        } catch (Exception e) {
+            handleDisconnect();
+            throw e;
 
         } finally {
             pendingRequests.remove(requestId);
@@ -314,8 +319,6 @@ public class ClientSocket {
         }
     }
 
-    public void clearResponseQueue() {}
-
     private synchronized void handleDisconnect() {
         for (CompletableFuture<Response> future : pendingRequests.values()) {
             future.completeExceptionally(new IOException("Connection lost"));
@@ -325,7 +328,10 @@ public class ClientSocket {
 
         closeSilently();
 
-        readerThread = null;
+        if (readerThread != null) {
+            readerThread.interrupt();
+            readerThread = null;
+        }
 
         dashboardWatching = false;
     }
