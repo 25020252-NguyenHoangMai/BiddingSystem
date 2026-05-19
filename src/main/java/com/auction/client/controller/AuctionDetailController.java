@@ -289,6 +289,11 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         // Lọc đúng session đang xem
         if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
 
+        if ("ITEM_UPDATED_BY_SELLER".equals(update.getMessage())) {
+            reloadAuctionDetail(update.getSessionId());
+            return;
+        }
+
         Platform.runLater(() -> {
             // Cập nhật state local
             currentItem.setCurrentPrice(update.getCurrentPrice());
@@ -782,6 +787,53 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         btnPlaceBid.setDisable(isClosed || isSeller);
         btnAutoBid.setDisable(isClosed || isSeller);
+    }
+
+    private void reloadAuctionDetail(String sessionId) {
+        Task<GetAuctionDetailResponse> task = new Task<>() {
+            @Override
+            protected GetAuctionDetailResponse call() throws Exception {
+                return auctionService.getAuctionDetail(sessionId);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            GetAuctionDetailResponse response = task.getValue();
+
+            if (response == null
+                    || !response.isSuccess()
+                    || response.getItem() == null) {
+                return;
+            }
+
+            ItemDTO updated = response.getItem();
+
+            currentItem = updated;
+
+            populateBasicInfo(updated);
+
+            setupDynamicSpecs(updated);
+
+            if (updated.getEndTimeMillis() > 0) {
+                startCountdown(updated.getEndTimeMillis());
+            }
+
+            updateBidHint(updated.getMinimumNextBid());
+        });
+
+        task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+
+            System.err.println("[AuctionDetailController] reloadAuctionDetail failed");
+
+            if (ex != null) {
+                ex.printStackTrace();
+            }
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @FXML

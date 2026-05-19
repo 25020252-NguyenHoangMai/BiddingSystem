@@ -25,6 +25,13 @@ public class AuctionService {
                 new GetBidHistoryRequest(sessionId), GetBidHistoryResponse.class);
     }
 
+    public GetAuctionDetailResponse getAuctionDetail(String sessionId) throws Exception {
+        return socket.sendRequestAndWait(
+                new GetAuctionDetailRequest(sessionId),
+                GetAuctionDetailResponse.class
+        );
+    }
+
     public void unwatchSession(String sessionId) {
         try {
             if (!socket.isConnectedPublic()) {
