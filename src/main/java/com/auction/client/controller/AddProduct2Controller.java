@@ -36,8 +36,7 @@ public class AddProduct2Controller {
     private final Map<String, String[]> categoryFields = Map.of(
             "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
             "Electronics", new String[]{"Brand"},
-            "Art", new String[]{"Artist"},
-            "Other", new String[]{"Other"}
+            "Art", new String[]{"Artist"}
     );
 
     @FXML
@@ -95,6 +94,10 @@ public class AddProduct2Controller {
             }
             dynamicFields.setVisible(true);
             dynamicFields.setManaged(true);
+        }
+        else {
+            dynamicFields.setVisible(false);
+            dynamicFields.setManaged(false);
         }
     }
 
