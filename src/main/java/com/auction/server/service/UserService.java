@@ -131,11 +131,19 @@ public class UserService {
         }
 
         User existing = userDAO.getUserByUsername(user.getUsername());
-
         if (existing != null && !existing.getId().equals(user.getId())) {
             throw new AuctionException("This username has already existed!");
         }
-        userDAO.updateUser(user);
+        if (user.getPassword() != null && !user.getPassword().isBlank()) {
+            String hashed = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+            user.setPassword(hashed);
+            userDAO.updateUser(user);
+        } else {
+            // Nếu mật khẩu gửi lên trống, lấy lại pass cũ từ db gán vào
+            User currentUserInDb = userDAO.getUserById(user.getId());
+            user.setPassword(currentUserInDb.getPassword());
+            userDAO.updateUser(user);
+        }
     }
 
 
