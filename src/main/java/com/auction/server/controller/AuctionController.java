@@ -38,6 +38,12 @@ public class AuctionController {
         if (request instanceof GetCurrentUserRequest getCurrentUserRequest) {
             return authController.getCurrentUser(getCurrentUserRequest);
         }
+        if (request instanceof GetAllUsersRequest getAllUsersRequest) {
+            return authController.getAllUsers(getAllUsersRequest);
+        }
+        if (request instanceof DeleteUserRequest deleteUserRequest) {
+            return authController.deleteUser(deleteUserRequest);
+        }
 
         if (request instanceof GetAllItemsRequest getAllItemsRequest) {
             return itemController.getAllItems(getAllItemsRequest);

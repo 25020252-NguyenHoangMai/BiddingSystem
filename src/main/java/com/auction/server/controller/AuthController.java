@@ -8,6 +8,8 @@ import com.auction.dto.UserSessionDTO;
 import com.auction.request.*;
 import com.auction.response.*;
 import com.auction.server.service.UserService;
+
+import java.util.List;
 //import com.auction.server.factory.UserRegistrationFactory;
 
 public class AuthController {
@@ -149,6 +151,34 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return new GetCurrentUserResponse(false, "Get current user failed!", null);
+        }
+    }
+
+    public GetAllUsersResponse getAllUsers(GetAllUsersRequest request) {
+        try {
+            List<UserSessionDTO> users = userService.getAllUsers()
+                    .stream()
+                    .map(this::toUserSessionDTO)
+                    .toList();
+
+            return new GetAllUsersResponse(true, "Get all users successfully!", users);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new GetAllUsersResponse(false, "Get all users failed!", List.of());
+        }
+    }
+
+    public DeleteUserResponse deleteUser(DeleteUserRequest request) {
+        try {
+            if (request.getUserId() == null || request.getUserId().isBlank()) {
+                return new DeleteUserResponse(false, "User ID is required!");
+            }
+
+            userService.deleteUser(request.getUserId());
+            return new DeleteUserResponse(true, "Delete user successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new DeleteUserResponse(false, "Delete user failed!");
         }
     }
 }

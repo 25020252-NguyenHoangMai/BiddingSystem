@@ -235,4 +235,17 @@ public class UserService {
         return userDAO.getUserById(userId);
     }
 
+    public void deleteUser(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new AuctionException("User id is required!");
+        }
+
+        User user = userDAO.getUserById(userId);
+        if (user == null) {
+            throw new UserNotFoundException("User not found!");
+        }
+
+        userDAO.deleteUser(userId);
+    }
+
 }
