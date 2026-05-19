@@ -111,6 +111,29 @@ public class SessionDAO {
         }
     }
 
+    public List<AuctionSession> getSessionsByItemIdForUpdate(Connection conn, String itemId) {
+        String sql = """
+        SELECT *
+        FROM AuctionSession WITH (UPDLOCK, ROWLOCK)
+        WHERE itemId = ?
+    """;
+
+        List<AuctionSession> sessions = new ArrayList<>();
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, itemId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sessions.add(mapToSession(conn, rs));
+                }
+            }
+            return sessions;
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while locking sessions by itemId: " + e.getMessage());
+        }
+    }
+
     public boolean updateCurrentBid(Connection conn, String sessionId, double newPrice, String bidderId) {
         String sql = """
             UPDATE AuctionSession
