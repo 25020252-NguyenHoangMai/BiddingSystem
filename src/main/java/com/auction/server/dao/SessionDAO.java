@@ -92,7 +92,11 @@ public class SessionDAO {
     }
 
     public AuctionSession getSessionByIdForUpdate(Connection conn, String sessionId) {
-        String sql = "SELECT * FROM AuctionSession WITH (UPDLOCK, ROWLOCK) WHERE id = ?";
+        String sql = """
+            SELECT *
+            FROM AuctionSession WITH (UPDLOCK, ROWLOCK)
+            WHERE itemId = ?
+    """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
