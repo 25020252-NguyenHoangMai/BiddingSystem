@@ -236,6 +236,7 @@ public class ItemDAO {
             ORDER BY s.startTime DESC
         ) s
         LEFT JOIN Users winner ON s.currentWinnerId = winner.id
+        ORDER BY s.startTime DESC
         """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql);
