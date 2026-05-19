@@ -372,10 +372,7 @@ public class ClientSocket {
             try {
                 listener.onDashboardUpdate(update);
             } catch (Exception e) {
-                System.err.println(
-                        "[ClientSocket] Dashboard listener error: "
-                                + e.getMessage()
-                );
+                System.err.println("[ClientSocket] Dashboard listener error: " + e.getMessage());
             }
         });
     }

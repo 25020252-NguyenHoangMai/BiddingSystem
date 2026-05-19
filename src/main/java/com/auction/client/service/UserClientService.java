@@ -1,14 +1,12 @@
 package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
+import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
-import com.auction.request.DepositRequest;
-import com.auction.request.EnableSellerRequest;
-import com.auction.request.GetCurrentUserRequest;
-import com.auction.response.DepositResponse;
-import com.auction.response.EnableSellerResponse;
-import com.auction.response.GetCurrentUserResponse;
+import com.auction.request.*;
+import com.auction.response.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserClientService {
@@ -18,62 +16,44 @@ public class UserClientService {
     public static UserClientService getInstance() { return INSTANCE; }
 
     // Lấy toàn bộ danh sách người dùng từ Server
-    public List<UserSessionDTO> getAllUsers() {
+    public List<ItemDTO> getAllProducts() {
         ClientSocket socket = ClientSocket.getInstance();
-        socket.connect();
+
         try {
-            // gửi request
-            socket.sendRequest("GET_ALL_USERS");
+            GetAllItemsResponse response =
+                    socket.sendRequestAndWait(new GetAllItemsRequest(), GetAllItemsResponse.class);
 
-            // nhận response
-            Object res = socket.receiveResponse();
-
-            // ép kiểu an toàn
-            if (res instanceof List<?> rawList) {
-                return rawList.stream()
-                        .filter(UserSessionDTO.class::isInstance)
-                        .map(UserSessionDTO.class::cast)
-                        .toList();
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
             }
 
-            System.err.println(
-                    "[AdminService] Invalid response type: "
-                            + (res == null
-                            ? "null"
-                            : res.getClass().getSimpleName())
-            );
+            return response.getItems() != null
+                    ? response.getItems()
+                    : new ArrayList<>();
+
         } catch (Exception e) {
-            System.err.println("[AdminService] getAllUsers failed: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("[ProductService] getAllProducts failed: " + e.getMessage());
+
+            throw new RuntimeException("Unable to load product list", e);
         }
-        return List.of();
     }
 
     // Gửi yêu cầu xóa người dùng theo ID
     public boolean deleteUser(int userId) {
         ClientSocket socket = ClientSocket.getInstance();
-        socket.connect();
+
         try {
-            socket.sendRequest("DELETE_USER:" + userId);
+            DeleteUserResponse response =
+                    socket.sendRequestAndWait(new DeleteUserRequest(), DeleteUserResponse.class);
 
-            Object res = socket.receiveResponse();
+            return response.isSuccess();
 
-            if (res instanceof Boolean success) {
-                return success;
-            }
-
-            System.err.println(
-                    "[AdminService] Invalid delete response type: "
-                            + (res == null
-                            ? "null"
-                            : res.getClass().getSimpleName())
-            );
         } catch (Exception e) {
-            System.err.println("[AdminService] deleteUser failed: " + e.getMessage());
+            System.err.println("[UserClientService] deleteUser failed: " + e.getMessage());
             e.printStackTrace();
-        }
 
-        return false;
+            return false;
+        }
     }
 
     // Gửi EnableSellerRequest lên Server
@@ -135,5 +115,4 @@ public class UserClientService {
 
         return response.getUserSession();
     }
-
 }

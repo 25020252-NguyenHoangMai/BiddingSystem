@@ -17,6 +17,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -62,6 +63,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== DATA =====
     private final ObservableList<ItemDTO> auctionList = FXCollections.observableArrayList();
+    private final FilteredList<ItemDTO> filteredAuctions = new FilteredList<>(auctionList, p -> true);
     private final List<Stage> childStages = new ArrayList<>();
 
     // ===== SERVICE =====
@@ -88,12 +90,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         // Chuyển màn hình Main sang màn hình đấu giá
         setupRowClickToDetail();
 
-        // Xóa text search thì tự động hiện lại toàn bộ sản phẩm
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal == null || newVal.isBlank()) {
-                tableAuctions.setItems(auctionList);
-            }
-        });
+        setupSearchFilter();
 
         // Đăng ký lắng nghe realtime update từ server
         clientSocket.setDashboardUpdateListener(this);
@@ -138,63 +135,85 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             }
         };
 
-        task.setOnSucceeded(e -> {
-            List<ItemDTO> items = task.getValue();
-
-            auctionList.setAll(items);
-            tableAuctions.setItems(auctionList);
-
-            if (items.isEmpty()) {
-                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào"));
-            }
-        });
-
-        task.setOnFailed(e -> {
-            Throwable ex = task.getException();
-            ex.printStackTrace();
-
-            tableAuctions.setPlaceholder(new Label("Không tải được dữ liệu"));
-
-            showError("Lỗi tải dữ liệu: " + ex.getMessage());
-        });
-
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
+        runBackgroundTask(
+                task,
+                this::handleProductsLoaded,
+                this::handleProductLoadingError
+        );
     }
 
     // ===== Callback khi server push sản phẩm mới =====
     @Override
     public void onDashboardUpdate(DashboardUpdateResponse update) {
-        if (update == null || update.getItem() == null) return;
+        if (!isValidUpdate(update)) {
+            return;
+        }
 
-        Platform.runLater(() -> {
-            ItemDTO item = update.getItem();
-            DashboardUpdateType type = update.getType();
+        Platform.runLater(() -> processDashboardUpdate(update));
+    }
 
-            if (type == DashboardUpdateType.ITEM_ADDED) {
-                // Thêm sản phẩm mới vào list (tránh trùng)
-                boolean exists = auctionList.stream().anyMatch(i -> Objects.equals(i.getId(), item.getId()));
-                if (!exists) {
-                    auctionList.add(item);
-                }
-            } else if (type == DashboardUpdateType.ITEM_UPDATED) {
-                for (int i = 0; i < auctionList.size(); i++) {
-                    if (Objects.equals(auctionList.get(i).getId(), item.getId())) {
-                        auctionList.set(i, item);
-                        break;
-                    }
-                }
-            } else if (type == DashboardUpdateType.ITEM_REMOVED) {
-                auctionList.removeIf(i -> Objects.equals(i.getId(), item.getId()));
+    private void processDashboardUpdate(DashboardUpdateResponse update) {
+        ItemDTO item = update.getItem();
+        DashboardUpdateType type = update.getType();
+
+        switch (type) {
+            case ITEM_ADDED -> addAuctionItem(item);
+            case ITEM_UPDATED -> updateAuctionItem(item);
+            case ITEM_REMOVED -> removeAuctionItem(item);
+
+            default -> {
             }
+        }
 
-            // Nếu đang lọc search thì re-apply filter
-            String keyword = searchField.getText();
-            if (keyword != null && !keyword.isBlank()) {
-                applyFilter(keyword);
+        reapplySearchFilterIfNeeded();
+    }
+
+    private void addAuctionItem(ItemDTO item) {
+        boolean exists = auctionList.stream()
+                .anyMatch(i -> Objects.equals(i.getId(), item.getId()));
+
+        if (!exists) {
+            auctionList.add(item);
+        }
+    }
+
+    private void updateAuctionItem(ItemDTO item) {
+        for (int i = 0; i < auctionList.size(); i++) {
+
+            ItemDTO current = auctionList.get(i);
+
+            if (Objects.equals(current.getId(), item.getId())) {
+                auctionList.set(i, item);
+                return;
             }
-        });
+        }
+    }
+
+    private void removeAuctionItem(ItemDTO item) {
+        auctionList.removeIf(i ->
+                Objects.equals(i.getId(), item.getId()));
+    }
+
+    private boolean isValidUpdate(DashboardUpdateResponse update) {
+        return update != null && update.getItem() != null;
+    }
+
+    private void reapplySearchFilterIfNeeded() {
+        String keyword = searchField.getText();
+
+        if (keyword != null && !keyword.isBlank()) {
+            applyFilter(keyword);
+        }
+    }
+
+    private void applyFilter(String keyword) {
+        ObservableList<ItemDTO> filteredList = FXCollections.observableArrayList(
+                auctionList.stream()
+                        .filter(item -> item.getName() != null &&
+                                item.getName().toLowerCase().contains(keyword.toLowerCase()))
+                        .toList()
+        );
+        tableAuctions.setItems(filteredList);
     }
 
     // ===== USER INFO =====
@@ -218,26 +237,50 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== TABLE CONFIG =====
     private void setupTable() {
-        colProductName.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().getName())));
+        setupProductNameColumn();
+        setupCurrentPriceColumn();
+        setupSellerColumn();
+        setupTimeColumn();
+    }
 
-        colCurrentPrice.setCellValueFactory(data -> new SimpleDoubleProperty(data.getValue().getCurrentPrice()).asObject());
+    private void setupProductNameColumn() {
+        colProductName.setCellValueFactory(data ->
+                new SimpleStringProperty(safe(data.getValue().getName()))
+        );
+    }
 
-        colSeller.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().getSellerUsername())));
+    private void setupCurrentPriceColumn() {
+        colCurrentPrice.setCellValueFactory(data ->
+                new SimpleDoubleProperty(data.getValue().getCurrentPrice()).asObject()
+        );
+    }
 
-        colTime.setCellValueFactory(data -> new SimpleStringProperty(safe(data.getValue().calculateTimeLeft())));
+    private void setupSellerColumn() {
+        colSeller.setCellValueFactory(data ->
+                new SimpleStringProperty(safe(data.getValue().getSellerUsername()))
+        );
+    }
 
-        colTime.setCellFactory(column -> new TableCell<>() {
+    private void setupTimeColumn() {
+        colTime.setCellValueFactory(data ->
+                new SimpleStringProperty(safe(data.getValue().calculateTimeLeft()))
+        );
+
+        colTime.setCellFactory(column -> createTimeCell());
+    }
+
+    private TableCell<ItemDTO, String> createTimeCell() {
+        return new TableCell<>() {
 
             private final Timeline timeline = new Timeline(
-                    new KeyFrame(Duration.seconds(1), e -> updateTime())
-            );
-
+                    new KeyFrame(Duration.seconds(1), e -> updateTime()));
             {
                 timeline.setCycleCount(Animation.INDEFINITE);
             }
 
             private void updateTime() {
                 ItemDTO item = getTableRow().getItem();
+
                 if (item != null) {
                     setText(safe(item.calculateTimeLeft()));
                 }
@@ -252,62 +295,66 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                     timeline.stop();
                 } else {
                     updateTime();
+
                     if (timeline.getStatus() != Animation.Status.RUNNING) {
                         timeline.play();
                     }
                 }
             }
-        });
+
+            @Override
+            public void updateIndex(int index) {
+                super.updateIndex(index);
+
+                // Cell bị recycle → stop timeline cũ
+                if (index < 0) {
+                    timeline.stop();
+                }
+            }
+        };
     }
 
     // ===== LOAD DATA (ASYNC) =====
     private void loadProductsAsync() {
         tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
+
         Task<List<ItemDTO>> task = new Task<>() {
+
             @Override
             protected List<ItemDTO> call() {
                 return productService.getAllProducts();
             }
         };
 
-        task.setOnSucceeded(e -> {
-            List<ItemDTO> items = task.getValue();
+        runBackgroundTask(
+                task,
+                this::handleProductsLoaded,
+                this::handleProductLoadingError
+        );
+    }
 
-            auctionList.setAll(items);
-            tableAuctions.setItems(auctionList);
+    private void handleProductsLoaded(List<ItemDTO> items) {
+        auctionList.setAll(items);
 
-            if (items.isEmpty()) {
-                tableAuctions.setPlaceholder(new Label("Không có sản phẩm nào"));
-            }
-        });
+        tableAuctions.setItems(auctionList);
 
-        task.setOnFailed(e -> {
-            Throwable ex = task.getException();
-            ex.printStackTrace();
+        if (items.isEmpty()) {
+            tableAuctions.setPlaceholder(new Label("No item"));
+        }
+    }
 
-            tableAuctions.setPlaceholder(new Label("Không tải được dữ liệu"));
+    private void handleProductLoadingError(Throwable ex) {
+        ex.printStackTrace();
 
-            showError("Lỗi tải dữ liệu: " + ex.getMessage());
-        });
+        tableAuctions.setPlaceholder(new Label("Cannot load data"));
 
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
+        showError("Error loading data: " + ex.getMessage());
     }
 
     // ===== ACTIONS =====
     @FXML
     private void handleLogout() {
-        closeChildStages();
-
-        clientSocket.setDashboardUpdateListener(null);
-        clientSocket.close();
-
-        auctionService.closeAllSockets();
-
-        ClientSession.removeUserChangeListener(userChangeListener);
-        ClientSession.clear();
-
+        cleanupApplication();
         switchScene("/views/login_view.fxml");
     }
 
@@ -321,13 +368,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             }
 
             Parent root = FXMLLoader.load(resource);
-            Stage mainStage = (Stage) welcomeLabel.getScene().getWindow();
 
-            Stage addProductStage = new Stage();
-            addProductStage.setTitle("Add Product");
-            addProductStage.initOwner(mainStage);
-            addProductStage.initModality(Modality.WINDOW_MODAL);
-            addProductStage.setScene(new Scene(root));
+            Stage addProductStage = createModalStage("Add Product", root);
 
             addProductStage.setOnHidden(event -> {
                 if (auctionList.isEmpty()) loadProductsAsync();
@@ -359,6 +401,17 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         }
     }
 
+    private Stage createModalStage(String title, Parent root) {
+        Stage stage = new Stage();
+
+        stage.setTitle(title);
+        stage.initOwner(welcomeLabel.getScene().getWindow());
+        stage.initModality(Modality.WINDOW_MODAL);
+        stage.setScene(new Scene(root));
+
+        return stage;
+    }
+
     private String safe(String value) {
         return value != null ? value : "";
     }
@@ -383,20 +436,15 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             }
 
             Parent root = FXMLLoader.load(resource);
-            Stage mainStage = (Stage) welcomeLabel.getScene().getWindow();
 
-            Stage profileStage = new Stage();
-            profileStage.setTitle("Profile");
-            profileStage.initOwner(mainStage);
-            profileStage.initModality(Modality.WINDOW_MODAL);
-            profileStage.setScene(new Scene(root));
+            Stage profileStage = createModalStage("Profile", root);
 
             profileStage.setOnHidden(event -> setupUserInfo());
 
             profileStage.show();
         } catch (IOException e) {
             e.printStackTrace();
-            showError("Loi mo man hinh profile: " + e.getMessage());
+            showError("Profile screen opening error: " + e.getMessage());
         }
     }
 
@@ -405,18 +453,13 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         try {
             var resource = getClass().getResource("/views/deposit.fxml");
             if (resource == null) {
-                showError("Không tìm thấy file: /views/deposit.fxml");
+                showError("Cannot find file: /views/deposit.fxml");
                 return;
             }
 
             Parent root = FXMLLoader.load(resource);
-            Stage mainStage = (Stage) welcomeLabel.getScene().getWindow();
 
-            Stage depositStage = new Stage();
-            depositStage.setTitle("Nạp tiền");
-            depositStage.initOwner(mainStage);
-            depositStage.initModality(Modality.WINDOW_MODAL);
-            depositStage.setScene(new Scene(root));
+            Stage depositStage = createModalStage("Deposit", root);
             depositStage.setResizable(false);
 
             // Khi đóng màn hình nạp tiền, cập nhật lại balance ở Main
@@ -429,25 +472,19 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         }
     }
 
-    @FXML
-    private void handleSearch() {
-        String keyword = searchField.getText();
+    private void updateAuctionTable(List<ItemDTO> items) {
+        auctionList.setAll(items);
+        tableAuctions.setItems(auctionList);
 
-        if (keyword == null || keyword.isBlank()) {
-            tableAuctions.setItems(auctionList);
-            return;
+        if (items.isEmpty()) {
+            tableAuctions.setPlaceholder(new Label("No item"));
         }
-        applyFilter(keyword);
     }
 
-    private void applyFilter(String keyword) {
-        ObservableList<ItemDTO> filteredList = FXCollections.observableArrayList(
-                auctionList.stream()
-                        .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains(keyword.toLowerCase()))
-                        .toList()
-        );
-        tableAuctions.setItems(filteredList);
+    private void handleLoadProductsError(Throwable ex) {
+        ex.printStackTrace();
+        tableAuctions.setPlaceholder(new Label("Fail to load data"));
+        showError("Cannot load data: " + ex.getMessage());
     }
 
     private void setupRowClickToDetail() {
@@ -461,6 +498,23 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         });
     }
 
+    private void setupSearchFilter() {
+        searchField.textProperty().addListener((obs, oldValue, newValue) -> {
+            String keyword = newValue == null
+                    ? ""
+                    : newValue.trim().toLowerCase();
+
+            filteredAuctions.setPredicate(item -> {
+                if (keyword.isBlank()) {
+                    return true;
+                }
+
+                return item.getName() != null
+                        && item.getName().toLowerCase().contains(keyword);
+            });
+        });
+    }
+
     private void openAuctionDetail(ItemDTO item) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/auction_details.fxml"));
@@ -469,10 +523,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             AuctionDetailController controller = loader.getController();
             controller.setItemData(item);
 
-            Stage stage = new Stage();
-            stage.setTitle("Auction — " + item.getName());
-            stage.initOwner(welcomeLabel.getScene().getWindow());
-            stage.setScene(new Scene(root));
+            Stage stage = createModalStage("Auction — " + item.getName(), root);
+            stage.initModality(Modality.NONE);
             childStages.add(stage);
             stage.setOnHidden(event -> childStages.remove(stage));
             stage.show();
@@ -480,6 +532,25 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             e.printStackTrace();
             showError("Cannot open auction detail: " + e.getMessage());
         }
+    }
+
+    private <T> void runBackgroundTask(
+            Task<T> task,
+            Consumer<T> onSuccess,
+            Consumer<Throwable> onError
+    ) {
+
+        task.setOnSucceeded(event ->
+                onSuccess.accept(task.getValue())
+        );
+
+        task.setOnFailed(event ->
+                onError.accept(task.getException())
+        );
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     // Đòng hết tất cả màn hình khi log out
@@ -492,5 +563,17 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                 stage.close();
             }
         }
+    }
+
+    private void cleanupApplication() {
+        closeChildStages();
+
+        clientSocket.setDashboardUpdateListener(null);
+
+        auctionService.closeAllSockets();
+
+        ClientSession.removeUserChangeListener(userChangeListener);
+
+        ClientSession.clear();
     }
 }
