@@ -19,6 +19,11 @@ import java.time.ZoneId;
 import java.util.List;
 
 public class ItemController {
+    private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
+    private static final String EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER = "AUCTION_END_TIME_UPDATED_BY_SELLER";
+    private static final String EVENT_AUCTION_CANCELED_BY_SELLER = "AUCTION_CANCELED_BY_SELLER";
+    private static final String EVENT_AUCTION_CANCELED_BY_ADMIN = "AUCTION_CANCELED_BY_ADMIN";
+
     private final ItemService itemService;
     private final SessionService sessionService;
     private final DashboardWatchRegistry dashboardWatchRegistry;
@@ -117,7 +122,8 @@ public class ItemController {
                 return new AdminCancelAuctionResponse(false, "Request cannot be null", null);
             }
 
-            AuctionSession session = sessionService.cancelSessionByAdmin(request.getAdminId(), request.getSessionId());
+            AuctionSession session = sessionService.cancelSessionByAdmin(request.getAdminId(),
+                                    request.getSessionId());
 
             ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
 
@@ -130,7 +136,7 @@ public class ItemController {
                     )
             );
 
-            broadcastAuctionCanceledToSessionWatchers(session, "Auction canceled by admin");
+            broadcastAuctionCanceledToSessionWatchers(session, EVENT_AUCTION_CANCELED_BY_ADMIN);
 
             return new AdminCancelAuctionResponse(true, "Auction canceled successfully", dto);
 
@@ -173,10 +179,12 @@ public class ItemController {
     public SellerCancelAuctionResponse sellerCancelAuction(SellerCancelAuctionRequest request) {
         try {
             if (request == null) {
-                return new SellerCancelAuctionResponse(false, "Request cannot be null", null);
+                return new SellerCancelAuctionResponse(false, "Request cannot be null",
+                                            null);
             }
 
-            AuctionSession session = sessionService.cancelSessionBySeller(request.getSellerId(), request.getSessionId());
+            AuctionSession session = sessionService.cancelSessionBySeller(request.getSellerId(),
+                                        request.getSessionId());
 
             ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
 
@@ -189,7 +197,7 @@ public class ItemController {
                     )
             );
 
-            broadcastAuctionCanceledToSessionWatchers(session, "Auction canceled by seller");
+            broadcastAuctionCanceledToSessionWatchers(session, EVENT_AUCTION_CANCELED_BY_SELLER);
 
             return new SellerCancelAuctionResponse(true, "Auction canceled successfully", dto);
 
@@ -223,10 +231,7 @@ public class ItemController {
                     )
             );
 
-            broadcastAuctionUpdatedToSessionWatchers(
-                    updatedItem,
-                    "Item updated by seller"
-            );
+            broadcastAuctionUpdatedToSessionWatchers(updatedItem, EVENT_ITEM_UPDATED_BY_SELLER);
 
             return new SellerUpdateItemResponse(true, "Item updated successfully", updatedItem);
 
@@ -275,10 +280,7 @@ public class ItemController {
                     )
             );
 
-            broadcastAuctionUpdatedToSessionWatchers(
-                    dto,
-                    "Auction end time updated by seller"
-            );
+            broadcastAuctionUpdatedToSessionWatchers(dto, EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER);
 
             return new SellerUpdateAuctionTimeResponse(
                     true,
