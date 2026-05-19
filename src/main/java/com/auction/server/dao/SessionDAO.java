@@ -171,7 +171,34 @@ public class SessionDAO {
         }
     }
 
-    public boolean existsSessionByItemId(String itemId) {
+    public void updateSchedule(Connection conn,
+                               String sessionId,
+                               LocalDateTime newStartTime,
+                               LocalDateTime newEndTime) {
+        String sql = """
+        UPDATE AuctionSession
+        SET startTime = ?, endTime = ?
+        WHERE id = ?
+    """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setTimestamp(1, Timestamp.valueOf(newStartTime));
+            ps.setTimestamp(2, Timestamp.valueOf(newEndTime));
+            ps.setString(3, sessionId);
+
+            int updated = ps.executeUpdate();
+
+            if (updated == 0) {
+                throw new AuctionException("Auction session not found to update schedule.");
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while updating auction schedule: " + e.getMessage());
+        }
+    }
+
+    public boolean existsSessionByItemId(Connection conn, String itemId) {
         if (itemId == null || itemId.trim().isEmpty()) {
             throw new IllegalArgumentException("itemId must not be null or empty");
         }
