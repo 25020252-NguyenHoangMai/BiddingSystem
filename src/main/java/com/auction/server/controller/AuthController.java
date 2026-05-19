@@ -211,4 +211,26 @@ public class AuthController {
             return new DeleteUserResponse(false, "Delete user failed!");
         }
     }
+
+    public EditProfileResponse editProfile(EditProfileRequest request) {
+        try {
+            User updated = userService.updateProfile(
+                    request.getUserId(),
+                    request.getFullName(),
+                    request.getUsername(),
+                    request.getPassword()
+            );
+
+            UserSessionDTO dto = toUserSessionDTO(updated);
+
+            return new EditProfileResponse(true, "Profile updated successfully!", dto);
+
+        } catch (AuctionException e) {
+            return new EditProfileResponse(false, e.getMessage(), null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new EditProfileResponse(false, "Update profile failed!", null);
+        }
+    }
 }

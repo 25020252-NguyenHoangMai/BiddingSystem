@@ -1,16 +1,20 @@
 package com.auction.request;
 
 public class EditProfileRequest extends Request {
+    private String userId;
     private String fullName;
     private String username;
     private String password;
-    private String avatarUrl;
 
-    public EditProfileRequest(String fullName, String username, String password, String avatarUrl) {
+    public EditProfileRequest(String userId, String fullName, String username, String password) {
+        this.userId = userId;
         this.fullName = fullName;
         this.username = username;
         this.password = password;
-        this.avatarUrl = avatarUrl;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 
     public String getFullName() {
@@ -23,9 +27,5 @@ public class EditProfileRequest extends Request {
 
     public String getPassword() {
         return password;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
     }
 }
