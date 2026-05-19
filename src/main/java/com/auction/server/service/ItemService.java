@@ -128,6 +128,76 @@ public class ItemService {
         itemDAO.updateItem(item);
     }
 
+    public ItemDTO updateItemBySeller(String sellerId, ItemDTO itemDTO) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new AuctionException("Seller id is required.");
+        }
+
+        if (itemDTO == null) {
+            throw new AuctionException("ItemDTO must not be null.");
+        }
+
+        if (itemDTO.getId() == null || itemDTO.getId().isBlank()) {
+            throw new AuctionException("Item id is required.");
+        }
+
+        if (itemDTO.getName() == null || itemDTO.getName().isBlank()) {
+            throw new AuctionException("Product name cannot be empty.");
+        }
+
+        if (itemDTO.getStartingPrice() <= 0) {
+            throw new AuctionException("Starting price must be greater than 0.");
+        }
+
+        ItemDTO existingItem = itemDAO.getItemById(itemDTO.getId());
+
+        if (existingItem == null) {
+            throw new ItemNotFoundException("Item is not found.");
+        }
+
+        if (existingItem.getSellerId() == null || !existingItem.getSellerId().equals(sellerId)) {
+            throw new AuctionException("You can only update your own item.");
+        }
+
+        List<AuctionSession> sessions = sessionDAO.getSessionsByItemId(itemDTO.getId());
+
+        AuctionSession editableSession = null;
+
+        for (AuctionSession session : sessions) {
+            String status = session.getStatus();
+
+            if (!SessionService.STATUS_OPEN.equals(status)) {
+                throw new AuctionException("Only OPEN auctions can be updated.");
+            }
+
+            boolean hasBid = session.getCurrentWinnerId() != null
+                    && !session.getCurrentWinnerId().isBlank();
+
+            if (hasBid) {
+                throw new AuctionException("Cannot update item after it has bids.");
+            }
+
+            editableSession = session;
+        }
+
+        itemDTO.setSellerId(existingItem.getSellerId());
+
+        Item item = ItemFromDTOFactory.createItem(itemDTO);
+        itemDAO.updateItem(item);
+
+        ItemDTO updatedItem = itemDAO.getItemById(itemDTO.getId());
+
+        if (updatedItem == null) {
+            throw new ItemNotFoundException("Updated item is not found.");
+        }
+
+        if (editableSession != null) {
+            return buildFullItemDTO(updatedItem, editableSession);
+        }
+
+        return updatedItem;
+    }
+
     public List<Item> getAllItems() {
         return itemDAO.getAllItems()
                 .stream()

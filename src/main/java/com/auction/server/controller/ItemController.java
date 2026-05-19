@@ -192,4 +192,33 @@ public class ItemController {
             return new SellerCancelAuctionResponse(false, "Cancel auction failed: " + e.getMessage(), null);
         }
     }
+
+    public SellerUpdateItemResponse sellerUpdateItem(SellerUpdateItemRequest request) {
+        try {
+            if (request == null) {
+                return new SellerUpdateItemResponse(false, "Request cannot be null", null);
+            }
+
+            ItemDTO updatedItem = itemService.updateItemBySeller(
+                    request.getSellerId(),
+                    request.getItem()
+            );
+
+            dashboardWatchRegistry.broadcastDashboardUpdate(
+                    new DashboardUpdateResponse(
+                            true,
+                            "Item updated by seller",
+                            DashboardUpdateType.ITEM_UPDATED,
+                            updatedItem
+                    )
+            );
+
+            return new SellerUpdateItemResponse(true, "Item updated successfully", updatedItem);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new SellerUpdateItemResponse(false, "Update item failed: " + e.getMessage(),
+                                    null);
+        }
+    }
 }

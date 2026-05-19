@@ -60,6 +60,9 @@ public class AuctionController {
         if (request instanceof SellerCancelAuctionRequest sellerCancelAuctionRequest) {
             return itemController.sellerCancelAuction(sellerCancelAuctionRequest);
         }
+        if (request instanceof SellerUpdateItemRequest sellerUpdateItemRequest) {
+            return itemController.sellerUpdateItem(sellerUpdateItemRequest);
+        }
 
         if (request instanceof PlaceBidRequest placeBidRequest) {
             return biddingController.placeBid(placeBidRequest);
