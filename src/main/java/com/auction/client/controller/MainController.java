@@ -110,13 +110,12 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         Task<List<ItemDTO>> task = new Task<>() {
             @Override
             protected List<ItemDTO> call() throws Exception {
-                // Kết nối và gửi WatchDashboardRequest
                 clientSocket.connect();
                 System.out.println("[MainController] Sending WatchDashboardRequest");
-                clientSocket.sendRequest(new WatchDashboardRequest());
 
                 try {
-                    DashboardWatchResponse watchResp = clientSocket.receiveDashboardWatchResponse();
+                    DashboardWatchResponse watchResp = clientSocket.sendRequestAndWait(
+                            new WatchDashboardRequest(), DashboardWatchResponse.class);
 
                     System.out.println("[MainController] Watch response: " + watchResp.isSuccess());
 

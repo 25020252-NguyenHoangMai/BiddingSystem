@@ -1,5 +1,6 @@
 package com.auction.client.service;
 
+import com.auction.client.ClientSession;
 import com.auction.client.network.ClientSocket;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
@@ -38,13 +39,39 @@ public class UserClientService {
         }
     }
 
+    // Lấy toàn bộ danh sách người dùng từ Server
+    public List<UserSessionDTO> getAllUsers() {
+        ClientSocket socket = ClientSocket.getInstance();
+
+        try {
+            String requesterId = ClientSession.getCurrentUser().getId();
+
+            GetAllUsersResponse response =
+                    socket.sendRequestAndWait(new GetAllUsersRequest(requesterId), GetAllUsersResponse.class);
+
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
+            }
+
+            return response.getUsers() != null
+                    ? response.getUsers()
+                    : new ArrayList<>();
+
+        } catch (Exception e) {
+            System.err.println("[UserClientService] getAllUsers failed: " + e.getMessage());
+
+            throw new RuntimeException("Unable to load user list", e);
+        }
+    }
+
     // Gửi yêu cầu xóa người dùng theo ID
-    public boolean deleteUser(int userId) {
+    public boolean deleteUser(String requesterId, String targetUserId) {
         ClientSocket socket = ClientSocket.getInstance();
 
         try {
             DeleteUserResponse response =
-                    socket.sendRequestAndWait(new DeleteUserRequest(), DeleteUserResponse.class);
+                    socket.sendRequestAndWait(
+                            new DeleteUserRequest(requesterId, targetUserId), DeleteUserResponse.class);
 
             return response.isSuccess();
 
