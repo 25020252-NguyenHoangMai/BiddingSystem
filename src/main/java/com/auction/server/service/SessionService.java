@@ -105,25 +105,47 @@ public class SessionService { // Quản lí phiên đấu giá
 
     public List<AuctionSession> getRunningSessions() {
         List<AuctionSession> runningSessions = new ArrayList<>();
+        List<AuctionSession> sessions;
 
         try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
-            List<AuctionSession> sessions = sessionDAO.getAllSessions(conn);
+            sessions = sessionDAO.getAllSessions(conn);
+        } catch (Exception e) {
+            throw new AuctionException("Get sessions failed: " + e.getMessage());
+        }
 
-            for (AuctionSession session : sessions) {
-                synchronized (session) {
-                    updateStatusByTime(session); // cũng tự mở connection, cần xem lại
+        for (AuctionSession snapshot : sessions) {
+            try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, snapshot.getId());
+
+                    if (session == null) {
+                        conn.commit();
+                        continue;
+                    }
+
+                    updateStatusByTime(conn, session);
 
                     if (STATUS_RUNNING.equals(session.getStatus())) {
                         runningSessions.add(session);
                     }
+
+                    conn.commit();
+
+                } catch (Exception e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    conn.setAutoCommit(true);
                 }
+
+            } catch (Exception e) {
+                throw new AuctionException("Get running sessions failed: " + e.getMessage());
             }
-
-            return runningSessions;
-
-        } catch (Exception e) {
-            throw new AuctionException("Get running sessions failed: " + e.getMessage());
         }
+
+        return runningSessions;
     }
 
     public void startSession(String sessionId) { //method bắt đầu phiên đấu giá
@@ -164,20 +186,41 @@ public class SessionService { // Quản lí phiên đấu giá
     }
 
     public boolean isBiddable(String sessionId) {
-        AuctionSession session = getSession(sessionId);
-
-        if (session == null) {
+        if (sessionId == null || sessionId.isBlank()) {
             return false;
         }
 
-        synchronized (session) {
-            updateStatusByTime(session);
+        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
 
-            LocalDateTime now = LocalDateTime.now();
+            try {
+                AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, sessionId);
 
-            return STATUS_RUNNING.equals(session.getStatus())
-                    && !now.isBefore(session.getStartTime())
-                    && now.isBefore(session.getEndTime());
+                if (session == null) {
+                    conn.commit();
+                    return false;
+                }
+
+                updateStatusByTime(conn, session);
+
+                LocalDateTime now = LocalDateTime.now();
+
+                boolean biddable = STATUS_RUNNING.equals(session.getStatus())
+                        && !now.isBefore(session.getStartTime())
+                        && now.isBefore(session.getEndTime());
+
+                conn.commit();
+                return biddable;
+
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (Exception e) {
+            throw new AuctionException("Check biddable failed: " + e.getMessage());
         }
     }
 
@@ -226,12 +269,39 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
+    //method public vì updateStatusByTime là private
     public void refreshSessionStatus(String sessionId) {
-        //method public vì updateStatusByTime là private
-        AuctionSession session = requireSession(sessionId);
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new AuctionException("Session id is required.");
+        }
 
-        synchronized (session) {
-            updateStatusByTime(session);
+        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, sessionId);
+
+                if (session == null) {
+                    throw new AuctionException("Auction session not found.");
+                }
+
+                updateStatusByTime(conn, session);
+
+                conn.commit();
+
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (Exception e) {
+            if (e instanceof AuctionException auctionException) {
+                throw auctionException;
+            }
+
+            throw new AuctionException("Refresh session status failed: " + e.getMessage());
         }
     }
 
@@ -260,6 +330,21 @@ public class SessionService { // Quản lí phiên đấu giá
             finalizeSession(session);
         }
         //status = open/=running, >= endTime => status = finished
+    }
+
+    private void updateStatusByTime(Connection conn, AuctionSession session) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (STATUS_OPEN.equals(session.getStatus())
+                && !now.isBefore(session.getStartTime())
+                && now.isBefore(session.getEndTime())) {
+            updateSessionStatus(conn, session, STATUS_RUNNING);
+        }
+
+        if ((STATUS_OPEN.equals(session.getStatus()) || STATUS_RUNNING.equals(session.getStatus()))
+                && !now.isBefore(session.getEndTime())) {
+            finalizeSession(conn, session);
+        }
     }
 
 
@@ -351,6 +436,11 @@ public class SessionService { // Quản lí phiên đấu giá
         } catch (java.sql.SQLException e) {
             throw new RuntimeException("Failed to update session status: " + e.getMessage(), e);
         }
+    }
+
+    private void updateSessionStatus(Connection conn, AuctionSession session, String status) {
+        sessionDAO.updateStatus(conn, session.getId(), status);
+        session.setStatus(status);
     }
 
     public List<AuctionSession> finalizeExpiredSessions() {

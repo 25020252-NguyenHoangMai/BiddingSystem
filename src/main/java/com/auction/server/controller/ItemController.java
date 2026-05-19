@@ -125,7 +125,7 @@ public class ItemController {
                     new DashboardUpdateResponse(
                             true,
                             "Auction canceled by admin",
-                            DashboardUpdateType.ITEM_UPDATED,
+                            DashboardUpdateType.ITEM_REMOVED,
                             dto
                     )
             );
