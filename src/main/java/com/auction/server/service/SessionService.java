@@ -505,7 +505,7 @@ public class SessionService { // Quản lí phiên đấu giá
 
     public AuctionSession cancelSessionBySeller(String sellerId, String sessionId) {
         if (sellerId == null || sellerId.isBlank()) {
-            throw new AuctionException("Admin id is required.");
+            throw new AuctionException("Seller id is required.");
         }
 
         if (sessionId == null || sessionId.isBlank()) {
@@ -574,72 +574,6 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
-    public AuctionSession updateScheduleBySeller(
-            String sellerId,
-            String sessionId,
-            LocalDateTime newStartTime,
-            LocalDateTime newEndTime
-    ) {
-        if (sellerId == null || sellerId.isBlank()) {
-            throw new AuctionException("Seller id is required.");
-        }
-
-        if (sessionId == null || sessionId.isBlank()) {
-            throw new AuctionException("Session id is required.");
-        }
-
-        if (newEndTime == null) {
-            throw new AuctionException("Auction end time is required.");
-        }
-
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
-            conn.setAutoCommit(false);
-
-            try {
-                AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, sessionId);
-
-                if (session == null) {
-                    throw new AuctionException("Auction session not found.");
-                }
-
-                validateSellerOwnsSession(sellerId, session);
-                validateNoBidForSellerUpdate(session);
-
-                String status = session.getStatus();
-
-                if (STATUS_OPEN.equals(status)) {
-                    updateOpenSessionSchedule(conn, session, newStartTime, newEndTime);
-                } else if (STATUS_RUNNING.equals(status)) {
-                    updateRunningSessionEndTime(conn, session, newStartTime, newEndTime);
-                } else if (STATUS_CANCELED.equals(status)) {
-                    throw new AuctionException("Cannot update a canceled auction.");
-                } else if (STATUS_FINISHED.equals(status)) {
-                    throw new AuctionException("Cannot update a finished auction.");
-                } else if (STATUS_PAID.equals(status)) {
-                    throw new AuctionException("Cannot update a paid auction.");
-                } else {
-                    throw new AuctionException("Cannot update auction with status: " + status);
-                }
-
-                conn.commit();
-                return session;
-
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);
-            }
-
-        } catch (Exception e) {
-            if (e instanceof AuctionException auctionException) {
-                throw auctionException;
-            }
-
-            throw new AuctionException("Update auction schedule failed: " + e.getMessage());
-        }
-    }
-
     private void validateSellerOwnsSession(String sellerId, AuctionSession session) {
         if (session.getItem() == null) {
             throw new AuctionException("Auction item not found.");
@@ -654,67 +588,6 @@ public class SessionService { // Quản lí phiên đấu giá
         if (!sellerId.equals(ownerSellerId)) {
             throw new AuctionException("You can only update your own auction.");
         }
-    }
-
-    private void validateNoBidForSellerUpdate(AuctionSession session) {
-        String currentWinnerId = session.getCurrentWinnerId();
-
-        boolean hasBid = currentWinnerId != null && !currentWinnerId.isBlank();
-
-        if (hasBid) {
-            throw new AuctionException("Cannot update auction after it has bids.");
-        }
-    }
-
-    private void updateOpenSessionSchedule(
-            Connection conn,
-            AuctionSession session,
-            LocalDateTime newStartTime,
-            LocalDateTime newEndTime
-    ) {
-        if (newStartTime == null) {
-            throw new AuctionException("Auction start time is required.");
-        }
-
-        if (!newEndTime.isAfter(newStartTime)) {
-            throw new AuctionException("Auction end time must be after start time.");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        if (newStartTime.isBefore(now.minusMinutes(1))) {
-            throw new AuctionException("Auction start time cannot be in the past.");
-        }
-
-        sessionDAO.updateSchedule(conn, session.getId(), newStartTime, newEndTime);
-
-        session.setStartTime(newStartTime);
-        session.setEndTime(newEndTime);
-    }
-
-    private void updateRunningSessionEndTime(
-            Connection conn,
-            AuctionSession session,
-            LocalDateTime newStartTime,
-            LocalDateTime newEndTime
-    ) {
-        if (newStartTime != null && !newStartTime.equals(session.getStartTime())) {
-            throw new AuctionException("Cannot update start time after auction has started.");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-
-        if (!newEndTime.isAfter(now)) {
-            throw new AuctionException("Auction end time must be in the future.");
-        }
-
-        if (!newEndTime.isAfter(session.getStartTime())) {
-            throw new AuctionException("Auction end time must be after start time.");
-        }
-
-        sessionDAO.updateEndTime(conn, session.getId(), newEndTime);
-
-        session.setEndTime(newEndTime);
     }
 
     public AuctionSession updateEndTimeBySeller(String sellerId, String sessionId, LocalDateTime newEndTime) {
