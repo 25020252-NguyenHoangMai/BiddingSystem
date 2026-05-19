@@ -79,7 +79,7 @@ class SessionDAOTest {
             when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
             when(preparedStatement.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> sessionDAO.insertSession(session, item));
+            assertDoesNotThrow(() -> sessionDAO.insertSession(connection, session, item));
 
             verify(preparedStatement, times(1)).executeUpdate();
         }
@@ -92,7 +92,7 @@ class SessionDAOTest {
             when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
             when(preparedStatement.executeUpdate()).thenThrow(new SQLException("DB Error"));
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> sessionDAO.insertSession(session, item));
+            AuctionException exception = assertThrows(AuctionException.class, () -> sessionDAO.insertSession(connection, session, item));
             assertTrue(exception.getMessage().contains("An error occurred while inserting session"));
         }
     }
@@ -115,12 +115,12 @@ class SessionDAOTest {
             when(resultSet.getString("status")).thenReturn("RUNNING");
 
             ItemDTO mockDto = new ItemDTO();
-            when(itemDAO.getItemById("item1")).thenReturn(mockDto);
+            when(itemDAO.getItemById(connection, "item1")).thenReturn(mockDto);
 
             Item mockItem = mock(Item.class);
             mockedFactory.when(() -> ItemFromDTOFactory.createItem(mockDto)).thenReturn(mockItem);
 
-            AuctionSession result = sessionDAO.getSessionById("ss1");
+            AuctionSession result = sessionDAO.getSessionById(connection, "ss1");
 
             assertNotNull(result);
             assertEquals("ss1", result.getId());
@@ -135,9 +135,9 @@ class SessionDAOTest {
             when(resultSet.next()).thenReturn(true);
             when(resultSet.getString("itemId")).thenReturn("item1");
 
-            when(itemDAO.getItemById("item1")).thenReturn(null);
+            when(itemDAO.getItemById(connection, "item1")).thenReturn(null);
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> sessionDAO.getSessionById("ss1"));
+            AuctionException exception = assertThrows(AuctionException.class, () -> sessionDAO.getSessionById(connection, "ss1"));
             assertTrue(exception.getMessage().contains("Item not found"));
         }
     }
@@ -175,14 +175,14 @@ class SessionDAOTest {
             when(preparedStatement.executeQuery()).thenReturn(resultSet);
             when(resultSet.next()).thenReturn(true);
 
-            boolean exists = sessionDAO.existsActiveSessionByItemId("item1");
+            boolean exists = sessionDAO.existsActiveSessionByItemId(connection, "item1");
 
             assertTrue(exists);
         }
 
         @Test
         void NullParam_ThrowsException() {
-            assertThrows(IllegalArgumentException.class, () -> sessionDAO.existsActiveSessionByItemId(null));
+            assertThrows(IllegalArgumentException.class, () -> sessionDAO.existsActiveSessionByItemId(connection, null));
         }
     }
 }

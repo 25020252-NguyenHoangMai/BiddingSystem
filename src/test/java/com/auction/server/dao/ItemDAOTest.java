@@ -71,7 +71,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
             when(mockPs.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> itemDAO.insertItem(vehicle));
+            assertDoesNotThrow(() -> itemDAO.insertItem(mockConn, vehicle));
 
             verify(mockPs).setString(4, "VEHICLE");
             verify(mockPs).setString(7, "Sedan");
@@ -86,7 +86,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
             when(mockPs.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> itemDAO.insertItem(elec));
+            assertDoesNotThrow(() -> itemDAO.insertItem(mockConn, elec));
 
             verify(mockPs).setString(4, "ELECTRONICS");
             verify(mockPs).setNull(7, java.sql.Types.NVARCHAR); //model bị null
@@ -101,7 +101,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
             when(mockPs.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> itemDAO.insertItem(art));
+            assertDoesNotThrow(() -> itemDAO.insertItem(mockConn, art));
 
             verify(mockPs).setString(4, "ART");
             verify(mockPs).setString(11, "Picasso");
@@ -122,7 +122,7 @@ public class ItemDAOTest extends BaseDAOTest {
                 }
             };
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(invalidItem));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(mockConn, invalidItem));
             assertEquals("Invalid item type.", exception.getMessage());
         }
 
@@ -131,7 +131,7 @@ public class ItemDAOTest extends BaseDAOTest {
             Vehicle vehicle = new Vehicle();
             when(mockPs.executeUpdate()).thenThrow(new SQLException("DB Down"));
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(vehicle));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.insertItem(mockConn, vehicle));
             assertTrue(exception.getMessage().contains("An error occurred while inserting item"));
         }
     }
@@ -149,7 +149,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
             when(mockPs.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> itemDAO.updateItem(vehicle));
+            assertDoesNotThrow(() -> itemDAO.updateItem(mockConn, vehicle));
             verify(mockPs).setString(3, "VEHICLE");
             verify(mockPs).setString(5, "SUV");
         }
@@ -162,7 +162,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
             when(mockPs.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> itemDAO.updateItem(elec));
+            assertDoesNotThrow(() -> itemDAO.updateItem(mockConn, elec));
             verify(mockPs).setString(3, "ELECTRONICS");
             verify(mockPs).setString(8, "Apple");
         }
@@ -175,7 +175,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
             when(mockPs.executeUpdate()).thenReturn(1);
 
-            assertDoesNotThrow(() -> itemDAO.updateItem(art));
+            assertDoesNotThrow(() -> itemDAO.updateItem(mockConn, art));
             verify(mockPs).setString(3, "ART");
             verify(mockPs).setString(9, "Van Gogh");
         }
@@ -188,7 +188,7 @@ public class ItemDAOTest extends BaseDAOTest {
                     return "Vật phẩm Fake để test";
                 }
             };
-            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(invalidItem));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(mockConn, invalidItem));
             assertEquals("Inavlid item type.", exception.getMessage());//mai sai chính tả trong itemdao
         }
 
@@ -197,7 +197,7 @@ public class ItemDAOTest extends BaseDAOTest {
             Art art = new Art();
             when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi mạng"));
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(art));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(mockConn, art));
             assertTrue(exception.getMessage().contains("An error occurred while updating item information"));
         }
     }
@@ -211,7 +211,7 @@ public class ItemDAOTest extends BaseDAOTest {
         void Success() throws SQLException {
             when(mockPs.executeUpdate()).thenReturn(1); //giả lập xóa thành công 1 dòng
 
-            assertDoesNotThrow(() -> itemDAO.deleteItem("ID-123"));
+            assertDoesNotThrow(() -> itemDAO.deleteItem(mockConn, "ID-123"));
             verify(mockPs).setString(1, "ID-123");
         }
 
@@ -219,7 +219,7 @@ public class ItemDAOTest extends BaseDAOTest {
         void NotFound_ThrowsException() throws SQLException {
             when(mockPs.executeUpdate()).thenReturn(0); //ko tìm thấy dòng nào để xóa
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem("ID-404"));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem(mockConn, "ID-404"));
             assertEquals("The item cannot be deleted.", exception.getMessage());
         }
 
@@ -227,7 +227,7 @@ public class ItemDAOTest extends BaseDAOTest {
         void SQLException_ThrowsException() throws SQLException {
             when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi xóa"));
 
-            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem("ID-123"));
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem(mockConn, "ID-123"));
             assertTrue(exception.getMessage().contains("An error occurred while deleting item"));
         }
     }
@@ -249,7 +249,7 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockRs.next()).thenReturn(true, true, false);
         setupMockResultSet();
 
-        List<ItemDTO> list = itemDAO.getAllItems();
+        List<ItemDTO> list = itemDAO.getAllItems(mockConn);
         assertEquals(2, list.size());
         assertEquals("ITEM-1", list.get(0).getId());
     }
@@ -264,7 +264,7 @@ public class ItemDAOTest extends BaseDAOTest {
             when(mockRs.next()).thenReturn(true);
             setupMockResultSet();
 
-            ItemDTO result = itemDAO.getItemById("ITEM-1");
+            ItemDTO result = itemDAO.getItemById(mockConn, "ITEM-1");
             assertNotNull(result);
             assertEquals("Tivi Sony", result.getName());
         }
@@ -274,7 +274,7 @@ public class ItemDAOTest extends BaseDAOTest {
             when(mockPs.executeQuery()).thenReturn(mockRs);
             when(mockRs.next()).thenReturn(false); //bảng trống
 
-            ItemDTO result = itemDAO.getItemById("GHOST-ITEM");
+            ItemDTO result = itemDAO.getItemById(mockConn, "GHOST-ITEM");
             assertNull(result);
         }
     }
@@ -286,7 +286,7 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockRs.next()).thenReturn(true, false);
         setupMockResultSet();
 
-        List<ItemDTO> list = itemDAO.getItemByName("Tivi Sony");
+        List<ItemDTO> list = itemDAO.getItemByName(mockConn, "Tivi Sony");
         assertEquals(1, list.size());
         verify(mockPs).setString(1, "Tivi Sony");
     }
@@ -297,7 +297,7 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockRs.next()).thenReturn(true, false);
         setupMockResultSet();
 
-        List<ItemDTO> list = itemDAO.getItemByItemType("ELECTRONICS");
+        List<ItemDTO> list = itemDAO.getItemByItemType(mockConn, "ELECTRONICS");
         assertEquals(1, list.size());
         verify(mockPs).setString(1, "ELECTRONICS");
     }
@@ -320,7 +320,7 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockRs.getString("brand")).thenReturn("Toyota"); // Cố tình mix để test
         when(mockRs.getString("artist")).thenReturn("Da Vinci");
 
-        ItemDTO result = itemDAO.getItemById("FULL-1");
+        ItemDTO result = itemDAO.getItemById(mockConn, "FULL-1");
 
         //Assert all
         assertNotNull(result);
@@ -347,7 +347,7 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockPs.executeQuery()).thenReturn(mockRs);
         when(mockRs.next()).thenReturn(false);
 
-        List<ItemDTO> list = itemDAO.getItemByName("Sản phẩm ma");
+        List<ItemDTO> list = itemDAO.getItemByName(mockConn, "Sản phẩm ma");
 
         assertTrue(list.isEmpty(), "Nếu DB không có, phải trả về List rỗng, không được null!");
         verify(mockPs).executeQuery();
@@ -357,7 +357,7 @@ public class ItemDAOTest extends BaseDAOTest {
     void testInsertItem_NullInput_ThrowsNullPointerException() {
         // DAO hiện tại ko handle null, sẽ bị ném NPE tại item.getId()
         // =>phải giăng bẫy bắt đc cái NPE này
-        assertThrows(NullPointerException.class, () -> itemDAO.insertItem(null),
+        assertThrows(NullPointerException.class, () -> itemDAO.insertItem(mockConn, null),
                 "Phải bắt được NullPointerException khi truyền null vào DAO");
     }
 
@@ -367,7 +367,7 @@ public class ItemDAOTest extends BaseDAOTest {
 
         when(mockConn.prepareStatement(anyString())).thenThrow(new SQLException("Database Connection Lost"));
 
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getAllItems());
+        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getAllItems(mockConn));
         assertTrue(exception.getMessage().contains("An error occurred while getting all items"));
     }
 
@@ -375,7 +375,7 @@ public class ItemDAOTest extends BaseDAOTest {
     void testGetItemByItemType_ThrowsSQLException() throws SQLException {
         when(mockPs.executeQuery()).thenThrow(new SQLException("Table locked"));
 
-        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getItemByItemType("ART"));
+        AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getItemByItemType(mockConn, "ART"));
         assertTrue(exception.getMessage().contains("An error occurred while getting items by item type"));
     }
 
@@ -386,7 +386,7 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockPs.executeQuery()).thenReturn(mockRs);
         when(mockRs.next()).thenReturn(false);
 
-        itemDAO.getItemById("TEST-CLOSE");
+        itemDAO.getItemById(mockConn, "TEST-CLOSE");
 
         //xác nhận hàm close() của ResultSet và PreparedStatement đã bị hệ thống gọi ngầm
         verify(mockRs, times(1)).close();
