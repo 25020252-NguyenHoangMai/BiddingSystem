@@ -17,15 +17,6 @@ public class ItemDAO {
         data.setName(rs.getString("name"));
         data.setDescription(rs.getString("description"));
         data.setItemType(rs.getString("itemType"));
-        Timestamp startTime = rs.getTimestamp("startTime");
-        if (startTime != null) {
-            data.setStartTimeMillis(startTime.getTime());
-        }
-
-        Timestamp endTime = rs.getTimestamp("endTime");
-        if (endTime != null) {
-            data.setEndTimeMillis(endTime.getTime());
-        }
         data.setSellerId(rs.getString("sellerId"));
         data.setStartingPrice(rs.getDouble("startingPrice"));
         data.setModel(rs.getString("model"));
@@ -283,7 +274,7 @@ public class ItemDAO {
                     dto.setEndTimeMillis(endTime.getTime());
                 }
 
-                list.add(dto);
+                list.add(mapToDashboardDTO(rs));
             }
 
         } catch (SQLException e) {
