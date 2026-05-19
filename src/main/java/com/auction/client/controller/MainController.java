@@ -78,7 +78,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     @FXML
     public void initialize() {
         setupTable();
-        tableAuctions.setItems(auctionList);
+        tableAuctions.setItems(filteredAuctions);
         tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
 
         // Cập nhật User Info
@@ -163,8 +163,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             default -> {
             }
         }
-
-        reapplySearchFilterIfNeeded();
     }
 
     private void addAuctionItem(ItemDTO item) {
@@ -195,14 +193,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     private boolean isValidUpdate(DashboardUpdateResponse update) {
         return update != null && update.getItem() != null;
-    }
-
-    private void reapplySearchFilterIfNeeded() {
-        String keyword = searchField.getText();
-
-        if (keyword != null && !keyword.isBlank()) {
-            applyFilter(keyword);
-        }
     }
 
     private void applyFilter(String keyword) {
@@ -334,8 +324,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     private void handleProductsLoaded(List<ItemDTO> items) {
         auctionList.setAll(items);
-
-        tableAuctions.setItems(auctionList);
 
         if (items.isEmpty()) {
             tableAuctions.setPlaceholder(new Label("No item"));
@@ -499,17 +487,23 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     private void setupSearchFilter() {
         searchField.textProperty().addListener((obs, oldValue, newValue) -> {
-            String keyword = newValue == null
+            String keyword = (newValue == null)
                     ? ""
                     : newValue.trim().toLowerCase();
 
             filteredAuctions.setPredicate(item -> {
-                if (keyword.isBlank()) {
-                    return true;
-                }
+                if (keyword.isBlank()) return true;
 
-                return item.getName() != null
-                        && item.getName().toLowerCase().contains(keyword);
+                String name = item.getName() == null
+                        ? ""
+                        : item.getName().toLowerCase();
+
+                String seller = item.getSellerUsername() == null
+                        ? ""
+                        : item.getSellerUsername().toLowerCase();
+
+                return name.contains(keyword)
+                        || seller.contains(keyword);
             });
         });
     }
