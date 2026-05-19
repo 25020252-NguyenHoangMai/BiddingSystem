@@ -156,6 +156,19 @@ public class AuthController {
 
     public GetAllUsersResponse getAllUsers(GetAllUsersRequest request) {
         try {
+            if (request.getRequesterId() == null || request.getRequesterId().isBlank()) {
+                return new GetAllUsersResponse(false, "Requester ID is required!", List.of());
+            }
+
+            User requester = userService.getUserById(request.getRequesterId());
+            if (requester == null) {
+                return new GetAllUsersResponse(false, "Requester not found!", List.of());
+            }
+
+            if (!"ADMIN".equalsIgnoreCase(requester.getRole())) {
+                return new GetAllUsersResponse(false, "Only admin can get all users!", List.of());
+            }
+
             List<UserSessionDTO> users = userService.getAllUsers()
                     .stream()
                     .map(this::toUserSessionDTO)
@@ -170,11 +183,28 @@ public class AuthController {
 
     public DeleteUserResponse deleteUser(DeleteUserRequest request) {
         try {
-            if (request.getUserId() == null || request.getUserId().isBlank()) {
-                return new DeleteUserResponse(false, "User ID is required!");
+            if (request.getRequesterId() == null || request.getRequesterId().isBlank()) {
+                return new DeleteUserResponse(false, "Requester ID is required!");
             }
 
-            userService.deleteUser(request.getUserId());
+            if (request.getTargetUserId() == null || request.getTargetUserId().isBlank()) {
+                return new DeleteUserResponse(false, "Target user ID is required!");
+            }
+
+            User requester = userService.getUserById(request.getRequesterId());
+            if (requester == null) {
+                return new DeleteUserResponse(false, "Requester not found!");
+            }
+
+            if (!"ADMIN".equalsIgnoreCase(requester.getRole())) {
+                return new DeleteUserResponse(false, "Only admin can delete users!");
+            }
+
+            if (request.getRequesterId().equals(request.getTargetUserId())) {
+                return new DeleteUserResponse(false, "Admin cannot delete yourself!");
+            }
+
+            userService.deleteUser(request.getTargetUserId());
             return new DeleteUserResponse(true, "Delete user successfully!");
         } catch (Exception e) {
             e.printStackTrace();
