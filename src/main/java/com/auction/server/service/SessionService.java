@@ -374,4 +374,75 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
+    public AuctionSession cancelSessionBySeller(String sellerId, String sessionId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new AuctionException("Admin id is required.");
+        }
+
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new AuctionException("Session id is required.");
+        }
+
+        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, sessionId);
+                if (session == null) {
+                    throw new AuctionException("Auction session not found.");
+                }
+
+                if (session.getItem() == null) {
+                    throw new AuctionException("Auction item not found.");
+                }
+
+                String ownerSellerId = session.getItem().getSellerId();
+
+                if (ownerSellerId == null || ownerSellerId.isBlank()) {
+                    throw new AuctionException("Auction seller is missing.");
+                }
+
+                if (!sellerId.equals(ownerSellerId)) {
+                    throw new AuctionException("You can only cancel your own auction.");
+                }
+
+                String status = session.getStatus();
+
+                if (STATUS_PAID.equals(status)) {
+                    throw new AuctionException("Cannot cancel a paid auction.");
+                }
+                if (STATUS_FINISHED.equals(status)) {
+                    throw new AuctionException("Cannot cancel a finished auction");
+                }
+                if (STATUS_CANCELED.equals(status)) {
+                    throw new AuctionException("Auction is already canceled.");
+                }
+
+                boolean hasBid = (session.getCurrentWinnerId() != null && !session.getCurrentWinnerId().isBlank());
+
+                if (hasBid) {
+                    throw new AuctionException("Cannot cancel auction after it has bids.");
+                }
+
+                sessionDAO.updateStatus(conn, sessionId, STATUS_CANCELED);
+
+                conn.commit();
+
+                session.setStatus(STATUS_CANCELED);
+                return session;
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (Exception e) {
+            if (e instanceof AuctionException auctionException) {
+                throw auctionException;
+            }
+
+            throw new AuctionException("Cancel auction failed: " + e.getMessage());
+        }
+    }
+
 }

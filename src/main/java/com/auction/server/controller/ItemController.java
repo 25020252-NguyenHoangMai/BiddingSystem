@@ -4,10 +4,7 @@ import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.dto.ItemDTO;
 import com.auction.model.User;
-import com.auction.request.AddItemRequest;
-import com.auction.request.AdminCancelAuctionRequest;
-import com.auction.request.GetAllItemsRequest;
-import com.auction.request.GetAuctionDetailRequest;
+import com.auction.request.*;
 import com.auction.response.*;
 import com.auction.server.factory.ItemFromDTOFactory;
 import com.auction.server.realtime.DashboardWatchRegistry;
@@ -127,7 +124,7 @@ public class ItemController {
                     )
             );
 
-            broadcastAuctionCanceledToSessionWatchers(session);
+            broadcastAuctionCanceledToSessionWatchers(session, "Auction canceled by admin");
 
             return new AdminCancelAuctionResponse(true, "Auction canceled successfully", dto);
 
@@ -137,7 +134,7 @@ public class ItemController {
         }
     }
 
-    private void broadcastAuctionCanceledToSessionWatchers(AuctionSession session) {
+    private void broadcastAuctionCanceledToSessionWatchers(AuctionSession session, String message) {
         if (session == null) {
             return;
         }
@@ -152,7 +149,7 @@ public class ItemController {
 
         BidUpdateResponse update = new BidUpdateResponse(
                 true,
-                "Auction canceled by admin",
+                message,
                 session.getId(),
                 session.getCurrentPrice(),
                 session.getCurrentWinnerId(),
@@ -165,5 +162,34 @@ public class ItemController {
         );
 
         sessionWatchRegistry.broadcastBidUpdate(session.getId(), update);
+    }
+
+    public SellerCancelAuctionResponse sellerCancelAuction(SellerCancelAuctionRequest request) {
+        try {
+            if (request == null) {
+                return new SellerCancelAuctionResponse(false, "Request cannot be null", null);
+            }
+
+            AuctionSession session = sessionService.cancelSessionBySeller(request.getSellerId(), request.getSessionId());
+
+            ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
+
+            dashboardWatchRegistry.broadcastDashboardUpdate(
+                    new DashboardUpdateResponse(
+                            true,
+                            "Auction canceled by seller",
+                            DashboardUpdateType.ITEM_REMOVED,
+                            dto
+                    )
+            );
+
+            broadcastAuctionCanceledToSessionWatchers(session, "Auction canceled by seller");
+
+            return new SellerCancelAuctionResponse(true, "Auction canceled successfully", dto);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new SellerCancelAuctionResponse(false, "Cancel auction failed: " + e.getMessage(), null);
+        }
     }
 }
