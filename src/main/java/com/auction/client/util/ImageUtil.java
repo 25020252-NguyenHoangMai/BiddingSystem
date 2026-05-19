@@ -19,7 +19,11 @@ public class ImageUtil {
                 if (Files.exists(path)) {
                     imgView.setImage(new Image(path.toUri().toString(), 100, 100, false, true));
                     imgView.setVisible(true);
-                    lblPlaceholder.setVisible(false);
+
+                    // Chỉ ẩn placeholder nếu đối tượng label này tồn tại
+                    if (lblPlaceholder != null) {
+                        lblPlaceholder.setVisible(false);
+                    }
                     return;
                 }
             }
