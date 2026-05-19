@@ -21,6 +21,7 @@ public class ItemDTO implements Serializable {
     private int mileage;
     private String brand;
     private String artist;
+    private long startTimeMillis;
     private long endTimeMillis;
     private int durationHours;
     private String sessionId;
@@ -149,6 +150,14 @@ public class ItemDTO implements Serializable {
     public boolean isSelected() {return selected.get();}
 
     public void setSelected(boolean selected) { this.selected.set(selected);}
+
+    public long getStartTimeMillis() {
+        return startTimeMillis;
+    }
+
+    public void setStartTimeMillis(long startTimeMillis) {
+        this.startTimeMillis = startTimeMillis;
+    }
 
     public long getEndTimeMillis() { return endTimeMillis; }
 
