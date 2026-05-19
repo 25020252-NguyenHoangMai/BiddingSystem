@@ -40,7 +40,8 @@ public class    MainServer {
                                             bidValidationService, bidTransactionExecutor);
 
         AuthController authController = new AuthController(userService);
-        ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry);
+        ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry,
+                                            sessionWatchRegistry);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
                                                 userService, bidDAO);

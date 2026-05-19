@@ -11,6 +11,7 @@ import com.auction.request.GetAuctionDetailRequest;
 import com.auction.response.*;
 import com.auction.server.factory.ItemFromDTOFactory;
 import com.auction.server.realtime.DashboardWatchRegistry;
+import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.ItemService;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
@@ -24,12 +25,14 @@ public class ItemController {
     private final ItemService itemService;
     private final SessionService sessionService;
     private final DashboardWatchRegistry dashboardWatchRegistry;
+    private final SessionWatchRegistry sessionWatchRegistry;
 
     public ItemController(ItemService itemService, SessionService sessionService,
-                          DashboardWatchRegistry dashboardWatchRegistry) {
+                          DashboardWatchRegistry dashboardWatchRegistry, SessionWatchRegistry sessionWatchRegistry) {
         this.itemService = itemService;
         this.sessionService = sessionService;
         this.dashboardWatchRegistry = dashboardWatchRegistry;
+        this.sessionWatchRegistry = sessionWatchRegistry;
     }
 
     public GetAllItemsResponse getAllItems(GetAllItemsRequest request) {
@@ -124,11 +127,43 @@ public class ItemController {
                     )
             );
 
+            broadcastAuctionCanceledToSessionWatchers(session);
+
             return new AdminCancelAuctionResponse(true, "Auction canceled successfully", dto);
 
         } catch (Exception e) {
             e.printStackTrace();
             return new AdminCancelAuctionResponse(false, "Cancel auction failed: " + e.getMessage(), null);
         }
+    }
+
+    private void broadcastAuctionCanceledToSessionWatchers(AuctionSession session) {
+        if (session == null) {
+            return;
+        }
+
+        Long endTimeMillis = null;
+        if (session.getEndTime() != null) {
+            endTimeMillis = session.getEndTime()
+                    .atZone(ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli();
+        }
+
+        BidUpdateResponse update = new BidUpdateResponse(
+                true,
+                "Auction canceled by admin",
+                session.getId(),
+                session.getCurrentPrice(),
+                session.getCurrentWinnerId(),
+                null,
+                SessionService.STATUS_CANCELED,
+                endTimeMillis,
+                null,
+                null,
+                null
+        );
+
+        sessionWatchRegistry.broadcastBidUpdate(session.getId(), update);
     }
 }

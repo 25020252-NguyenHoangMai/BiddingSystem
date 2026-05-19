@@ -317,6 +317,10 @@ public class SessionService { // Quản lí phiên đấu giá
             throw new AuctionException("Admin id is required.");
         }
 
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new AuctionException("Session id is required.");
+        }
+
         User admin = userDAO.getUserById(adminId);
         if (admin == null || !"ADMIN".equalsIgnoreCase(admin.getRole())) {
             throw new AuctionException("Only admin can cancel auction.");
