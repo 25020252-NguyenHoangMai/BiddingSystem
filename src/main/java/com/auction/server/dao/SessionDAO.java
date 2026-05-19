@@ -53,14 +53,13 @@ public class SessionDAO {
         return session;
     }
 
-    public void insertSession(AuctionSession session, Item item) {
+    public void insertSession(Connection conn, AuctionSession session, Item item) {
         String sql = """
             INSERT INTO AuctionSession (id, itemId, currentPrice, currentWinnerId, startTime, endTime, status)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """;
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, session.getId());
             ps.setString(2, item.getId());
             ps.setDouble(3, session.getCurrentPrice());
@@ -76,11 +75,10 @@ public class SessionDAO {
         }
     }
 
-    public AuctionSession getSessionById(String sessionId) {
+    public AuctionSession getSessionById(Connection conn, String sessionId) {
         String sql = "SELECT * FROM AuctionSession WHERE id = ?";
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
             ResultSet rs = ps.executeQuery();
 
@@ -146,7 +144,7 @@ public class SessionDAO {
         }
     }
 
-    public void updateEndTime(String sessionId, LocalDateTime newEndTime) {
+    public void updateEndTime(Connection conn, String sessionId, LocalDateTime newEndTime) {
 
         String sql = """
         UPDATE AuctionSession
@@ -154,8 +152,7 @@ public class SessionDAO {
         WHERE id = ?
     """;
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setTimestamp(1, Timestamp.valueOf(newEndTime));
             ps.setString(2, sessionId);
@@ -205,8 +202,7 @@ public class SessionDAO {
 
         String sql = "SELECT TOP 1 1 FROM AuctionSession WHERE itemId = ?";
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, itemId);
 
@@ -219,7 +215,7 @@ public class SessionDAO {
         }
     }
 
-    public boolean existsActiveSessionByItemId(String itemId) {
+    public boolean existsActiveSessionByItemId(Connection conn, String itemId) {
         if (itemId == null || itemId.trim().isEmpty()) {
             throw new IllegalArgumentException("itemId must not be null or empty");
         }
@@ -231,8 +227,7 @@ public class SessionDAO {
           AND status IN ('OPEN', 'RUNNING')
         """;
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, itemId);
 
@@ -245,7 +240,7 @@ public class SessionDAO {
         }
     }
 
-    public List<AuctionSession> getSessionsByItemId(String itemId) {
+    public List<AuctionSession> getSessionsByItemId(Connection conn, String itemId) {
         if (itemId == null || itemId.trim().isEmpty()) {
             throw new IllegalArgumentException("itemId must not be null or empty");
         }
@@ -254,8 +249,7 @@ public class SessionDAO {
 
         List<AuctionSession> sessions = new ArrayList<>();
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, itemId);
 
@@ -272,12 +266,11 @@ public class SessionDAO {
         }
     }
 
-    public List<AuctionSession> getAllSessions() {
+    public List<AuctionSession> getAllSessions(Connection conn) {
         String sql = "SELECT * FROM AuctionSession";
         List<AuctionSession> list = new ArrayList<>();
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
@@ -289,12 +282,11 @@ public class SessionDAO {
         return list;
     }
 
-    public List<AuctionSession> getSessionsByStatus(String status) {
+    public List<AuctionSession> getSessionsByStatus(Connection conn, String status) {
         String sql = "SELECT * FROM AuctionSession WHERE status = ?";
         List<AuctionSession> list = new ArrayList<>();
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ResultSet rs = ps.executeQuery();
 
