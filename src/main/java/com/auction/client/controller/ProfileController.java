@@ -147,22 +147,55 @@ public class ProfileController {
         });
     }
 
-    // ===== ACTIONS =====
+//    // ===== ACTIONS =====
+//    @FXML
+//    private void handleEditProfile() {
+//        UserSessionDTO user = ClientSession.getCurrentUser();
+//        if (user == null) return;
+//
+//        FileChooser chooser = new FileChooser();
+//        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
+//        File selected = chooser.showOpenDialog(avatarPane.getScene().getWindow());
+//
+//        if (selected != null) {
+//            // Lưu xong thì gọi lại loadAvatar để cập nhật giao diện
+//            ImageUtil.saveAvatarAsync(user.getId(), selected, path -> {
+//                ImageUtil.loadAvatar(user.getId(), user.getUsername(), avatarImageView, avatarLabel);
+//            });
+//        }
+//    }
+
     @FXML
     private void handleEditProfile() {
-        UserSessionDTO user = ClientSession.getCurrentUser();
-        if (user == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/edit_profile.fxml"));
+            Parent root = loader.load();
 
-        FileChooser chooser = new FileChooser();
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
-        File selected = chooser.showOpenDialog(avatarPane.getScene().getWindow());
+            EditProfileController controller = loader.getController();
+            if (controller != null) {
+                controller.initData(ClientSession.getCurrentUser());
+            }
 
-        if (selected != null) {
-            // Lưu xong thì gọi lại loadAvatar để cập nhật giao diện
-            ImageUtil.saveAvatarAsync(user.getId(), selected, path -> {
-                ImageUtil.loadAvatar(user.getId(), user.getUsername(), avatarImageView, avatarLabel);
-            });
+            Stage stage = (Stage) avatarPane.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Edit Profile");
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Lỗi hệ thống", "Không thể tải màn hình chỉnh sửa tài khoản.");
         }
+    }
+
+    private void showError(String title, String content) {
+        Alert a = new Alert(Alert.AlertType.ERROR);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.setContentText(content);
+        a.showAndWait();
     }
 
     @FXML
