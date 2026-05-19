@@ -22,11 +22,11 @@ public class SessionDAO {
         this.itemDAO = itemDAO;
     }
 
-    private AuctionSession mapToSession(ResultSet rs) throws SQLException {
+    private AuctionSession mapToSession(Connection conn, ResultSet rs) throws SQLException {
         String id = rs.getString("id");
         String itemId = rs.getString("itemId");
 
-        ItemDTO itemDTO = itemDAO.getItemById(itemId);
+        ItemDTO itemDTO = itemDAO.getItemById(conn, itemId);
 
         if (itemDTO == null) {
             throw new SQLException("Item not found with id: " + itemId);
@@ -83,7 +83,7 @@ public class SessionDAO {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                return mapToSession(rs);
+                return mapToSession(conn, rs);
             }
             return null;
         } catch (SQLException e) {
@@ -95,7 +95,7 @@ public class SessionDAO {
         String sql = """
             SELECT *
             FROM AuctionSession WITH (UPDLOCK, ROWLOCK)
-            WHERE itemId = ?
+            WHERE sessionId = ?
     """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -103,7 +103,7 @@ public class SessionDAO {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                return mapToSession(rs);
+                return mapToSession(conn, rs);
             }
             return null;
         } catch (SQLException e) {
@@ -282,7 +282,7 @@ public class SessionDAO {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    sessions.add(mapToSession(rs));
+                    sessions.add(mapToSession(conn, rs));
                 }
             }
 
@@ -301,7 +301,7 @@ public class SessionDAO {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                list.add(mapToSession(rs));
+                list.add(mapToSession(conn, rs));
             }
         } catch (SQLException e) {
             throw new AuctionException("An error occurred while getting all sessions: " + e.getMessage());
@@ -318,7 +318,7 @@ public class SessionDAO {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                list.add(mapToSession(rs));
+                list.add(mapToSession(conn, rs));
             }
 
         } catch (SQLException e) {

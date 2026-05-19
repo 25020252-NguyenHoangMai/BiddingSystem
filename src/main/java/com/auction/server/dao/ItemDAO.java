@@ -29,10 +29,9 @@ public class ItemDAO {
 
 
     //=============== thêm sản phẩm ===============
-    public void insertItem(Item item) {
+    public void insertItem(Connection conn, Item item) {
         String sql = "INSERT INTO Item (id, name, description, itemType, sellerId, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, item.getId());
             ps.setString(2, item.getName());
@@ -72,10 +71,9 @@ public class ItemDAO {
 
 
     //=============== xóa sản phẩm ===============
-    public void deleteItem(String id) {
+    public void deleteItem(Connection conn, String id) {
         String sql = "DELETE FROM Item WHERE id = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
             int rows = ps.executeUpdate();
@@ -90,10 +88,9 @@ public class ItemDAO {
 
 
     //=============== cập nhật thông tin sản phẩm ===============
-    public void updateItem(Item item) {
+    public void updateItem(Connection conn, Item item) {
         String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?, model = ?, engineType = ?, mileage = ?, brand = ?, artist = ? WHERE id = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, item.getName());
             ps.setString(2, item.getDescription());
@@ -135,11 +132,10 @@ public class ItemDAO {
     }
 
     //=============== hiển thị toàn bộ danh sách sản phẩm ===============
-    public List<ItemDTO> getAllItems() {
+    public List<ItemDTO> getAllItems(Connection conn) {
         List<ItemDTO> list = new ArrayList<>();
         String sql = "SELECT * FROM Item";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
@@ -154,10 +150,9 @@ public class ItemDAO {
 
 
     //=============== tìm user theo id ===============
-    public ItemDTO getItemById(String id) {
+    public ItemDTO getItemById(Connection conn, String id) {
         String sql = "SELECT * FROM Item WHERE id = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -173,11 +168,10 @@ public class ItemDAO {
 
 
     //=============== tìm item theo name ===============
-    public List<ItemDTO> getItemByName(String name) {
+    public List<ItemDTO> getItemByName(Connection conn, String name) {
         List<ItemDTO> list = new ArrayList<>();
         String sql = "SELECT * FROM Item WHERE name = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name); // ✔ đặt ở đây
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -193,12 +187,11 @@ public class ItemDAO {
     }
 
     //=============== tìm item theo itemType ===============
-    public List<ItemDTO> getItemByItemType(String itemType) {
+    public List<ItemDTO> getItemByItemType(Connection conn, String itemType) {
         List<ItemDTO> list = new ArrayList<>();
         String sql = "SELECT * FROM Item WHERE itemType = ?";
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, itemType);
 
