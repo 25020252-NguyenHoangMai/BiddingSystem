@@ -113,37 +113,40 @@ public class UserService {
 
 
     //=============== cập nhật thông tin người dùng ===============
-    public void updateProfile(User user) {
-        if (user == null) {
-            throw new AuctionException("User must not be null!");
-        }
-
-        if (user.getId() == null || user.getId().isBlank()) {
+    public User updateProfile(String userId, String fullName, String username, String newPassword) {
+        if (userId == null || userId.isBlank()) {
             throw new AuctionException("User id is required!");
         }
 
-        if (user.getFullName() == null || user.getFullName().isBlank()) {
+        if (fullName == null || fullName.isBlank()) {
             throw new AuctionException("Full name is required!");
         }
 
-        if (user.getUsername() == null || user.getUsername().isBlank()) {
+        if (username == null || username.isBlank()) {
             throw new AuctionException("Username is required!");
         }
 
-        User existing = userDAO.getUserByUsername(user.getUsername());
-        if (existing != null && !existing.getId().equals(user.getId())) {
+        User current = userDAO.getUserById(userId);
+        if (current == null) {
+            throw new UserNotFoundException("User not found!");
+        }
+
+        User existing = userDAO.getUserByUsername(username);
+        if (existing != null && !existing.getId().equals(userId)) {
             throw new AuctionException("This username has already existed!");
         }
-        if (user.getPassword() != null && !user.getPassword().isBlank()) {
-            String hashed = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
-            user.setPassword(hashed);
-            userDAO.updateUser(user);
-        } else {
-            // Nếu mật khẩu gửi lên trống, lấy lại pass cũ từ db gán vào
-            User currentUserInDb = userDAO.getUserById(user.getId());
-            user.setPassword(currentUserInDb.getPassword());
-            userDAO.updateUser(user);
+
+        current.setFullName(fullName);
+        current.setUsername(username);
+
+        userDAO.updateUser(current);
+
+        if (newPassword != null && !newPassword.isBlank()) {
+            String hashed = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+            userDAO.updatePassword(userId, hashed);
         }
+
+        return userDAO.getUserById(userId);
     }
 
 

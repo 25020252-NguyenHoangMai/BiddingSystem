@@ -44,6 +44,9 @@ public class AuctionController {
         if (request instanceof DeleteUserRequest deleteUserRequest) {
             return authController.deleteUser(deleteUserRequest);
         }
+        if (request instanceof EditProfileRequest editProfileRequest) {
+            return authController.editProfile(editProfileRequest);
+        }
 
         if (request instanceof GetAllItemsRequest getAllItemsRequest) {
             return itemController.getAllItems(getAllItemsRequest);
