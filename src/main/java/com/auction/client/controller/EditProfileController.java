@@ -195,7 +195,23 @@ public class EditProfileController {
         btnSave.setText("Save Changes");
     }
 
-    private void close() {
-        ((Stage) btnSave.getScene().getWindow()).close();
+    private void goToProfileScene() {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/views/profile.fxml")
+            );
+
+            javafx.scene.Parent root = loader.load();
+
+            Stage stage = (Stage) btnSave.getScene().getWindow();
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorLabel.setText("Cannot return to profile screen!");
+            errorLabel.setVisible(true);
+            resetSubmitState();
+        }
     }
 }
