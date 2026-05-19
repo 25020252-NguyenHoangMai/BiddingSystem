@@ -68,9 +68,15 @@ public class UserSessionDTO implements Serializable {
         return selected;
     }
 
-    public boolean isSelected() { return selected.get();}
+    public boolean isSelected() {
+        if (selected == null) selected = new SimpleBooleanProperty(false);
+        return selected.get();
+    }
 
-    public void setSelected(boolean value) {selected.set(value);}
+    public void setSelected(boolean value) {
+        if (selected == null) selected = new SimpleBooleanProperty(false);
+        selected.set(value);
+    }
 
     public double getReservedBalance() { return reservedBalance;}
 

@@ -526,4 +526,89 @@ public class ItemService {
 
         return dto;
     }
+
+    public ItemDTO addItemWithSession(String sellerId, ItemDTO itemDTO, LocalDateTime startTime,
+                                      LocalDateTime endTime) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new AuctionException("Seller id is required");
+        }
+        if (itemDTO == null) {
+            throw new AuctionException("ItemDTO must not be null");
+        }
+        if (startTime == null || endTime == null) {
+            throw new AuctionException("Start and end time must not be null");
+        }
+        if (!endTime.isAfter(startTime)) {
+            throw new AuctionException("End time must be after start time");
+        }
+
+        User user = userService.getUserById(sellerId);
+        if (!(user instanceof Bidder bidder)) {
+            throw new AuctionException("Only bidder accounts can enable seller features.");
+        }
+
+        if (!bidder.isSellerEnabled()) {
+            throw new AuctionException("This bidder account has not enabled seller mode.");
+        }
+
+        Item item = ItemFromDTOFactory.createItem(itemDTO);
+
+        if (item == null) {
+            throw new AuctionException("Item must not be null!");
+        }
+
+        if (item.getName() == null || item.getName().isBlank()) {
+            throw new AuctionException("Product name cannot be empty!");
+        }
+
+        if (item.getStartingPrice() < 0) {
+            throw new AuctionException("Starting price cannot be negative!");
+        }
+
+        item.setSellerId(sellerId);
+        item.setId(java.util.UUID.randomUUID().toString());
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                if (sessionDAO.existsActiveSessionByItemId(conn, item.getId())) {
+                    throw new AuctionException("This item already has an OPEN or RUNNING auction session.");
+                }
+
+                itemDAO.insertItem(conn, item);
+
+                String sessionId = java.util.UUID.randomUUID().toString();
+                AuctionSession session = new AuctionSession(sessionId, item, startTime, endTime);
+
+                sessionDAO.insertSession(conn, session, item);
+
+                ItemDTO createdItem = itemDAO.getItemById(conn, item.getId());
+
+                if (createdItem == null) {
+                    throw new ItemNotFoundException("Created item is not found.");
+                }
+
+                ItemDTO fullDTO = buildFullItemDTO(createdItem, session);
+
+                conn.commit();
+
+                return fullDTO;
+
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (Exception e) {
+            if (e instanceof AuctionException auctionException) {
+                throw auctionException;
+            }
+
+            throw new AuctionException("Add item with auction session failed: " + e.getMessage());
+        }
+
+    }
 }

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
 <VBox prefHeight="750.0" prefWidth="1200.0" spacing="0" style="-fx-background-color: #f4f6f8;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AdminController">
     <children>
@@ -9,7 +11,15 @@
             <children>
                 <Label style="-fx-font-size: 22; -fx-text-fill: white; -fx-font-weight: bold;" text="ADMIN" />
                 <Region HBox.hgrow="ALWAYS" />
-                <Label fx:id="lblAdminStatus" style="-fx-text-fill: #2ecc71;"/>
+                <Label fx:id="lblAdminStatus" style="-fx-text-fill: #2ecc71;" />
+                <Button onAction="#handleLogout" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 8 18 8 18; -fx-cursor: hand;" text="Đăng xuất">
+                    <HBox.margin>
+                        <Insets left="20" />
+                    </HBox.margin>
+               <font>
+                  <Font size="13.0" />
+               </font>
+                </Button>
             </children>
         </HBox>
 
@@ -26,7 +36,7 @@
                                                 <Label style="-fx-font-weight: bold;" text="Tìm kiếm SP:" />
                                                 <TextField fx:id="txtSearchItem" prefWidth="300.0" promptText="Nhập tên sản phẩm..." style="-fx-background-radius: 15;" />
                                                 <Region HBox.hgrow="ALWAYS" />
-                                                <Button fx:id="btnDeleteItem" onAction="#handleDeleteItem" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" text="XÓA MỤC ĐÃ TÍCH" />
+                                                <Button fx:id="btnDeleteItem" onAction="#handleDeleteItem" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 18 8 18; -fx-cursor: hand; " text="XÓA MỤC ĐÃ TÍCH" />
                                             </children>
                                         </HBox>
                                         <TableView fx:id="itemTable" editable="true" VBox.vgrow="ALWAYS">

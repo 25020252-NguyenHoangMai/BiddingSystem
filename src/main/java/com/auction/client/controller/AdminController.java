@@ -14,6 +14,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.util.List;
 
@@ -30,7 +31,6 @@ public class AdminController {
     @FXML private TextField txtSearchItem;
     @FXML private VBox itemDetailContainer;
     @FXML private Button btnDeleteItem;
-    @FXML private Button btnEditItem;
 
     // --- PHẦN QUẢN LÝ NGƯỜI DÙNG ---
     @FXML private TableView<UserSessionDTO> userTable;
@@ -42,7 +42,6 @@ public class AdminController {
     @FXML private TextField txtSearchUser;
     @FXML private VBox userDetailContainer;
     @FXML private Button btnDeleteUser;
-    @FXML private Button btnEditUser;
 
     private final ObservableList<ItemDTO> masterDataItems = FXCollections.observableArrayList();
     private final ObservableList<UserSessionDTO> masterDataUsers = FXCollections.observableArrayList();
@@ -70,8 +69,20 @@ public class AdminController {
         itemTable.setItems(masterDataItems);
         userTable.setItems(masterDataUsers);
 
-        loadDataFromServer();
         setupSearchFilters();
+        loadDataFromServer();
+
+        itemTable.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.windowProperty().addListener((obs2, oldWin, newWin) -> {
+                    if (newWin != null) {
+                        newWin.showingProperty().addListener((obs3, wasShowing, isShowing) -> {
+                            if (isShowing) loadDataFromServer();
+                        });
+                    }
+                });
+            }
+        });
     }
 
     private void loadDataFromServer() {
@@ -142,6 +153,191 @@ public class AdminController {
             });
         });
         userTable.setItems(filteredUsers);
+    }
+
+    @FXML
+    private void handleDeleteItem() {
+        List<ItemDTO> selected = masterDataItems.stream()
+                .filter(ItemDTO::isSelected)
+                .toList();
+
+        if (selected.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Chưa chọn sản phẩm");
+            alert.setHeaderText(null);
+            alert.setContentText("Vui lòng tích chọn ít nhất một sản phẩm để xóa.");
+            alert.showAndWait();
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận xóa");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Bạn có chắc muốn xóa " + selected.size() + " sản phẩm đã chọn?");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+
+            String adminId = com.auction.client.ClientSession.getCurrentUser().getId();
+
+            btnDeleteItem.setDisable(true);
+            btnDeleteItem.setText("Đang xóa...");
+
+            javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    for (ItemDTO item : selected) {
+                        if (item.getSessionId() == null || item.getSessionId().isBlank()) continue;
+
+                        com.auction.response.AdminCancelAuctionResponse res =
+                                com.auction.client.network.ClientSocket.getInstance()
+                                        .sendRequestAndWait(
+                                                new com.auction.request.AdminCancelAuctionRequest(adminId, item.getSessionId()),
+                                                com.auction.response.AdminCancelAuctionResponse.class
+                                        );
+
+                        if (!res.isSuccess()) {
+                            throw new Exception("Xóa thất bại sản phẩm \"" + item.getName() + "\": " + res.getMessage());
+                        }
+                    }
+                    return null;
+                }
+            };
+
+            task.setOnSucceeded(e -> Platform.runLater(() -> {
+                masterDataItems.removeAll(selected);
+                btnDeleteItem.setDisable(false);
+                btnDeleteItem.setText("XÓA MỤC ĐÃ TÍCH");
+
+                Alert ok = new Alert(Alert.AlertType.INFORMATION);
+                ok.setTitle("Thành công");
+                ok.setHeaderText(null);
+                ok.setContentText("Đã xóa " + selected.size() + " sản phẩm.");
+                ok.show();
+            }));
+
+            task.setOnFailed(e -> Platform.runLater(() -> {
+                btnDeleteItem.setDisable(false);
+                btnDeleteItem.setText("XÓA MỤC ĐÃ TÍCH");
+
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("Lỗi xóa sản phẩm");
+                err.setHeaderText(null);
+                err.setContentText(task.getException().getMessage());
+                err.show();
+            }));
+
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            thread.start();
+        });
+    }
+
+    @FXML
+    private void handleDeleteUser() {
+        List<UserSessionDTO> selected = masterDataUsers.stream()
+                .filter(UserSessionDTO::isSelected)
+                .toList();
+
+        if (selected.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Chưa chọn người dùng");
+            alert.setHeaderText(null);
+            alert.setContentText("Vui lòng tích chọn ít nhất một người dùng để xóa.");
+            alert.showAndWait();
+            return;
+        }
+
+        String currentAdminId = com.auction.client.ClientSession.getCurrentUser().getId();
+        boolean deletingSelf = selected.stream().anyMatch(u -> u.getId().equals(currentAdminId));
+        if (deletingSelf) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Không hợp lệ");
+            alert.setHeaderText(null);
+            alert.setContentText("Bạn không thể xóa chính tài khoản đang đăng nhập.");
+            alert.showAndWait();
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận xóa");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Bạn có chắc muốn xóa " + selected.size() + " người dùng đã chọn?");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+
+            btnDeleteUser.setDisable(true);
+            btnDeleteUser.setText("Đang xóa...");
+
+            javafx.concurrent.Task<Void> task = new javafx.concurrent.Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    for (UserSessionDTO user : selected) {
+                        boolean success = userService.deleteUser(currentAdminId, user.getId());
+                        if (!success) {
+                            throw new Exception("Xóa thất bại người dùng \"" + user.getUsername() + "\"");
+                        }
+                    }
+                    return null;
+                }
+            };
+
+            task.setOnSucceeded(e -> Platform.runLater(() -> {
+                masterDataUsers.removeAll(selected);
+                btnDeleteUser.setDisable(false);
+                btnDeleteUser.setText("XÓA USER ĐÃ TÍCH");
+
+                Alert ok = new Alert(Alert.AlertType.INFORMATION);
+                ok.setTitle("Thành công");
+                ok.setHeaderText(null);
+                ok.setContentText("Đã xóa " + selected.size() + " người dùng.");
+                ok.show();
+            }));
+
+            task.setOnFailed(e -> Platform.runLater(() -> {
+                btnDeleteUser.setDisable(false);
+                btnDeleteUser.setText("XÓA USER ĐÃ TÍCH");
+
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("Lỗi xóa người dùng");
+                err.setHeaderText(null);
+                err.setContentText(task.getException().getMessage());
+                err.show();
+            }));
+
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            thread.start();
+        });
+    }
+
+    @FXML
+    private void handleLogout() {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận đăng xuất");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Bạn có chắc muốn đăng xuất?");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+
+            com.auction.client.ClientSession.clear();
+
+            try {
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                        getClass().getResource("/views/login_view.fxml")
+                );
+                javafx.scene.Parent root = loader.load();
+                Stage stage = (Stage) itemTable.getScene().getWindow();
+                stage.setScene(new javafx.scene.Scene(root));
+                stage.setTitle("Đăng nhập");
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+                Alert err = new Alert(Alert.AlertType.ERROR);
+                err.setTitle("Lỗi");
+                err.setHeaderText(null);
+                err.setContentText("Không thể quay về màn hình đăng nhập: " + e.getMessage());
+                err.show();
+            }
+        });
     }
 }
 

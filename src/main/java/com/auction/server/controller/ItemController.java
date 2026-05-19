@@ -73,13 +73,12 @@ public class ItemController {
                 return new AddItemResponse(false, "Auction start time cannot be in the past.", null);
             }
 
-            ItemDTO createdItem = itemService.addItem(request.getSellerId(), request.getItem());
-
-            Item item = ItemFromDTOFactory.createItem(createdItem);
-
-            AuctionSession session = sessionService.createSession(item, startTime, endTime);
-
-            ItemDTO fullDTO = itemService.buildFullItemDTO(createdItem, session);
+            ItemDTO fullDTO = itemService.addItemWithSession(
+                    request.getSellerId(),
+                    requestItem,
+                    startTime,
+                    endTime
+            );
 
             dashboardWatchRegistry.broadcastDashboardUpdate(
                     new DashboardUpdateResponse(
