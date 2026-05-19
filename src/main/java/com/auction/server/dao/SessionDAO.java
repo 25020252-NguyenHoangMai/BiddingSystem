@@ -95,7 +95,7 @@ public class SessionDAO {
         String sql = """
             SELECT *
             FROM AuctionSession WITH (UPDLOCK, ROWLOCK)
-            WHERE sessionId = ?
+            WHERE id = ?
     """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
