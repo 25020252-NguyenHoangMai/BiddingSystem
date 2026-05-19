@@ -338,9 +338,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     @FXML
     private void handleAddProduct() {
         try {
-            var resource = getClass().getResource("/views/add_product.fxml");
+            var resource = getClass().getResource("/views/add_product2.fxml");
             if (resource == null) {
-                showError("Khong tim thay file: /views/add_product.fxml");
+                showError("Khong tim thay file: /views/add_product2.fxml");
                 return;
             }
 
