@@ -36,6 +36,29 @@ public class ItemDAO {
         return data;
     }
 
+    private ItemDTO mapToDashboardDTO(ResultSet rs) throws SQLException {
+        ItemDTO dto = mapToDTO(rs);
+
+        dto.setSellerUsername(rs.getString("sellerUsername"));
+        dto.setSessionId(rs.getString("sessionId"));
+        dto.setCurrentPrice(rs.getDouble("currentPrice"));
+        dto.setSessionStatus(rs.getString("sessionStatus"));
+
+        Timestamp startTime = rs.getTimestamp("startTime");
+        if (startTime != null) {
+            dto.setStartTimeMillis(startTime.getTime());
+        }
+
+        Timestamp endTime = rs.getTimestamp("endTime");
+        if (endTime != null) {
+            dto.setEndTimeMillis(endTime.getTime());
+        }
+
+        dto.setCurrentWinnerUsername(rs.getString("currentWinnerUsername"));
+
+        return dto;
+    }
+
 
     //=============== thêm sản phẩm ===============
     public void insertItem(Connection conn, Item item) {
