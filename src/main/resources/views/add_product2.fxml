@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AddProduct2Controller">
+
+    <content>
+        <VBox prefWidth="800" spacing="20" style="-fx-padding: 25; -fx-background-color: #ffffff;">
+
+            <VBox spacing="5">
+                <Label style="-fx-font-size: 22; -fx-font-weight: bold;" text="New Item" />
+                <Label style="-fx-text-fill: #7f8c8d;" text="Select date and set exact hour, minute, and second" />
+            </VBox>
+
+            <GridPane hgap="15" vgap="20">
+                <columnConstraints>
+                    <ColumnConstraints prefWidth="130" />
+                    <ColumnConstraints hgrow="ALWAYS" />
+                </columnConstraints>
+
+                <Label style="-fx-font-weight: bold;" text="Product Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                <TextField fx:id="txtName" promptText="Enter product name" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                <Label style="-fx-font-weight: bold;" text="Description:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                <TextArea fx:id="txtDescription" prefHeight="80" promptText="Max 2000 words" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                <Label style="-fx-font-weight: bold;" text="Starting Price ($):" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                <TextField fx:id="txtPrice" promptText="e.g. 100.00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                <Label style="-fx-font-weight: bold;" text="Starting Time:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                <HBox alignment="CENTER_LEFT" spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                    <DatePicker fx:id="dpStartDate" prefWidth="130" promptText="Date" />
+
+                    <Region prefWidth="5" />
+
+                    <Label text="Hour:" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11;" />
+                    <Spinner fx:id="spinStartHour" prefWidth="60" editable="true" />
+
+                    <Label text="Minute:" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11;" />
+                    <Spinner fx:id="spinStartMin" prefWidth="60" editable="true" />
+
+                    <Label text="Second:" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11;" />
+                    <Spinner fx:id="spinStartSec" prefWidth="60" editable="true" />
+                </HBox>
+
+                <Label style="-fx-font-weight: bold;" text="Ending Time:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                <HBox alignment="CENTER_LEFT" spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                    <DatePicker fx:id="dpEndDate" prefWidth="130" promptText="Date" />
+
+                    <Region prefWidth="5" />
+
+                    <Label text="Hour:" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11;" />
+                    <Spinner fx:id="spinEndHour" prefWidth="60" editable="true" />
+
+                    <Label text="Minute:" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11;" />
+                    <Spinner fx:id="spinEndMin" prefWidth="60" editable="true" />
+
+                    <Label text="Second:" style="-fx-text-fill: #7f8c8d; -fx-font-size: 11;" />
+                    <Spinner fx:id="spinEndSec" prefWidth="60" editable="true" />
+                </HBox>
+
+                <Label style="-fx-font-weight: bold;" text="Category:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+                <ComboBox fx:id="cbCategory" onAction="#handleCategoryChange"
+                          prefWidth="220" promptText="Select category"
+                          GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+            </GridPane>
+
+            <VBox fx:id="dynamicFields" managed="false" spacing="10"
+                  style="-fx-background-color: #f4f6f7; -fx-padding: 15; -fx-background-radius: 10;"
+                  visible="false" />
+
+            <Label fx:id="errorLabel" textFill="red" visible="false" wrapText="true" />
+
+            <HBox alignment="CENTER_RIGHT" spacing="12">
+                <Button onAction="#handleCancel" prefWidth="110"
+                        style="-fx-background-color: #bdc3c7; -fx-text-fill: white; -fx-cursor: hand;"
+                        text="Cancel" />
+                <Button fx:id="btnSubmit" onAction="#handleAddAndStart" prefWidth="150"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"
+                        text="Post Auction" />
+            </HBox>
+
+        </VBox>
+    </content>
+</ScrollPane>
