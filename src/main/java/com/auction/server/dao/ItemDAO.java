@@ -229,6 +229,7 @@ public class ItemDAO {
             ORDER BY s.startTime DESC
         ) s
         LEFT JOIN Users winner ON s.currentWinnerId = winner.id
+        WHERE s.status IN ('OPEN', 'RUNNING')
         ORDER BY s.startTime DESC
         """;
 
