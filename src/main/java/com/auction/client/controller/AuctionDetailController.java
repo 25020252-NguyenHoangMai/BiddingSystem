@@ -209,6 +209,16 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     private void startRealtimeWatching(ItemDTO item) {
         if (watching) { return; }
+
+        if (item.getSessionId() == null || item.getSessionId().isBlank()) {
+            // Sản phẩm chưa có phiên đấu giá — disable bid, hiện thông báo rõ ràng
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+            lblMinBidHint.setText("Phiên đấu giá chưa bắt đầu");
+            lblTimer.setText("N/A");
+            return;
+        }
+
         watching = true;
 
         Task<Void> watchTask = new Task<>() {
@@ -426,7 +436,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     }
 
     private void startCountdown(long endTimeMillis) {
-        if (countdownTimeline != null) cleanupWatching();
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             long remaining = endTimeMillis - System.currentTimeMillis();
@@ -741,12 +754,13 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private void cleanupWatching() {
         watching = false;
 
-        if (currentItem != null) {
+        if (currentItem != null && currentItem.getSessionId() != null) {
             realtimeManager.unwatch(currentItem.getSessionId());
         }
 
         if (countdownTimeline != null) {
             countdownTimeline.stop();
+            countdownTimeline = null;
         }
     }
 

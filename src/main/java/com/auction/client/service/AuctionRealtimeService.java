@@ -22,6 +22,10 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
     }
 
     public SessionWatchResponse watch(String sessionId, String userId) throws Exception {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new Exception("Session ID is required");
+        }
+
         SessionWatchResponse response = auctionService.watchSession(sessionId, userId);
 
         if (response == null || !response.isSuccess()) {
@@ -37,6 +41,7 @@ public class AuctionRealtimeService implements ClientSocket.BidUpdateListener {
     }
 
     public void unwatch(String sessionId) {
+        if (sessionId == null) return;
         try {
             auctionService.unwatchSession(sessionId);
         } catch (Exception ex) {

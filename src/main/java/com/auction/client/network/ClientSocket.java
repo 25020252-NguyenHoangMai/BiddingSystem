@@ -193,8 +193,11 @@ public class ClientSocket {
                 throw new IllegalStateException("Socket is not connected");
             }
 
+            String requestId = UUID.randomUUID().toString();
+            RequestMessage message = new RequestMessage(requestId, request);
+
             synchronized (writeLock) {
-                out.writeObject(request);
+                out.writeObject(message);
                 out.flush();
             }
 

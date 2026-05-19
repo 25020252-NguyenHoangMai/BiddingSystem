@@ -171,7 +171,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
         if (!exists) {
             auctionList.add(0, item);
-            tableAuctions.setItems(auctionList);
         }
     }
 
@@ -194,16 +193,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     private boolean isValidUpdate(DashboardUpdateResponse update) {
         return update != null && update.getItem() != null;
-    }
-
-    private void applyFilter(String keyword) {
-        ObservableList<ItemDTO> filteredList = FXCollections.observableArrayList(
-                auctionList.stream()
-                        .filter(item -> item.getName() != null &&
-                                item.getName().toLowerCase().contains(keyword.toLowerCase()))
-                        .toList()
-        );
-        tableAuctions.setItems(filteredList);
     }
 
     // ===== USER INFO =====
@@ -360,7 +349,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             Stage addProductStage = createModalStage("Add Product", root);
 
             addProductStage.setOnHidden(event -> {
-                if (auctionList.isEmpty()) loadProductsAsync();
+                loadProductsAsync();
             });
 
             addProductStage.show();
