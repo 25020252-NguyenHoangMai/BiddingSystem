@@ -206,7 +206,6 @@ public class ProfileController {
         // Dọn socket trước khi logout
         ClientSocket socket = ClientSocket.getInstance();
         socket.setDashboardUpdateListener(null);
-        socket.clearResponseQueue();
         Task<Void> unwatch = new Task<>() {
             @Override
             protected Void call() {
