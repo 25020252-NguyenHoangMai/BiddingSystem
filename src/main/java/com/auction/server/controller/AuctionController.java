@@ -54,6 +54,9 @@ public class AuctionController {
         if (request instanceof GetAuctionDetailRequest getAuctionDetailRequest) {
             return itemController.getAuctionDetail(getAuctionDetailRequest);
         }
+        if (request instanceof AdminCancelAuctionRequest adminCancelAuctionRequest) {
+            return itemController.adminCancelAuction(adminCancelAuctionRequest);
+        }
 
         if (request instanceof PlaceBidRequest placeBidRequest) {
             return biddingController.placeBid(placeBidRequest);

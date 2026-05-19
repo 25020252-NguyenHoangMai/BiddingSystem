@@ -5,6 +5,7 @@ import com.auction.model.Item;
 import com.auction.dto.ItemDTO;
 import com.auction.model.User;
 import com.auction.request.AddItemRequest;
+import com.auction.request.AdminCancelAuctionRequest;
 import com.auction.request.GetAllItemsRequest;
 import com.auction.request.GetAuctionDetailRequest;
 import com.auction.response.*;
@@ -101,6 +102,33 @@ public class ItemController {
 
         } catch (Exception e) {
             return new GetAuctionDetailResponse(false, "Get auction detail failed: " + e.getMessage(), null);
+        }
+    }
+
+    public AdminCancelAuctionResponse adminCancelAuction(AdminCancelAuctionRequest request) {
+        try {
+            if (request == null) {
+                return new AdminCancelAuctionResponse(false, "Request cannot be null", null);
+            }
+
+            AuctionSession session = sessionService.cancelSessionByAdmin(request.getAdminId(), request.getSessionId());
+
+            ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
+
+            dashboardWatchRegistry.broadcastDashboardUpdate(
+                    new DashboardUpdateResponse(
+                            true,
+                            "Auction canceled by admin",
+                            DashboardUpdateType.ITEM_UPDATED,
+                            dto
+                    )
+            );
+
+            return new AdminCancelAuctionResponse(true, "Auction canceled successfully", dto);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new AdminCancelAuctionResponse(false, "Cancel auction failed: " + e.getMessage(), null);
         }
     }
 }
