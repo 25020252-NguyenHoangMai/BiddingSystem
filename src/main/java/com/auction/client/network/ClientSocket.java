@@ -162,8 +162,6 @@ public class ClientSocket {
 
                         if (future != null) {
                             future.complete(responseMessage.getPayload());
-                        } else {
-                            System.err.println("No pending request for requestId: " +  requestId);
                         }
 
                     } else if (obj instanceof EventMessage eventMessage) {
@@ -189,7 +187,7 @@ public class ClientSocket {
         readerThread.start();
     }
 
-    public synchronized void sendRequest(Object request) {
+    public synchronized void sendRequest(Request request) {
         try {
             if (!isConnected()) {
                 throw new IllegalStateException("Socket is not connected");
@@ -263,6 +261,9 @@ public class ClientSocket {
     // ===== DASHBOARD UPDATE LISTENER =====
     public void setDashboardUpdateListener(DashboardUpdateListener listener) {
         this.dashboardUpdateListener = listener;
+        if (listener != null) {
+            this.dashboardWatching = true;
+        }
     }
 
     // ===== CLOSE =====

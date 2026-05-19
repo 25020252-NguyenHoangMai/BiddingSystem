@@ -613,8 +613,39 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             SetAutoBidResponse res = task.getValue();
 
             if (res.isSuccess()) {
-                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
+                // Nếu autobid kích hoạt và giá thay đổi (autobid đặt luôn 1 bid), cập nhật history + chart
+                if (res.getCurrentPrice() != null && res.getCurrentPrice() > 0
+                        && res.getCurrentWinnerUsername() != null) {
+                    String me = ClientSession.getCurrentUser() != null
+                            ? ClientSession.getCurrentUser().getUsername() : "";
 
+                    // History
+                    String entry = BidHistoryFormatter.formatRealtime(
+                            res.getCurrentWinnerUsername(), res.getCurrentPrice(), me);
+                    if (!lvBidHistory.getItems().contains(entry)) {
+                        lvBidHistory.getItems().add(0, entry);
+                        if (lvBidHistory.getItems().size() > 20) {
+                            lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
+                        }
+                    }
+
+                    // Chart
+                    String timeLabel = java.time.LocalTime.now().format(TIME_FMT);
+                    boolean exists = priceSeries.getData().stream()
+                            .anyMatch(d -> Objects.equals(d.getYValue(), res.getCurrentPrice()));
+                    if (!exists) {
+                        priceSeries.getData().add(new XYChart.Data<>(timeLabel, res.getCurrentPrice()));
+                    }
+                    if (priceSeries.getData().size() > 12) {
+                        priceSeries.getData().remove(0);
+                    }
+
+                    // Cập nhật UI giá hiện tại
+                    refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
+                    updateBidHint(null);
+                }
+
+                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
             } else {
                 showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
             }
@@ -660,6 +691,35 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 updateBalanceLabel();
 
                 txtBidAmount.clear();
+
+                // Cập nhật history + chart ngay lập tức
+                if (res.getCurrentPrice() != null && res.getCurrentPrice() > 0) {
+                    String me = ClientSession.getCurrentUser() != null
+                            ? ClientSession.getCurrentUser().getUsername() : "";
+                    String bidder = res.getCurrentWinnerUsername() != null
+                            ? res.getCurrentWinnerUsername() : me;
+
+                    // History
+                    String entry = BidHistoryFormatter.formatRealtime(bidder, res.getCurrentPrice(), me);
+                    if (!lvBidHistory.getItems().contains(entry)) {
+                        lvBidHistory.getItems().add(0, entry);
+                        if (lvBidHistory.getItems().size() > 20) {
+                            lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
+                        }
+                    }
+
+                    // Chart
+                    String timeLabel = java.time.LocalTime.now().format(TIME_FMT);
+                    boolean exists = priceSeries.getData().stream()
+                            .anyMatch(d -> Objects.equals(d.getYValue(), res.getCurrentPrice()));
+                    if (!exists) {
+                        priceSeries.getData().add(new XYChart.Data<>(timeLabel, res.getCurrentPrice()));
+                    }
+                    if (priceSeries.getData().size() > 12) {
+                        priceSeries.getData().remove(0);
+                    }
+                }
+
 
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
             } else {

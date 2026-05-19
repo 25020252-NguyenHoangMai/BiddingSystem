@@ -170,7 +170,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                 .anyMatch(i -> Objects.equals(i.getId(), item.getId()));
 
         if (!exists) {
-            auctionList.add(item);
+            auctionList.add(0, item);
+            tableAuctions.setItems(auctionList);
         }
     }
 

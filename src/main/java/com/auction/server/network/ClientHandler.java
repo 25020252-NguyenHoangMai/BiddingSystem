@@ -80,9 +80,8 @@ public class ClientHandler implements Runnable, AuctionSessionObserver, Dashboar
 
                 if (!(obj instanceof RequestMessage requestMessage)) {
                     System.out.println("Received non-request protocol message from client: " + socket);
-                    safeSendMessage(new ResponseMessage("unknown",
-                            new ErrorResponse("Invalid request message")));
-                    break;
+                    continue;
+
                 }
 
                 String requestId = requestMessage.getRequestId();
