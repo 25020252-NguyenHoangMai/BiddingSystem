@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -204,25 +203,17 @@ public class ItemService {
                 List<AuctionSession> sessions =
                         sessionDAO.getSessionsByItemIdForUpdate(conn, itemDTO.getId());
 
-                AuctionSession session = findEditableSession(sessions);
+                AuctionSession session = findOpenSession(sessions);
 
                 if (session == null) {
-                    throw new AuctionException("No editable auction session found for this item.");
+                    throw new AuctionException("Only OPEN auctions can update item details.");
                 }
 
                 if (hasBid(session)) {
                     throw new AuctionException("Cannot update auction after it has bids.");
                 }
 
-                ItemDTO result;
-
-                if (SessionService.STATUS_OPEN.equals(session.getStatus())) {
-                    result = updateOpenAuctionItem(conn, existingItem, itemDTO, session);
-                } else if (SessionService.STATUS_RUNNING.equals(session.getStatus())) {
-                    result = updateRunningAuctionEndTime(conn, existingItem, itemDTO, session);
-                } else {
-                    throw new AuctionException("Cannot update auction with status: " + session.getStatus());
-                }
+                ItemDTO result = updateOpenAuctionItem(conn, existingItem, itemDTO, session);
 
                 conn.commit();
                 return result;
@@ -282,38 +273,6 @@ public class ItemService {
         return buildFullItemDTO(updatedItem, session);
     }
 
-    private ItemDTO updateRunningAuctionEndTime(
-            Connection conn,
-            ItemDTO existingItem,
-            ItemDTO itemDTO,
-            AuctionSession session
-    ) {
-        validateNoItemFieldChanged(existingItem, itemDTO);
-
-        if (itemDTO.getStartTimeMillis() > 0) {
-            LocalDateTime requestedStartTime = toLocalDateTime(
-                    itemDTO.getStartTimeMillis(),
-                    "Auction start time"
-            );
-
-            if (!requestedStartTime.equals(session.getStartTime())) {
-                throw new AuctionException("Cannot update start time after auction has started.");
-            }
-        }
-
-        LocalDateTime endTime = toLocalDateTime(
-                itemDTO.getEndTimeMillis(),
-                "Auction end time"
-        );
-
-        validateRunningEndTime(session, endTime);
-
-        sessionDAO.updateEndTime(conn, session.getId(), endTime);
-        session.setEndTime(endTime);
-
-        return buildFullItemDTO(existingItem, session);
-    }
-
     private void validateItemFieldsForUpdate(ItemDTO itemDTO) {
         if (itemDTO.getName() == null || itemDTO.getName().isBlank()) {
             throw new AuctionException("Product name cannot be empty.");
@@ -355,73 +314,20 @@ public class ItemService {
                 .toLocalDateTime();
     }
 
-    private AuctionSession findEditableSession(List<AuctionSession> sessions) {
-        AuctionSession editableSession = null;
+    private AuctionSession findOpenSession(List<AuctionSession> sessions) {
+        AuctionSession openSession = null;
 
         for (AuctionSession session : sessions) {
-            String status = session.getStatus();
-
-            if (SessionService.STATUS_OPEN.equals(status)
-                    || SessionService.STATUS_RUNNING.equals(status)) {
-                if (editableSession != null) {
-                    throw new AuctionException("Item has more than one editable auction session.");
+            if (SessionService.STATUS_OPEN.equals(session.getStatus())) {
+                if (openSession != null) {
+                    throw new AuctionException("Item has more than one OPEN auction session.");
                 }
 
-                editableSession = session;
+                openSession = session;
             }
         }
 
-        return editableSession;
-    }
-
-    private void validateNoItemFieldChanged(ItemDTO existingItem, ItemDTO requestedItem) {
-        if (!Objects.equals(existingItem.getName(), requestedItem.getName())) {
-            throw new AuctionException("Cannot update product name after auction has started.");
-        }
-
-        if (!Objects.equals(existingItem.getDescription(), requestedItem.getDescription())) {
-            throw new AuctionException("Cannot update product description after auction has started.");
-        }
-
-        if (!Objects.equals(existingItem.getItemType(), requestedItem.getItemType())) {
-            throw new AuctionException("Cannot update item type after auction has started.");
-        }
-
-        if (Double.compare(existingItem.getStartingPrice(), requestedItem.getStartingPrice()) != 0) {
-            throw new AuctionException("Cannot update starting price after auction has started.");
-        }
-
-        if (!Objects.equals(existingItem.getModel(), requestedItem.getModel())) {
-            throw new AuctionException("Cannot update vehicle model after auction has started.");
-        }
-
-        if (!Objects.equals(existingItem.getEngineType(), requestedItem.getEngineType())) {
-            throw new AuctionException("Cannot update engine type after auction has started.");
-        }
-
-        if (existingItem.getMileage() != requestedItem.getMileage()) {
-            throw new AuctionException("Cannot update mileage after auction has started.");
-        }
-
-        if (!Objects.equals(existingItem.getBrand(), requestedItem.getBrand())) {
-            throw new AuctionException("Cannot update brand after auction has started.");
-        }
-
-        if (!Objects.equals(existingItem.getArtist(), requestedItem.getArtist())) {
-            throw new AuctionException("Cannot update artist after auction has started.");
-        }
-    }
-
-    private void validateRunningEndTime(AuctionSession session, LocalDateTime endTime) {
-        LocalDateTime now = LocalDateTime.now();
-
-        if (!endTime.isAfter(now)) {
-            throw new AuctionException("Auction end time must be in the future.");
-        }
-
-        if (!endTime.isAfter(session.getStartTime())) {
-            throw new AuctionException("Auction end time must be after start time.");
-        }
+        return openSession;
     }
 
     public List<Item> getAllItems() {

@@ -717,4 +717,92 @@ public class SessionService { // Quản lí phiên đấu giá
         session.setEndTime(newEndTime);
     }
 
+    public AuctionSession updateEndTimeBySeller(String sellerId, String sessionId, LocalDateTime newEndTime) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new AuctionException("Seller id is required.");
+        }
+
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new AuctionException("Session id is required.");
+        }
+
+        if (newEndTime == null) {
+            throw new AuctionException("Auction end time is required.");
+        }
+
+        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn, sessionId);
+
+                if (session == null) {
+                    throw new AuctionException("Auction session not found.");
+                }
+
+                validateSellerOwnsSession(sellerId, session);
+                validateNoBidForSellerTimeUpdate(session);
+                validateRunningSessionCanUpdateEndTime(session, newEndTime);
+
+                sessionDAO.updateEndTime(conn, session.getId(), newEndTime);
+                session.setEndTime(newEndTime);
+
+                conn.commit();
+                return session;
+
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (Exception e) {
+            if (e instanceof AuctionException auctionException) {
+                throw auctionException;
+            }
+
+            if (e instanceof IllegalArgumentException illegalArgumentException) {
+                throw illegalArgumentException;
+            }
+
+            if (e instanceof IllegalStateException illegalStateException) {
+                throw illegalStateException;
+            }
+
+            throw new AuctionException("Update auction end time failed: " + e.getMessage());
+        }
+    }
+
+    private void validateNoBidForSellerTimeUpdate(AuctionSession session) {
+        String currentWinnerId = session.getCurrentWinnerId();
+
+        boolean hasBid = currentWinnerId != null && !currentWinnerId.isBlank();
+
+        if (hasBid) {
+            throw new AuctionException("Cannot update auction time after it has bids.");
+        }
+    }
+
+    private void validateRunningSessionCanUpdateEndTime(AuctionSession session, LocalDateTime newEndTime) {
+        if (!STATUS_RUNNING.equals(session.getStatus())) {
+            throw new AuctionException("Only RUNNING auctions can update end time with this request.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!newEndTime.isAfter(now)) {
+            throw new AuctionException("Auction end time must be in the future.");
+        }
+
+        if (session.getStartTime() == null) {
+            throw new AuctionException("Auction start time is missing.");
+        }
+
+        if (!newEndTime.isAfter(session.getStartTime())) {
+            throw new AuctionException("Auction end time must be after start time.");
+        }
+    }
+
+
 }

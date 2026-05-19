@@ -200,6 +200,7 @@ public class ItemController {
         }
     }
 
+//method dùng khi session open
     public SellerUpdateItemResponse sellerUpdateItem(SellerUpdateItemRequest request) {
         try {
             if (request == null) {
@@ -223,6 +224,11 @@ public class ItemController {
                     )
             );
 
+            broadcastAuctionUpdatedToSessionWatchers(
+                    updatedItem,
+                    "Item updated by seller"
+            );
+
             return new SellerUpdateItemResponse(true, "Item updated successfully", updatedItem);
 
         } catch (Exception e) {
@@ -240,5 +246,80 @@ public class ItemController {
         return Instant.ofEpochMilli(millis)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
+    }
+
+    public SellerUpdateAuctionTimeResponse sellerUpdateAuctionTime(SellerUpdateAuctionTimeRequest request) {
+        try {
+            if (request == null) {
+                return new SellerUpdateAuctionTimeResponse(false, "Request cannot be null", null);
+            }
+
+            LocalDateTime endTime = toLocalDateTime(
+                    request.getEndTimeMillis(),
+                    "Auction end time"
+            );
+
+            AuctionSession session = sessionService.updateEndTimeBySeller(
+                    request.getSellerId(),
+                    request.getSessionId(),
+                    endTime
+            );
+
+            ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
+
+            dashboardWatchRegistry.broadcastDashboardUpdate(
+                    new DashboardUpdateResponse(
+                            true,
+                            "Auction end time updated by seller",
+                            DashboardUpdateType.ITEM_UPDATED,
+                            dto
+                    )
+            );
+
+            broadcastAuctionUpdatedToSessionWatchers(
+                    dto,
+                    "Auction end time updated by seller"
+            );
+
+            return new SellerUpdateAuctionTimeResponse(
+                    true,
+                    "Auction end time updated successfully",
+                    dto
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new SellerUpdateAuctionTimeResponse(
+                    false,
+                    "Update auction end time failed: " + e.getMessage(),
+                    null
+            );
+        }
+    }
+
+    private void broadcastAuctionUpdatedToSessionWatchers(ItemDTO item, String message) {
+        if (item == null || item.getSessionId() == null || item.getSessionId().isBlank()) {
+            return;
+        }
+
+        Long endTimeMillis = item.getEndTimeMillis() > 0
+                ? item.getEndTimeMillis()
+                : null;
+
+        BidUpdateResponse update = new BidUpdateResponse(
+                true,
+                message,
+                item.getSessionId(),
+                item.getCurrentPrice(),
+                null,
+                item.getCurrentWinnerUsername(),
+                item.getSessionStatus(),
+                endTimeMillis,
+                item.getMinimumNextBid(),
+                null,
+                null
+        );
+
+        sessionWatchRegistry.broadcastBidUpdate(item.getSessionId(), update);
     }
 }
