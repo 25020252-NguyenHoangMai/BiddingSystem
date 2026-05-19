@@ -31,10 +31,14 @@ public class ImageUtil {
 
         // Nếu không có file ảnh -> Hiện placeholder xám theo tên người dùng
         imgView.setVisible(false);
-        lblPlaceholder.setVisible(true);
-        lblPlaceholder.setText(
-                (username != null && !username.isEmpty()) ? username.substring(0, 1).toUpperCase() : "?"
-        );
+
+        // Chỉ hiển thị và gán chữ nếu lblPlaceholder khác null
+        if (lblPlaceholder != null) {
+            lblPlaceholder.setVisible(true);
+            lblPlaceholder.setText(
+                    (username != null && !username.isEmpty()) ? username.substring(0, 1).toUpperCase() : "?"
+            );
+        }
     }
 
     public static void saveAvatarAsync(String userId, File file, Consumer<Path> onDone) {
