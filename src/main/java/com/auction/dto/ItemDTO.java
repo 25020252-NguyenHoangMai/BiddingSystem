@@ -205,15 +205,33 @@ public class ItemDTO implements Serializable {
 
     public String calculateTimeLeft() {
         long now = System.currentTimeMillis();
+
+        if (startTimeMillis > 0 && now < startTimeMillis) {
+            long diff = startTimeMillis - now;
+            return "Starts in " + formatDuration(diff);
+        }
+
         long diff = endTimeMillis - now;
 
         if (diff <= 0) return "Đã kết thúc";
 
-        long seconds = (diff / 1000) % 60;
-        long minutes = (diff / (1000 * 60)) % 60;
-        long hours = (diff / (1000 * 60 * 60));
+        return formatDuration(diff);
+    }
+
+    private String formatDuration(long millis) {
+        long seconds = (millis / 1000) % 60;
+        long minutes = (millis / (1000 * 60)) % 60;
+        long hours = millis / (1000 * 60 * 60);
 
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
+    public boolean hasStarted() {
+        return startTimeMillis > 0 && System.currentTimeMillis() >= startTimeMillis;
+    }
+
+    public boolean hasEnded() {
+        return endTimeMillis > 0 && System.currentTimeMillis() >= endTimeMillis;
     }
 
     public Double getMinimumNextBid() { return minimumNextBid;}

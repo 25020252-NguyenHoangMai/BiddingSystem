@@ -53,24 +53,31 @@ public class ItemController {
             if (request == null) {
                 return new AddItemResponse(false, "Request can not be null", null);
             }
+            if (request.getItem() == null) {
+                return new AddItemResponse(false, "Item can not be null", null);
+            }
+
+            ItemDTO requestItem = request.getItem();
+
+            LocalDateTime startTime = toLocalDateTime(requestItem.getStartTimeMillis(), "Auction start time");
+
+            LocalDateTime endTime = toLocalDateTime(requestItem.getEndTimeMillis(), "Auction end time");
+
+            if (!endTime.isAfter(startTime)) {
+                return new AddItemResponse(false, "Auction end time must be after start time.", null);
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+
+            if (startTime.isBefore(now.minusMinutes(1))) {
+                return new AddItemResponse(false, "Auction start time cannot be in the past.", null);
+            }
 
             ItemDTO createdItem = itemService.addItem(request.getSellerId(), request.getItem());
 
-            // THÊM: tạo AuctionSession với endTimeMillis từ client
             Item item = ItemFromDTOFactory.createItem(createdItem);
-            LocalDateTime now = LocalDateTime.now();
 
-            int durationHours = request.getDurationHours();
-
-            if (durationHours < 1 || durationHours > 720) {
-                return new AddItemResponse(false, "Auction duration must be between 1 and 720 hours!",
-                                    null);
-            }
-
-            LocalDateTime endTime = now.plusHours(durationHours);
-
-            // Tạo session, giữ lại object trả về
-            AuctionSession session = sessionService.createSession(item, now, endTime);
+            AuctionSession session = sessionService.createSession(item, startTime, endTime);
 
             ItemDTO fullDTO = itemService.buildFullItemDTO(createdItem, session);
 
@@ -198,6 +205,9 @@ public class ItemController {
             if (request == null) {
                 return new SellerUpdateItemResponse(false, "Request cannot be null", null);
             }
+            if (request.getItem() == null) {
+                return new SellerUpdateItemResponse(false, "Item cannot be null", null);
+            }
 
             ItemDTO updatedItem = itemService.updateItemBySeller(
                     request.getSellerId(),
@@ -220,5 +230,15 @@ public class ItemController {
             return new SellerUpdateItemResponse(false, "Update item failed: " + e.getMessage(),
                                     null);
         }
+    }
+
+    private LocalDateTime toLocalDateTime(long millis, String fieldName) {
+        if (millis <= 0) {
+            throw new IllegalArgumentException(fieldName + " is required.");
+        }
+
+        return Instant.ofEpochMilli(millis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
     }
 }
