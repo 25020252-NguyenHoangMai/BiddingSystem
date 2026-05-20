@@ -69,6 +69,9 @@ public class AuctionController {
         if (request instanceof SellerUpdateAuctionTimeRequest sellerUpdateAuctionTimeRequest) {
             return itemController.sellerUpdateAuctionTime(sellerUpdateAuctionTimeRequest);
         }
+        if (request instanceof GetItemImageRequest getItemImageRequest) {
+            return itemController.getItemImage(getItemImageRequest);
+        }
 
         if (request instanceof PlaceBidRequest placeBidRequest) {
             return biddingController.placeBid(placeBidRequest);

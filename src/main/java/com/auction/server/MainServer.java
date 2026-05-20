@@ -22,6 +22,7 @@ public class    MainServer {
         SessionWatchRegistry sessionWatchRegistry = new SessionWatchRegistry();
         DashboardWatchRegistry dashboardWatchRegistry = new DashboardWatchRegistry();
 
+        ImageStorageService imageStorageService = new ImageStorageService();
         UserService userService = new UserService(userDAO);
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
 
@@ -41,7 +42,7 @@ public class    MainServer {
 
         AuthController authController = new AuthController(userService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry,
-                                            sessionWatchRegistry);
+                                            sessionWatchRegistry, imageStorageService);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
                                                 userService, bidDAO);
