@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -20,7 +21,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 public class ProfileController {
@@ -240,5 +243,37 @@ public class ProfileController {
         a.setHeaderText(null);
         a.setContentText(content);
         a.showAndWait();
+    }
+
+    public void handleSessionHistory() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/views/session_history.fxml")
+            );
+
+            Parent root = loader.load();
+
+            SessionHistoryController controller = loader.getController();
+            if (controller != null) {
+                controller.loadSessionHistoryFromServer(ClientSession.getCurrentUser());
+            }
+
+            Stage stage = (Stage) avatarPane.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Session History");
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Navigation Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Cannot open session history screen.");
+            alert.showAndWait();
+        }
     }
 }
