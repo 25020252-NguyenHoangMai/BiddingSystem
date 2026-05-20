@@ -4,6 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
+<?import javafx.scene.image.ImageView?>
 <ScrollPane fitToWidth="true" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AddProduct2Controller">
 
     <content>
@@ -70,6 +71,19 @@
             <VBox fx:id="dynamicFields" managed="false" spacing="10"
                   style="-fx-background-color: #f4f6f7; -fx-padding: 15; -fx-background-radius: 10;"
                   visible="false" />
+
+            <VBox spacing="10">
+                <Label style="-fx-font-weight: bold;" text="Product Image:" />
+
+                <Button text="Choose Image" onAction="#handleChooseImage" />
+
+                <ImageView fx:id="productPreviewImage"
+                           fitWidth="320"
+                           fitHeight="220"
+                           preserveRatio="true"
+                           smooth="true" />
+
+            </VBox>
 
             <Label fx:id="errorLabel" textFill="red" visible="false" wrapText="true" />
 

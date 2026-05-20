@@ -6,11 +6,10 @@ import com.auction.protocol.ResponseMessage;
 import com.auction.request.Request;
 import com.auction.response.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
+import java.rmi.ConnectException;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -248,7 +247,10 @@ public class ClientSocket {
 
             return expectedType.cast(response);
 
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
+            pendingRequests.remove(requestId);
+            throw new Exception("Server not respond (timeout 30s)", e);
+        } catch (IOException | IllegalStateException e) {
             handleDisconnect();
             throw e;
 

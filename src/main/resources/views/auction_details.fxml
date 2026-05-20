@@ -8,6 +8,7 @@
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.image.ImageView?>
 <GridPane prefHeight="700.0" prefWidth="1050.0" style="-fx-background-color: #f4f7f6;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionDetailController">
 
     <columnConstraints>
@@ -32,12 +33,42 @@
                 <Label fx:id="lblTimer" style="-fx-font-family: monospace; -fx-font-size: 16px; -fx-text-fill: #27ae60;                               -fx-background-color: #eafaf1; -fx-padding: 5 10;                               -fx-border-color: #27ae60; -fx-border-radius: 5;" text="00:00:00" />
             </HBox>
 
-            <!-- Category + Name + Description -->
-            <VBox spacing="5">
-                <Label fx:id="lblCategory" style="-fx-text-fill: #27ae60; -fx-font-weight: bold;" text="CATEGORY" />
-                <Label fx:id="lblName" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Product Name" wrapText="true" />
-                <Text fx:id="txtDescription" fill="#555" text="Description..." wrappingWidth="400.0" />
-            </VBox>
+            <!-- Product image + info -->
+            <HBox spacing="20" alignment="TOP_LEFT">
+
+                <!-- PRODUCT IMAGE -->
+                <ImageView fx:id="productImageView"
+                           fitWidth="320"
+                           fitHeight="240"
+                           preserveRatio="true"
+                           smooth="true"
+                           style="-fx-border-color: #dfe6e9;
+                      -fx-border-radius: 10;
+                      -fx-background-radius: 10;" />
+
+                <!-- PRODUCT INFO -->
+                <VBox spacing="5" HBox.hgrow="ALWAYS">
+
+                    <Label fx:id="lblCategory"
+                           style="-fx-text-fill: #27ae60;
+                      -fx-font-weight: bold;"
+                           text="CATEGORY" />
+
+                    <Label fx:id="lblName"
+                           style="-fx-font-size: 24px;
+                      -fx-font-weight: bold;
+                      -fx-text-fill: #2c3e50;"
+                           text="Product Name"
+                           wrapText="true" />
+
+                    <Text fx:id="txtDescription"
+                          fill="#555"
+                          text="Description..."
+                          wrappingWidth="320.0" />
+
+                </VBox>
+
+            </HBox>
 
             <!-- Seller + Starting price -->
             <HBox spacing="40">

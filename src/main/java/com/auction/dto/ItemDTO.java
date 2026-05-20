@@ -31,6 +31,7 @@ public class ItemDTO implements Serializable {
     private String material;
     private String gemstone;
     private String weight;
+    private String imagePath;
 
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
@@ -244,6 +245,8 @@ public class ItemDTO implements Serializable {
 
     public void setMinimumNextBid(Double minimumNextBid) { this.minimumNextBid = minimumNextBid;}
 
+    public String getImagePath() { return imagePath; }
 
+    public void setImagePath(String imagePath) { this.imagePath = imagePath;}
 
 }

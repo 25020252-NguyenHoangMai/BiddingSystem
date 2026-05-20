@@ -16,11 +16,14 @@ import javafx.fxml.FXML;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.File;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -38,6 +41,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     @FXML private ListView<String> lvBidHistory;
     @FXML private Button btnBack, btnPlaceBid, btnAutoBid;
     @FXML private LineChart<String, Number> bidPriceChart;
+    @FXML private ImageView productImageView;
 
     // ===== STATE =====
     private ItemDTO currentItem;
@@ -97,9 +101,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         // Đếm ngược (Sử dụng thời gian thực từ Server)
         startCountdown(item.getEndTimeMillis());
 
-        startHistoryLoading(item);
-
-        startRealtimeWatching(item);
+        startHistoryLoading(item, () -> {startRealtimeWatching(item);});
     }
 
     private void populateBasicInfo(ItemDTO item) {
@@ -119,9 +121,11 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 item.getCurrentWinnerUsername(),
                 item.getSessionStatus()
         );
+
+        loadProductImage(item.getImagePath());
     }
 
-    private void startHistoryLoading(ItemDTO item) {
+    private void startHistoryLoading(ItemDTO item, Runnable onSuccess) {
         Task<GetBidHistoryResponse> historyTask = new Task<>() {
             @Override
             protected GetBidHistoryResponse call() throws Exception {
@@ -192,6 +196,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 lvBidHistory.getItems().add(
                         BidHistoryFormatter.format(entry, me)
                 );
+            }
+
+            if (onSuccess != null) {
+                onSuccess.run();
             }
         });
 
@@ -834,6 +842,25 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void loadProductImage(String imagePath) {
+        try {
+            if (imagePath == null || imagePath.isBlank()) {
+                System.out.println("NOT FOUND: " + imagePath);
+                return;
+            }
+
+            File file = new File(imagePath);
+
+            if (!file.exists()) { return;}
+            Image image = new Image(file.toURI().toString(), 380, 260, true, true);
+
+            productImageView.setImage(image);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML

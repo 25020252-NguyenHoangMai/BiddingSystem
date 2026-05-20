@@ -5,7 +5,7 @@ module BiddingSystem {
     requires java.sql;
     requires com.microsoft.sqlserver.jdbc;
     requires jbcrypt;
-    requires com.zaxxer.hikari;
+    requires com.zaxxer.hikari; requires java.rmi;
 
     opens com.auction.client to javafx.graphics, javafx.fxml;
 

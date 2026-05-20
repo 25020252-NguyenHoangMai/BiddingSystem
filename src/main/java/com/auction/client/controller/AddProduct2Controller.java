@@ -10,12 +10,19 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.stage.FileChooser;
+
+import java.io.File;
+import java.nio.file.*;
+import java.util.UUID;
 
 public class AddProduct2Controller {
 
@@ -28,6 +35,8 @@ public class AddProduct2Controller {
     @FXML private DatePicker dpStartDate, dpEndDate;
     @FXML private Spinner<Integer> spinStartHour, spinStartMin, spinStartSec;
     @FXML private Spinner<Integer> spinEndHour, spinEndMin, spinEndSec;
+    @FXML private ImageView productPreviewImage;
+    private File selectedImageFile;
 
     private final Map<String, TextField> fields = new LinkedHashMap<>();
     private final ProductService service = ProductService.getInstance();
@@ -192,6 +201,29 @@ public class AddProduct2Controller {
             mapField(item, entry.getKey(), val);
         }
 
+        if (selectedImageFile != null) {
+            Path dir = Paths.get("product_images");
+
+            Files.createDirectories(dir);
+
+            String ext = selectedImageFile.getName().substring(
+                            selectedImageFile.getName().lastIndexOf('.')
+                    );
+
+            String fileName = UUID.randomUUID() + ext;
+
+            Path dest = dir.resolve(fileName);
+
+            Files.copy(
+                    selectedImageFile.toPath(),
+                    dest,
+                    StandardCopyOption.REPLACE_EXISTING
+            );
+
+            item.setImagePath(dest.toString());
+            System.out.println("IMAGE PATH = " + dest);
+        }
+
         return item;
     }
 
@@ -202,6 +234,31 @@ public class AddProduct2Controller {
             case "EngineType" -> item.setEngineType(val);
             case "Brand" -> item.setBrand(val);
             case "Artist" -> item.setArtist(val);
+        }
+    }
+
+    @FXML
+    private void handleChooseImage() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Choose Product Image");
+
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter(
+                        "Image Files",
+                        "*.png",
+                        "*.jpg",
+                        "*.jpeg"
+                )
+        );
+
+        File file = chooser.showOpenDialog(productPreviewImage.getScene().getWindow());
+
+        if (file != null) {
+            selectedImageFile = file;
+
+            Image image = new Image(file.toURI().toString());
+
+            productPreviewImage.setImage(image);
         }
     }
 
