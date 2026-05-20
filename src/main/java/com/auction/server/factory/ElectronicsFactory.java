@@ -11,6 +11,7 @@ public class ElectronicsFactory implements ItemFactory {
                 dto.getId(),
                 dto.getName(),
                 dto.getDescription(),
+                dto.getImagePath(),
                 dto.getSellerId(),
                 dto.getStartingPrice(),
                 dto.getBrand()

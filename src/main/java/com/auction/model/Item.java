@@ -7,22 +7,25 @@ public abstract class Item extends Entity {
     private String itemType;
     private String sellerId;
     private double startingPrice;
+    private String imagePath;
 
 
     public Item() { super(); }
 
-    public Item(String id, String name, String sellerId){
+    public Item(String id, String name, String sellerId, String imagePath){
         super(id);
         this.name = name;
         this.sellerId = sellerId;
+        this.imagePath = imagePath;
     }
 
-    public Item(String id, String name, String description, String itemType, String sellerId, double startingPrice) {
+    public Item(String id, String name, String description, String itemType, String sellerId, String imagePath, double startingPrice) {
         super(id);
         this.name = name;
         this.description = description;
         this.itemType = itemType;
         this.sellerId = sellerId;
+        this.imagePath = imagePath;
         this.startingPrice = startingPrice;
     }
 
@@ -69,4 +72,11 @@ public abstract class Item extends Entity {
         this.startingPrice = startingPrice;
     }
 
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
 }

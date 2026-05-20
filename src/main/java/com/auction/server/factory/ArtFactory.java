@@ -6,7 +6,7 @@ import com.auction.model.Art;
 public class ArtFactory implements ItemFactory {
     @Override
     public Item createItem(ItemDTO dto) {
-        return new Art(dto.getId(), dto.getName(), dto.getDescription(), dto.getSellerId(), dto.getStartingPrice(), dto.getArtist());
+        return new Art(dto.getId(), dto.getName(), dto.getDescription(), dto.getSellerId(), dto.getImagePath(), dto.getStartingPrice(), dto.getArtist());
     }
 
 }

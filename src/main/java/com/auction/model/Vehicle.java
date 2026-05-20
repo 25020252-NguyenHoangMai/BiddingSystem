@@ -13,11 +13,11 @@ public class Vehicle extends Item {
         super();
     }
 
-    public Vehicle(String id, String name, String description, String sellerId, double startingPrice,
+    public Vehicle(String id, String name, String description, String imagePath, String sellerId, double startingPrice,
                    String brand, String model, String engineType, int mileage) {
 
 
-        super(id, name, description, "VEHICLE", sellerId, startingPrice);
+        super(id, name, description, imagePath, "VEHICLE", sellerId, startingPrice);
 
 
         this.brand = brand;

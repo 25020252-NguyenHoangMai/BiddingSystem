@@ -8,8 +8,8 @@ public class Electronics extends Item {
 
     public Electronics(){}
 
-    public Electronics(String id, String name, String description, String sellerID, double startingPrice,  String brand) {
-        super(id, name, description, "ELECTRONICS", sellerID, startingPrice);
+    public Electronics(String id, String name, String description, String imagePath, String sellerID, double startingPrice,  String brand) {
+        super(id, name, description, imagePath, "ELECTRONICS", sellerID, startingPrice);
         this.brand = brand;
     }
 

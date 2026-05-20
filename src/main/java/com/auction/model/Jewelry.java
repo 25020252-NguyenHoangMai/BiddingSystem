@@ -12,8 +12,8 @@ public class Jewelry extends Item {
     public Jewelry() {
     }
 
-    public Jewelry(String id, String name, String description, String sellerId, double startingPrice,  String material, String gemstone, String weight, String brand){
-        super(id, name, description, "JEWELRY", sellerId, startingPrice);
+    public Jewelry(String id, String name, String description, String imagePath, String sellerId, double startingPrice,  String material, String gemstone, String weight, String brand){
+        super(id, name, description, imagePath, "JEWELRY", sellerId, startingPrice);
         this.material = material;
         this.gemstone = gemstone;
         this.weight = weight;
