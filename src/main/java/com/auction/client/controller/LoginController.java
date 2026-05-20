@@ -73,18 +73,28 @@ public class LoginController implements Initializable {
                 String role = response.getUser().getRole();
 
                 if ("ADMIN".equalsIgnoreCase(role)) {
+                    // Lấy stage hiện tại trước khi chuyển màn
+                    javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+
                     com.auction.client.util.SceneUtil.changeScene(
                             event,
                             "/views/admin_dashboard.fxml",
                             "Admin Dashboard"
                     );
+                    if (stage != null) {
+                        stage.setMaximized(true);
+                    }
 
                 } else {
+                    javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
                     com.auction.client.util.SceneUtil.changeScene(
                             event,
                             "/views/main.fxml",
                             "Auction Dashboard"
                     );
+                    if (stage != null) {
+                        stage.setMaximized(true);
+                    }
                 }
             } else {
                 showError(response.getMessage());
