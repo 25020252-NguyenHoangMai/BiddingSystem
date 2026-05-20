@@ -180,6 +180,7 @@ public class EditProfileController {
 
             Stage stage = (Stage) btnSave.getScene().getWindow();
             stage.setScene(new javafx.scene.Scene(root));
+            stage.centerOnScreen();
             stage.show();
 
         } catch (Exception e) {
