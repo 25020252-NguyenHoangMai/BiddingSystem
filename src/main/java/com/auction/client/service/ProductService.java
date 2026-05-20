@@ -9,6 +9,14 @@ import com.auction.response.AddItemResponse;
 import com.auction.response.GetAllItemsResponse;
 import com.auction.response.GetItemImageResponse;
 
+import com.auction.client.ClientSession;
+import com.auction.request.SellerCancelAuctionRequest;
+import com.auction.request.SellerUpdateAuctionTimeRequest;
+import com.auction.request.SellerUpdateItemRequest;
+import com.auction.response.SellerCancelAuctionResponse;
+import com.auction.response.SellerUpdateAuctionTimeResponse;
+import com.auction.response.SellerUpdateItemResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -100,6 +108,111 @@ public class ProductService {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public ItemDTO updateProductBySeller(ItemDTO item) {
+        ClientSocket socket = ClientSocket.getInstance();
+
+        try {
+            var user = ClientSession.getCurrentUser();
+
+            if (user == null) {
+                throw new IllegalStateException("You are not logged in.");
+            }
+
+            if (item == null) {
+                throw new IllegalArgumentException("Item is required.");
+            }
+
+            socket.connect();
+
+            SellerUpdateItemRequest request = new SellerUpdateItemRequest(user.getId(), item);
+
+            SellerUpdateItemResponse response = socket.sendRequestAndWait(request, SellerUpdateItemResponse.class);
+
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
+            }
+
+            ItemDTO updatedItem = response.getItemDTO();
+
+            if (updatedItem == null) {
+                throw new IllegalStateException("SellerUpdateItemResponse itemDTO is null");
+            }
+
+            return updatedItem;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Update product failed: " + e.getMessage(), e);
+        }
+    }
+
+    public ItemDTO updateAuctionEndTimeBySeller(String sessionId, long endTimeMillis) {
+        ClientSocket socket = ClientSocket.getInstance();
+
+        try {
+            var user = ClientSession.getCurrentUser();
+
+            if (user == null) {
+                throw new IllegalStateException("You are not logged in.");
+            }
+
+            if (sessionId == null || sessionId.isBlank()) {
+                throw new IllegalArgumentException("Session id is required.");
+            }
+
+            socket.connect();
+
+            SellerUpdateAuctionTimeRequest request = new SellerUpdateAuctionTimeRequest(user.getId(), sessionId, endTimeMillis);
+
+            SellerUpdateAuctionTimeResponse response = socket.sendRequestAndWait(request, SellerUpdateAuctionTimeResponse.class);
+
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
+            }
+
+            ItemDTO updatedItem = response.getItemDTO();
+
+            if (updatedItem == null) {
+                throw new IllegalStateException("SellerUpdateAuctionTimeResponse itemDTO is null");
+            }
+
+            return updatedItem;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Update auction end time failed: " + e.getMessage(), e);
+        }
+    }
+
+    public ItemDTO cancelAuctionBySeller(String sessionId) {
+        ClientSocket socket = ClientSocket.getInstance();
+
+        try {
+            var user = ClientSession.getCurrentUser();
+
+            if (user == null) {
+                throw new IllegalStateException("You are not logged in.");
+            }
+
+            if (sessionId == null || sessionId.isBlank()) {
+                throw new IllegalArgumentException("Session id is required.");
+            }
+
+            socket.connect();
+
+            SellerCancelAuctionRequest request = new SellerCancelAuctionRequest(user.getId(), sessionId);
+
+            SellerCancelAuctionResponse response = socket.sendRequestAndWait(request, SellerCancelAuctionResponse.class);
+
+            if (!response.isSuccess()) {
+                throw new RuntimeException(response.getMessage());
+            }
+
+            return response.getItemDTO();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Cancel auction failed: " + e.getMessage(), e);
         }
     }
 }

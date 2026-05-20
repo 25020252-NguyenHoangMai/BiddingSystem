@@ -24,7 +24,6 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -53,6 +52,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private XYChart.Series<String, Number> priceSeries;
     private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
+    private static final String EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER = "AUCTION_END_TIME_UPDATED_BY_SELLER";
+    private static final String EVENT_AUCTION_CANCELED_BY_SELLER = "AUCTION_CANCELED_BY_SELLER";
+    private static final String EVENT_AUCTION_CANCELED_BY_ADMIN = "AUCTION_CANCELED_BY_ADMIN";
 
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
@@ -298,7 +301,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         // Lọc đúng session đang xem
         if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
 
-        if ("ITEM_UPDATED_BY_SELLER".equals(update.getMessage())) {
+        if (EVENT_ITEM_UPDATED_BY_SELLER.equals(update.getMessage())) {
             reloadAuctionDetail(update.getSessionId());
             return;
         }
@@ -329,8 +332,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     update.getStatus());
             updateBidHint(update.getMinimumNextBid());
 
-            addBidHistoryEntry(update);
-            updateRealtimeChart(update);
+            if (isBidEvent(update)) {
+                addBidHistoryEntry(update);
+                updateRealtimeChart(update);
+            }
             updateBalanceLabel();
         });
     }
@@ -866,6 +871,12 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean isBidEvent(BidUpdateResponse update) {
+        return update.getBidderUsername() != null
+                && !update.getBidderUsername().isBlank()
+                && update.getBidAmount() != null;
     }
 
     @FXML
