@@ -56,7 +56,7 @@
 
         <Button maxWidth="Infinity" onAction="#handleEditProfile" text="Edit Profile" />
 
-        <Button maxWidth="Infinity" onAction="#handleTransactionHistory" text="Transaction History" />
+        <Button maxWidth="Infinity" onAction="#handleSessionHistory" text="Session History" />
 
         <Button fx:id="btnEnableSeller" maxWidth="Infinity" onAction="#handleEnableSeller" style="-fx-background-color: #27ae60;" text="Enable Seller" textFill="WHITE" />
 
