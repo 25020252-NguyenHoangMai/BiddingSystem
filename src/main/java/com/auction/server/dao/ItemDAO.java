@@ -24,6 +24,7 @@ public class ItemDAO {
         data.setMileage(rs.getInt("mileage"));
         data.setBrand(rs.getString("brand"));
         data.setArtist(rs.getString("artist"));
+        data.setImagePath(rs.getString("imagePath"));
         return data;
     }
 
@@ -53,7 +54,7 @@ public class ItemDAO {
 
     //=============== thêm sản phẩm ===============
     public void insertItem(Connection conn, Item item) {
-        String sql = "INSERT INTO Item (id, name, description, itemType, sellerId, startingPrice, model, engineType, mileage, brand, artist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Item (id, name, description, itemType, sellerId, startingPrice, model, engineType, mileage, brand, artist, imagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, item.getId());
@@ -85,6 +86,8 @@ public class ItemDAO {
             else {
                 throw new AuctionException("Invalid item type.");
             }
+
+            ps.setString(12, item.getImagePath());
             ps.executeUpdate();
         }
         catch (SQLException e) {
@@ -112,7 +115,7 @@ public class ItemDAO {
 
     //=============== cập nhật thông tin sản phẩm ===============
     public void updateItem(Connection conn, Item item) {
-        String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?, model = ?, engineType = ?, mileage = ?, brand = ?, artist = ? WHERE id = ?";
+        String sql = "UPDATE Item SET name = ?, description = ?, itemType = ?, startingPrice = ?, model = ?, engineType = ?, mileage = ?, brand = ?, artist = ?, imagePath = ? WHERE id = ?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, item.getName());
@@ -146,7 +149,8 @@ public class ItemDAO {
             else {
                 throw new AuctionException("Inavlid item type.");
             }
-            ps.setString(10, item.getId());
+            ps.setString(10, item.getImagePath());
+            ps.setString(11, item.getId());
             ps.executeUpdate();
         }
         catch (SQLException e) {
