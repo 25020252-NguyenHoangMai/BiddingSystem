@@ -18,10 +18,6 @@
 
         <VBox spacing="3.0">
             <HBox spacing="5">
-                <Label text="Product ID:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
-                <Label fx:id="lblProductID" text="SP-101-LONG-ID-EXAMPLE" style="-fx-font-family: 'Monospaced';" />
-            </HBox>
-            <HBox spacing="5">
                 <Label text="Session ID:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
                 <Label fx:id="lblSessionID" text="PH-999-LONG-ID-EXAMPLE" style="-fx-font-family: 'Monospaced';" />
             </HBox>
