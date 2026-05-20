@@ -4,8 +4,10 @@ import com.auction.client.network.ClientSocket;
 import com.auction.dto.ItemDTO;
 import com.auction.request.AddItemRequest;
 import com.auction.request.GetAllItemsRequest;
+import com.auction.request.GetItemImageRequest;
 import com.auction.response.AddItemResponse;
 import com.auction.response.GetAllItemsResponse;
+import com.auction.response.GetItemImageResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +51,10 @@ public class ProductService {
             // 1. Lấy kết nối Socket
             socket.connect();
 
-            AddItemRequest request = new AddItemRequest(item.getSellerId(), item, item.getDurationHours());
+            byte[] imageBytes = item.getImageBytes();
+            String imageFileName = item.getImageFileName();
+
+            AddItemRequest request = new AddItemRequest(item.getSellerId(), item, item.getDurationHours(), imageBytes, imageFileName);
 
             AddItemResponse response =
                     socket.sendRequestAndWait(
@@ -75,6 +80,26 @@ public class ProductService {
             e.printStackTrace();
 
             throw new RuntimeException("Lỗi thêm sản phẩm: " + e.getMessage(), e);
+        }
+    }
+
+    public byte[] getItemImage(String imagePath) {
+        ClientSocket socket = ClientSocket.getInstance();
+
+        try {
+            GetItemImageRequest request = new GetItemImageRequest(imagePath);
+
+            GetItemImageResponse response = socket.sendRequestAndWait(request, GetItemImageResponse.class);
+
+            if (!response.isSuccess()) {
+                return null;
+            }
+
+            return response.getImageBytes();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

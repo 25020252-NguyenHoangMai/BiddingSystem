@@ -32,6 +32,8 @@ public class ItemDTO implements Serializable {
     private String gemstone;
     private String weight;
     private String imagePath;
+    private byte[] imageBytes;
+    private String imageFileName;
 
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
@@ -248,5 +250,13 @@ public class ItemDTO implements Serializable {
     public String getImagePath() { return imagePath; }
 
     public void setImagePath(String imagePath) { this.imagePath = imagePath;}
+
+    public byte[] getImageBytes() { return imageBytes; }
+
+    public void setImageBytes(byte[] imageBytes) { this.imageBytes = imageBytes; }
+
+    public String getImageFileName() { return imageFileName; }
+
+    public void setImageFileName(String imageFileName) { this.imageFileName = imageFileName;}
 
 }

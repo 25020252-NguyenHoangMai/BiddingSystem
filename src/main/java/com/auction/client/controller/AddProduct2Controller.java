@@ -22,7 +22,6 @@ import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.nio.file.*;
-import java.util.UUID;
 
 public class AddProduct2Controller {
 
@@ -202,26 +201,10 @@ public class AddProduct2Controller {
         }
 
         if (selectedImageFile != null) {
-            Path dir = Paths.get("product_images");
+            byte[] imageBytes = Files.readAllBytes(selectedImageFile.toPath());
 
-            Files.createDirectories(dir);
-
-            String ext = selectedImageFile.getName().substring(
-                            selectedImageFile.getName().lastIndexOf('.')
-                    );
-
-            String fileName = UUID.randomUUID() + ext;
-
-            Path dest = dir.resolve(fileName);
-
-            Files.copy(
-                    selectedImageFile.toPath(),
-                    dest,
-                    StandardCopyOption.REPLACE_EXISTING
-            );
-
-            item.setImagePath(dest.toString());
-            System.out.println("IMAGE PATH = " + dest);
+            item.setImageBytes(imageBytes);
+            item.setImageFileName(selectedImageFile.getName());
         }
 
         return item;

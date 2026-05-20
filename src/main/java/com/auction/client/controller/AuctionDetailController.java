@@ -23,6 +23,7 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.text.NumberFormat;
 import java.time.Instant;
@@ -847,18 +848,22 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private void loadProductImage(String imagePath) {
         try {
             if (imagePath == null || imagePath.isBlank()) {
-                System.out.println("NOT FOUND: " + imagePath);
                 return;
             }
 
-            File file = new File(imagePath);
+            ProductService productService = ProductService.getInstance();
 
-            if (!file.exists()) { return;}
-            Image image = new Image(file.toURI().toString(), 380, 260, true, true);
+            byte[] imageBytes = productService.getItemImage(imagePath);
+
+            if (imageBytes == null || imageBytes.length == 0) {
+                return;
+            }
+
+            Image image = new Image(new ByteArrayInputStream(imageBytes), 380, 260, true, true);
 
             productImageView.setImage(image);
-        }
-        catch (Exception e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
