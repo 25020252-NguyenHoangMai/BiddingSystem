@@ -14,7 +14,7 @@ public class Art extends Item {
     }
 
     public Art(String id, String name, String description, String sellerID, String imagePath, double startingPrice, String artist) {
-        super(id, name, description, "ART", sellerID, imagePath, startingPrice);
+        super(id, name, description, imagePath, "ART", sellerID, startingPrice);
         this.artist = artist;
     }
 

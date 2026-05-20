@@ -12,20 +12,20 @@ public abstract class Item extends Entity {
 
     public Item() { super(); }
 
-    public Item(String id, String name, String sellerId, String imagePath){
+    public Item(String id, String name, String imagePath, String sellerId){
         super(id);
         this.name = name;
-        this.sellerId = sellerId;
         this.imagePath = imagePath;
+        this.sellerId = sellerId;
     }
 
-    public Item(String id, String name, String description, String itemType, String sellerId, String imagePath, double startingPrice) {
+    public Item(String id, String name, String description, String imagePath, String itemType, String sellerId, double startingPrice) {
         super(id);
         this.name = name;
         this.description = description;
+        this.imagePath = imagePath;
         this.itemType = itemType;
         this.sellerId = sellerId;
-        this.imagePath = imagePath;
         this.startingPrice = startingPrice;
     }
 
