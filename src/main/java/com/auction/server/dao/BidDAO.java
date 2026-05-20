@@ -26,10 +26,6 @@ public class BidDAO {
     public void insertBid(Connection conn, BidTransaction bid) {
 
         String sql = "INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime) VALUES (?, ?, ?, ?, ?)";
-//        String sql = """
-//            INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
-//            VALUES (?, ?, ?, ?, SYSDATETIME())
-//        """;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, bid.getId());
@@ -45,15 +41,14 @@ public class BidDAO {
         }
     }
 
-    public BidTransaction getHighestBid(String sessionId) {
+    public BidTransaction getHighestBid(Connection conn, String sessionId) {
         String sql = """
         SELECT TOP 1 id, sessionId, bidderId, bidAmount, bidTime
         FROM BidTransaction
         WHERE sessionId = ?
         ORDER BY bidAmount DESC, bidTime DESC;
     """;
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
 
             ResultSet rs = ps.executeQuery();
@@ -67,7 +62,7 @@ public class BidDAO {
         }
     }
 
-    public List<BidTransaction> getBidsBySession(String sessionId) {
+    public List<BidTransaction> getBidsBySession(Connection conn, String sessionId) {
         String sql = """
         SELECT id, sessionId, bidderId, bidAmount, bidTime
         FROM BidTransaction
@@ -77,8 +72,7 @@ public class BidDAO {
 
         List<BidTransaction> list = new ArrayList<>();
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, sessionId);
 
             ResultSet rs = ps.executeQuery();
@@ -93,20 +87,18 @@ public class BidDAO {
         return list;
     }
 
-    public List<BidTransaction> getBidsByBidder(String sessionId, String bidderId) {
+    public List<BidTransaction> getBidsByBidder(Connection conn, String bidderId) {
         String sql = """
         SELECT id, sessionId, bidderId, bidAmount, bidTime
         FROM BidTransaction
-        WHERE sessionId = ? AND bidderId = ?
+        WHERE bidderId = ?
         ORDER BY bidTime DESC
     """;
 
         List<BidTransaction> list = new ArrayList<>();
 
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, sessionId);
-            ps.setString(2, bidderId);
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, bidderId);
 
             ResultSet rs = ps.executeQuery();
 
@@ -120,92 +112,4 @@ public class BidDAO {
 
         return list;
     }
-
-//    public boolean placeBidAtomically(String sessionId, String bidderId, double bidAmount) {
-//
-//        String selectSessionForUpdate = """
-//        SELECT currentPrice, currentWinnerId, status
-//        FROM AuctionSession WITH (UPDLOCK, ROWLOCK)
-//        WHERE id = ?
-//    """;
-//
-//        String updateSession = """
-//        UPDATE AuctionSession
-//        SET currentPrice = ?, currentWinnerId = ?
-//        WHERE id = ?
-//    """;
-//
-////        String insertBid = """
-////        INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
-////        VALUES (?, ?, ?, ?, ?)
-////    """;
-//
-//        String insertBid = """
-//            INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime)
-//            VALUES (?, ?, ?, ?, SYSDATETIME())
-//        """;
-//
-//        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
-//
-//            conn.setAutoCommit(false);
-//
-//            try (
-//                    PreparedStatement psSelect = conn.prepareStatement(selectSessionForUpdate);
-//                    PreparedStatement psUpdate = conn.prepareStatement(updateSession);
-//                    PreparedStatement psInsert = conn.prepareStatement(insertBid)
-//            ) {
-//
-//                //lock row
-//                psSelect.setString(1, sessionId);
-//                ResultSet rs = psSelect.executeQuery();
-//
-//                if (!rs.next()) {
-//                    throw new AuctionException("Auction session not found");
-//                }
-//
-//                double currentPrice = rs.getDouble("currentPrice");
-//                String currentWinnerId = rs.getString("currentWinnerId");
-//                String status = rs.getString("status");
-//
-//                if (!"RUNNING".equalsIgnoreCase(status)) return false;
-//                if (bidAmount <= currentPrice) return false;
-//                if (bidderId.equals(currentWinnerId)) return false;
-//
-//                psUpdate.setDouble(1, bidAmount);
-//                psUpdate.setString(2, bidderId);
-//                psUpdate.setString(3, sessionId);
-//
-//                int updated = psUpdate.executeUpdate();
-//                if (updated == 0) {
-//                    throw new AuctionException("Failed to update session.");
-//                }
-//
-//                BidTransaction bid = new BidTransaction(
-//                        java.util.UUID.randomUUID().toString(),
-//                        sessionId,
-//                        bidderId,
-//                        bidAmount
-//                );
-////                bid.setBidTime(LocalDateTime.now());
-//
-//                psInsert.setString(1, bid.getId());
-//                psInsert.setString(2, bid.getSessionId());
-//                psInsert.setString(3, bid.getBidderId());
-//                psInsert.setDouble(4, bid.getBidAmount());
-////                psInsert.setTimestamp(5, Timestamp.valueOf(bid.getBidTime()));
-//
-//                psInsert.executeUpdate();
-//
-//                conn.commit();
-//                return true;
-//
-//            } catch (Exception e) {
-//                conn.rollback();
-//                throw e;
-//            }
-//
-//        } catch (SQLException e) {
-//            throw new AuctionException("Atomic bid placement failed: " + e.getMessage());
-//        }
-//    }
 }
