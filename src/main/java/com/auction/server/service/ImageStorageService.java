@@ -45,9 +45,14 @@ public class ImageStorageService {
             return null;
         }
 
-        File file = new File(imagePath);
+        File uploadDir = new File(UPLOAD_DIR).getCanonicalFile();
+        File file = new File(imagePath).getCanonicalFile();
 
-        if (!file.exists()) {
+        if (!file.getPath().startsWith(uploadDir.getPath())) {
+            throw new SecurityException("Invalid image path");
+        }
+
+        if (!file.exists() || !file.isFile()) {
             return null;
         }
 
