@@ -9,6 +9,7 @@ import com.auction.response.*;
 import com.auction.server.factory.ItemFromDTOFactory;
 import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
+import com.auction.server.service.ImageStorageService;
 import com.auction.server.service.ItemService;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
@@ -28,13 +29,16 @@ public class ItemController {
     private final SessionService sessionService;
     private final DashboardWatchRegistry dashboardWatchRegistry;
     private final SessionWatchRegistry sessionWatchRegistry;
+    private final ImageStorageService imageStorageService;
 
     public ItemController(ItemService itemService, SessionService sessionService,
-                          DashboardWatchRegistry dashboardWatchRegistry, SessionWatchRegistry sessionWatchRegistry) {
+                          DashboardWatchRegistry dashboardWatchRegistry, SessionWatchRegistry sessionWatchRegistry,
+                          ImageStorageService imageStorageService) {
         this.itemService = itemService;
         this.sessionService = sessionService;
         this.dashboardWatchRegistry = dashboardWatchRegistry;
         this.sessionWatchRegistry = sessionWatchRegistry;
+        this.imageStorageService = imageStorageService;
     }
 
     public GetAllItemsResponse getAllItems(GetAllItemsRequest request) {
@@ -63,6 +67,13 @@ public class ItemController {
             }
 
             ItemDTO requestItem = request.getItem();
+
+            String imagePath = imageStorageService.saveItemImage(
+                    request.getImageBytes(),
+                    request.getImageFileName()
+            );
+
+            requestItem.setImagePath(imagePath);
 
             LocalDateTime startTime = toLocalDateTime(requestItem.getStartTimeMillis(), "Auction start time");
 
@@ -322,5 +333,25 @@ public class ItemController {
         );
 
         sessionWatchRegistry.broadcastBidUpdate(item.getSessionId(), update);
+    }
+
+    public GetItemImageResponse getItemImage(GetItemImageRequest request) {
+        try {
+            if (request == null) {
+                return new GetItemImageResponse(false, "Request cannot be null", null);
+            }
+
+            byte[] imageBytes = imageStorageService.readImage(request.getImagePath());
+
+            if (imageBytes == null) {
+                return new GetItemImageResponse(false, "Image not found", null);
+            }
+
+            return new GetItemImageResponse(true, "Get image successfully", imageBytes);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new GetItemImageResponse(false, "Get image failed: " + e.getMessage(), null);
+        }
     }
 }
