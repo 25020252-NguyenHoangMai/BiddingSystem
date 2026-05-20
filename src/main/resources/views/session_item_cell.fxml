@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #eeeeee; -fx-border-width: 0 0 1 0;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+
+    <StackPane style="-fx-border-color: #ddd; -fx-border-radius: 5; -fx-padding: 2;">
+        <ImageView fx:id="imgProduct" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="false">
+            <Image url="@../../images/placeholder.png" />
+        </ImageView>
+    </StackPane>
+
+    <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+        <Label fx:id="lblProductName" text="Product Name" wrapText="true" style="-fx-font-weight: bold; -fx-font-size: 18px;" />
+
+        <VBox spacing="3.0">
+            <HBox spacing="5">
+                <Label text="Product ID:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
+                <Label fx:id="lblProductID" text="SP-101-LONG-ID-EXAMPLE" style="-fx-font-family: 'Monospaced';" />
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Session ID:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
+                <Label fx:id="lblSessionID" text="PH-999-LONG-ID-EXAMPLE" style="-fx-font-family: 'Monospaced';" />
+            </HBox>
+            <HBox spacing="5">
+                <Label text="Product Type:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
+                <Label fx:id="lblProductType" text="Electronics / Smartphones" style="-fx-font-style: italic; -fx-text-fill: #555;" />
+            </HBox>
+        </VBox>
+
+        <HBox spacing="5">
+            <Label text="Seller:" style="-fx-text-fill: #777;" />
+            <Label fx:id="lblSellerInfo" text="username (fullname)" style="-fx-font-weight: bold;" />
+        </HBox>
+
+        <Separator prefWidth="200.0" />
+
+        <VBox spacing="5.0">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Your Latest Bid:" minWidth="110.0" style="-fx-font-size: 13px; -fx-text-fill: #555;" />
+                <Label fx:id="lblUserLastBid" text="0 $" style="-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 14px;" />
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="Current Price:" minWidth="110.0" style="-fx-font-size: 13px; -fx-text-fill: #555;" />
+                <Label fx:id="lblCurrentPrice" text="0 $" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 14px;" />
+            </HBox>
+        </VBox>
+    </VBox>
+
+    <VBox alignment="TOP_RIGHT" spacing="15.0" minWidth="180.0">
+        <VBox alignment="TOP_RIGHT" spacing="5">
+            <Label text="Last bid at:" style="-fx-font-size: 10px; -fx-text-fill: #999;" />
+            <Label fx:id="lblLastBidTime" text="21/05/2026 14:30" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #444;" />
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS" />
+
+        <Button fx:id="btnGoDetail" mnemonicParsing="false" prefHeight="35.0" prefWidth="140.0"
+                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="VIEW DETAIL" />
+
+        <Label fx:id="lblStatusTag" text="RUNNING"
+               style="-fx-font-size: 11px; -fx-padding: 4 12; -fx-background-color: #e1f5fe; -fx-text-fill: #01579b; -fx-background-radius: 20; -fx-font-weight: bold;" />
+    </VBox>
+</HBox>
