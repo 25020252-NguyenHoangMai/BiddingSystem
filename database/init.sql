@@ -1,6 +1,6 @@
 USE [master]
 GO
-/****** Object:  Database [BiddingSystem]    Script Date: 5/19/2026 3:52:08 PM ******/
+/****** Object:  Database [BiddingSystem]    Script Date: 5/20/2026 3:30:50 PM ******/
 CREATE DATABASE [BiddingSystem]
  CONTAINMENT = NONE
  ON  PRIMARY
@@ -82,7 +82,7 @@ ALTER DATABASE [BiddingSystem] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLE
 GO
 USE [BiddingSystem]
 GO
-/****** Object:  Table [dbo].[AuctionSession]    Script Date: 5/19/2026 3:52:09 PM ******/
+/****** Object:  Table [dbo].[AuctionSession]    Script Date: 5/20/2026 3:30:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -101,7 +101,7 @@ CREATE TABLE [dbo].[AuctionSession](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[AutoBid]    Script Date: 5/19/2026 3:52:09 PM ******/
+/****** Object:  Table [dbo].[AutoBid]    Script Date: 5/20/2026 3:30:50 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -120,7 +120,7 @@ CREATE TABLE [dbo].[AutoBid](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[BidTransaction]    Script Date: 5/19/2026 3:52:09 PM ******/
+/****** Object:  Table [dbo].[BidTransaction]    Script Date: 5/20/2026 3:30:50 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -137,7 +137,7 @@ CREATE TABLE [dbo].[BidTransaction](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[Item]    Script Date: 5/19/2026 3:52:09 PM ******/
+/****** Object:  Table [dbo].[Item]    Script Date: 5/20/2026 3:30:50 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -154,13 +154,14 @@ CREATE TABLE [dbo].[Item](
     [mileage] [int] NULL,
     [brand] [nvarchar](max) NULL,
     [artist] [nvarchar](max) NULL,
+    [imagePath] [nvarchar](500) NULL,
     CONSTRAINT [PK_Item] PRIMARY KEY CLUSTERED
 (
 [id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[Users]    Script Date: 5/19/2026 3:52:09 PM ******/
+/****** Object:  Table [dbo].[Users]    Script Date: 5/20/2026 3:30:50 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -186,7 +187,7 @@ CREATE TABLE [dbo].[Users](
     GO
     SET ANSI_PADDING ON
     GO
-/****** Object:  Index [IX_AutoBid]    Script Date: 5/19/2026 3:52:09 PM ******/
+/****** Object:  Index [IX_AutoBid]    Script Date: 5/20/2026 3:30:50 PM ******/
 CREATE UNIQUE NONCLUSTERED INDEX [IX_AutoBid] ON [dbo].[AutoBid]
 (
 	[bidderId] ASC,
