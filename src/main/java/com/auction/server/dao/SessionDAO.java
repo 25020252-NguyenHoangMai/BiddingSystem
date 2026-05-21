@@ -1,6 +1,8 @@
 package com.auction.server.dao;
 
 import com.auction.dto.ItemDTO;
+import com.auction.dto.SellerHistoryItemDTO;
+import com.auction.dto.SessionHistoryItemDTO;
 import com.auction.exception.AuctionException;
 import com.auction.model.AuctionSession;
 import com.auction.model.Item;
@@ -51,6 +53,30 @@ public class SessionDAO {
         session.setStatus(status);
 
         return session;
+    }
+
+
+    private SellerHistoryItemDTO mapToSessionHistoryItemDTOForSeller(ResultSet rs) throws SQLException {
+        SellerHistoryItemDTO dto = new SellerHistoryItemDTO();
+
+        dto.setSessionId(rs.getString("sessionId"));
+        dto.setProductName(rs.getString("productName"));
+        dto.setProductType(rs.getString("productType"));
+        dto.setTotalBidsReceived(rs.getInt("totalBidsReceived"));
+        dto.setStartingPrice(rs.getDouble("startingPrice"));
+        dto.setCurrentPrice(rs.getDouble("currentPrice"));
+        Timestamp startTime = rs.getTimestamp("startTime");
+        if (startTime != null) {
+            dto.setStartTimeMillis(startTime.getTime());
+        }
+        Timestamp endTime = rs.getTimestamp("endTime");
+        if (endTime != null) {
+            dto.setEndTimeMillis(endTime.getTime());
+        }
+        dto.setStatus(rs.getString("status"));
+        dto.setImagePath(rs.getString("imagePath"));
+
+        return dto;
     }
 
     public void insertSession(Connection conn, AuctionSession session, Item item) {
@@ -326,5 +352,47 @@ public class SessionDAO {
         }
 
         return list;
+    }
+
+
+    public List<SellerHistoryItemDTO> getSessionHistoryBySeller(Connection conn, String sellerId) {
+        String sql = """
+        SELECT
+            s.id AS sessionId,
+            i.name AS productName,
+            i.itemType AS productType,
+            i.sellerId AS sellerId,
+            seller.username AS sellerUsername,
+            seller.fullName AS sellerFullName,
+            
+            s.startingPrice AS startingPrice,
+            s.currentPrice AS currentPrice,
+            s.endTime AS endTime,
+            
+            (SELECT COUNT(*) FROM BidTransaction bt WHERE bt.sessionId = s.id) AS totalBids,
+            
+            s.status AS status,
+            i.imagePath AS imagePath
+        FROM AuctionSession s
+        JOIN Item i ON i.id = s.itemId
+        JOIN Users seller ON seller.id = i.sellerId
+        WHERE i.sellerId = ?
+        ORDER BY s.startTime DESC
+    """;
+
+        List<SellerHistoryItemDTO> list = new ArrayList<>();
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sellerId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToSessionHistoryItemDTOForSeller(rs));
+                }
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting seller session history: " + e.getMessage());
+        }
     }
 }
