@@ -1,6 +1,7 @@
 package com.auction.server.controller;
 
 import com.auction.dto.BidHistoryEntryDTO;
+import com.auction.dto.SessionHistoryItemDTO;
 import com.auction.dto.UserSessionDTO;
 import com.auction.exception.InsufficientBalanceException;
 import com.auction.exception.InvalidBidException;
@@ -9,12 +10,10 @@ import com.auction.model.BidTransaction;
 import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.request.GetBidHistoryRequest;
+import com.auction.request.GetSessionHistoryRequest;
 import com.auction.request.PlaceBidRequest;
 import com.auction.request.SetAutoBidRequest;
-import com.auction.response.BidUpdateResponse;
-import com.auction.response.GetBidHistoryResponse;
-import com.auction.response.PlaceBidResponse;
-import com.auction.response.SetAutoBidResponse;
+import com.auction.response.*;
 import com.auction.server.dao.BidDAO;
 import com.auction.server.realtime.SessionWatchRegistry;
 import com.auction.server.service.*;
@@ -272,6 +271,30 @@ public class BiddingController {
         } catch (Exception e) {
             e.printStackTrace();
             return new GetBidHistoryResponse(false, "Get bid history failed: " + e.getMessage(), List.of());
+        }
+    }
+
+    public GetSessionHistoryResponse getSessionHistory(GetSessionHistoryRequest request) {
+        try {
+            if (request == null || request.getUserId() == null || request.getUserId().isBlank()) {
+                return new GetSessionHistoryResponse(false, "User ID is required", List.of());
+            }
+
+            List<SessionHistoryItemDTO> sessions =  bidHistoryService.getSessionHistory(request.getUserId());
+
+            return new GetSessionHistoryResponse(
+                    true,
+                    "Get session history successfully",
+                    sessions
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new GetSessionHistoryResponse(
+                    false,
+                    "Get session history failed: " + e.getMessage(),
+                    List.of()
+            );
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.auction.server.service;
 
 import com.auction.dto.BidHistoryEntryDTO;
+import com.auction.dto.SessionHistoryItemDTO;
 import com.auction.exception.AuctionException;
 import com.auction.model.BidTransaction;
 import com.auction.model.User;
@@ -73,6 +74,18 @@ public class BidHistoryService {
             return user.getUsername();
         } catch (Exception e) {
             return "Unknown";
+        }
+    }
+
+    public List<SessionHistoryItemDTO> getSessionHistory(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            return bidDAO.getSessionHistoryByBidder(conn, userId);
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to load session history: " + e.getMessage());
         }
     }
 }
