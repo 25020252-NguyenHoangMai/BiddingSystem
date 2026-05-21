@@ -7,6 +7,7 @@ import com.auction.model.User;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
 
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -17,6 +18,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class SessionService { // Quản lí phiên đấu giá
+    private static final String SESSION_ID_PREFIX = "SS-";
+    private static final String SESSION_ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int SESSION_ID_LENGTH = 8;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     public static final String STATUS_OPEN = "OPEN";
     public static final String STATUS_RUNNING = "RUNNING";
     public static final String STATUS_FINISHED = "FINISHED";
@@ -63,7 +69,7 @@ public class SessionService { // Quản lí phiên đấu giá
                     throw new IllegalArgumentException("This item already has an OPEN or RUNNING auction session");
                 }
 
-                String sessionId = UUID.randomUUID().toString();
+                String sessionId = generateSessionId(conn);
                 AuctionSession session = new AuctionSession(sessionId, item, start, end);
 
                 sessionDAO.insertSession(conn, session, item);
@@ -89,6 +95,29 @@ public class SessionService { // Quản lí phiên đấu giá
 
             throw new AuctionException("Create auction session failed: " + e.getMessage());
         }
+    }
+
+    private String generateSessionId(Connection conn) {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            String sessionId = SESSION_ID_PREFIX + randomCode(SESSION_ID_LENGTH);
+
+            if (sessionDAO.getSessionById(conn, sessionId) == null) {
+                return sessionId;
+            }
+        }
+
+        throw new AuctionException("Cannot generate unique session id.");
+    }
+
+    private String randomCode(int length) {
+        StringBuilder code = new StringBuilder(length);
+
+        for (int i = 0; i < length; i++) {
+            int index = RANDOM.nextInt(SESSION_ID_CHARS.length());
+            code.append(SESSION_ID_CHARS.charAt(index));
+        }
+
+        return code.toString();
     }
 
     public AuctionSession getSession(String sessionId) {

@@ -10,6 +10,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -40,6 +41,8 @@ public class AddProduct2Controller {
     private final Map<String, TextField> fields = new LinkedHashMap<>();
     private final ProductService service = ProductService.getInstance();
     private volatile boolean submitting;
+    private ItemDTO editingItem;
+    private boolean editMode;
 
     private final Map<String, String[]> categoryFields = Map.of(
             "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
@@ -79,34 +82,40 @@ public class AddProduct2Controller {
 
     @FXML
     private void handleCategoryChange(ActionEvent event) {
+        rebuildDynamicFields(cbCategory.getValue());
+    }
+
+    private void rebuildDynamicFields(String category) {
         dynamicFields.getChildren().clear();
         fields.clear();
 
-        String cat = cbCategory.getValue();
-        if (cat == null) {
+        if (category == null) {
             dynamicFields.setVisible(false);
             dynamicFields.setManaged(false);
             return;
         }
 
-        String[] fieldNames = categoryFields.get(cat);
-        if (fieldNames != null) {
-            for (String n : fieldNames) {
-                Label label = new Label(n + ":");
-                label.setStyle("-fx-font-weight: bold;");
-                TextField tf = new TextField();
-                tf.setPromptText("Enter " + n.toLowerCase());
+        String[] fieldNames = categoryFields.get(category);
 
-                dynamicFields.getChildren().addAll(label, tf);
-                fields.put(n, tf);
-            }
-            dynamicFields.setVisible(true);
-            dynamicFields.setManaged(true);
-        }
-        else {
+        if (fieldNames == null) {
             dynamicFields.setVisible(false);
             dynamicFields.setManaged(false);
+            return;
         }
+
+        for (String name : fieldNames) {
+            Label label = new Label(name + ":");
+            label.setStyle("-fx-font-weight: bold;");
+
+            TextField tf = new TextField();
+            tf.setPromptText("Enter " + name.toLowerCase());
+
+            dynamicFields.getChildren().addAll(label, tf);
+            fields.put(name, tf);
+        }
+
+        dynamicFields.setVisible(true);
+        dynamicFields.setManaged(true);
     }
 
     @FXML
@@ -130,11 +139,39 @@ public class AddProduct2Controller {
         Task<ItemDTO> task = new Task<>() {
             @Override
             protected ItemDTO call() throws Exception {
-                return service.addProduct(item);
+                if (!editMode) {
+                    return service.addProduct(item);
+                }
+
+                if (editingItem == null) {
+                    throw new IllegalStateException("Editing item is missing.");
+                }
+
+                String status = editingItem.getSessionStatus();
+
+                if ("OPEN".equals(status)) {
+                    item.setId(editingItem.getId());
+                    item.setSessionId(editingItem.getSessionId());
+                    return service.updateProductBySeller(item);
+                }
+
+                if ("RUNNING".equals(status)) {
+                    return service.updateAuctionEndTimeBySeller(
+                            editingItem.getSessionId(),
+                            item.getEndTimeMillis()
+                    );
+                }
+
+                throw new IllegalStateException("This auction cannot be updated.");
             }
         };
 
         task.setOnSucceeded(e -> {
+            ItemDTO saved = task.getValue();
+            String message = editMode
+                    ? "Product '" + saved.getName() + "' updated!"
+                    : "Product '" + saved.getName() + "' posted!";
+
             Alert alert = new Alert(Alert.AlertType.INFORMATION, "Product '" + task.getValue().getName() + "' posted!");
             alert.showAndWait();
             close();
@@ -143,7 +180,7 @@ public class AddProduct2Controller {
         task.setOnFailed(e -> {
             submitting = false;
             btnSubmit.setDisable(false);
-            btnSubmit.setText("Post Auction");
+            btnSubmit.setText(editMode ? "Update Auction" : "Post Auction");
             errorLabel.setText(task.getException().getMessage());
             errorLabel.setVisible(true);
         });
@@ -207,6 +244,11 @@ public class AddProduct2Controller {
             item.setImageFileName(selectedImageFile.getName());
         }
 
+        if (editMode && editingItem != null) {
+            item.setId(editingItem.getId());
+            item.setSessionId(editingItem.getSessionId());
+        }
+
         return item;
     }
 
@@ -243,6 +285,148 @@ public class AddProduct2Controller {
 
             productPreviewImage.setImage(image);
         }
+    }
+
+    public void setEditingItem(ItemDTO item) {
+        if (item == null) {
+            return;
+        }
+
+        this.editingItem = item;
+        this.editMode = true;
+
+        fillFormForEdit(item);
+        applyEditPermissions(item);
+
+        btnSubmit.setText("Update Auction");
+    }
+
+    private void fillFormForEdit(ItemDTO item) {
+        txtName.setText(item.getName() != null ? item.getName() : "");
+        txtDescription.setText(item.getDescription() != null ? item.getDescription() : "");
+        txtPrice.setText(String.valueOf(item.getStartingPrice()));
+
+        String category = item.getItemType();
+
+        if (category != null && !category.isBlank()) {
+            String normalizedCategory = normalizeCategory(category);
+            cbCategory.setValue(normalizedCategory);
+            rebuildDynamicFields(normalizedCategory);
+            fillDynamicFields(item, normalizedCategory);
+        }
+
+        if (item.getStartTimeMillis() > 0) {
+            setDateTimeControls(
+                    item.getStartTimeMillis(),
+                    dpStartDate,
+                    spinStartHour,
+                    spinStartMin,
+                    spinStartSec
+            );
+        }
+
+        if (item.getEndTimeMillis() > 0) {
+            setDateTimeControls(
+                    item.getEndTimeMillis(),
+                    dpEndDate,
+                    spinEndHour,
+                    spinEndMin,
+                    spinEndSec
+            );
+        }
+    }
+
+    private void applyEditPermissions(ItemDTO item) {
+        String status = item.getSessionStatus();
+
+        if ("OPEN".equals(status)) {
+            txtName.setDisable(false);
+            txtDescription.setDisable(false);
+            txtPrice.setDisable(false);
+            cbCategory.setDisable(false);
+
+            dpStartDate.setDisable(false);
+            spinStartHour.setDisable(false);
+            spinStartMin.setDisable(false);
+            spinStartSec.setDisable(false);
+
+            dpEndDate.setDisable(false);
+            spinEndHour.setDisable(false);
+            spinEndMin.setDisable(false);
+            spinEndSec.setDisable(false);
+
+        } else if ("RUNNING".equals(status)) {
+            // RUNNING -> Chỉ cho phép kéo dài endTime (endTime mới > endTime cũ)
+            // Khóa các trường thông tin cơ bản và startTime
+            txtName.setDisable(true);
+            txtDescription.setDisable(true);
+            txtPrice.setDisable(true);
+            cbCategory.setDisable(true);
+
+            dpStartDate.setDisable(true);
+            spinStartHour.setDisable(true);
+            spinStartMin.setDisable(true);
+            spinStartSec.setDisable(true);
+
+            // Mở cho phép sửa endTime
+            dpEndDate.setDisable(false);
+            spinEndHour.setDisable(false);
+            spinEndMin.setDisable(false);
+            spinEndSec.setDisable(false);
+        }
+    }
+
+    private String normalizeCategory(String itemType) {
+        if (itemType == null || itemType.isBlank()) {
+            return null;
+        }
+
+        return switch (itemType.toUpperCase()) {
+            case "VEHICLE" -> "Vehicle";
+            case "ELECTRONICS" -> "Electronics";
+            case "ART" -> "Art";
+            default -> itemType;
+        };
+    }
+
+    private void fillDynamicFields(ItemDTO item, String category) {
+        switch (category) {
+            case "Vehicle" -> {
+                setFieldValue("Model", item.getModel());
+                setFieldValue("EngineType", item.getEngineType());
+                setFieldValue("Mileage", item.getMileage() > 0 ? String.valueOf(item.getMileage()) : "");
+            }
+            case "Electronics" -> setFieldValue("Brand", item.getBrand());
+            case "Art" -> setFieldValue("Artist", item.getArtist());
+            default -> {
+            }
+        }
+    }
+
+    private void setFieldValue(String key, String value) {
+        TextField field = fields.get(key);
+
+        if (field != null) {
+            field.setText(value != null ? value : "");
+        }
+    }
+
+    private void setDateTimeControls(
+            long millis,
+            DatePicker datePicker,
+            Spinner<Integer> hourSpinner,
+            Spinner<Integer> minuteSpinner,
+            Spinner<Integer> secondSpinner
+    ) {
+        LocalDateTime dateTime = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(millis),
+                ZoneId.systemDefault()
+        );
+
+        datePicker.setValue(dateTime.toLocalDate());
+        hourSpinner.getValueFactory().setValue(dateTime.getHour());
+        minuteSpinner.getValueFactory().setValue(dateTime.getMinute());
+        secondSpinner.getValueFactory().setValue(dateTime.getSecond());
     }
 
     @FXML private void handleCancel(ActionEvent event) { close(); }

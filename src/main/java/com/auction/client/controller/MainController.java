@@ -41,14 +41,12 @@ import javafx.util.Duration;
 public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== UI =====
-    @FXML
-    private Label welcomeLabel;
-    @FXML
-    private Label balanceLabel;
-    @FXML
-    private Button addBtn;
-    @FXML
-    private TextField searchField;
+    @FXML private Label welcomeLabel;
+    @FXML private Label balanceLabel;
+    @FXML private Button addBtn;
+    @FXML private Button updateBtn;
+    @FXML private Button cancelBtn;
+    @FXML private TextField searchField;
 
     @FXML
     private TableView<ItemDTO> tableAuctions;
@@ -535,6 +533,12 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         thread.setDaemon(true);
         thread.start();
     }
+
+    @FXML
+    private void handleUpdateProduct() {}
+
+    @FXML
+    private void handleCancelAuction() {}
 
     // Đòng hết tất cả màn hình khi log out
     private void closeChildStages() {
