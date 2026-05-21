@@ -23,6 +23,27 @@ public class BidDAO {
         return bid;
     }
 
+    private SessionHistoryItemDTO mapToSessionHistoryItemDTO(ResultSet rs) throws SQLException {
+        SessionHistoryItemDTO dto = new SessionHistoryItemDTO();
+
+        dto.setSessionId(rs.getString("sessionId"));
+        dto.setProductName(rs.getString("productName"));
+        dto.setProductType(rs.getString("productType"));
+        dto.setSellerId(rs.getString("sellerId"));
+        dto.setSellerUsername(rs.getString("sellerUsername"));
+        dto.setSellerFullName(rs.getString("sellerFullName"));
+        dto.setUserLastBid(rs.getDouble("userLastBid"));
+        dto.setCurrentPrice(rs.getDouble("currentPrice"));
+
+        Timestamp lastBidTime = rs.getTimestamp("lastBidTime");
+        dto.setLastBidTime(lastBidTime != null ? lastBidTime.toLocalDateTime() : null);
+
+        dto.setStatus(rs.getString("status"));
+        dto.setImagePath(rs.getString("imagePath"));
+
+        return dto;
+    }
+
     public void insertBid(Connection conn, BidTransaction bid) {
 
         String sql = "INSERT INTO BidTransaction (id, sessionId, bidderId, bidAmount, bidTime) VALUES (?, ?, ?, ?, ?)";
