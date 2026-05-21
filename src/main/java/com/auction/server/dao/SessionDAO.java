@@ -361,16 +361,11 @@ public class SessionDAO {
             s.id AS sessionId,
             i.name AS productName,
             i.itemType AS productType,
-            i.sellerId AS sellerId,
-            seller.username AS sellerUsername,
-            seller.fullName AS sellerFullName,
-            
-            s.startingPrice AS startingPrice,
+            i.startingPrice AS startingPrice,
             s.currentPrice AS currentPrice,
+            s.startTime AS startTime,
             s.endTime AS endTime,
-            
-            (SELECT COUNT(*) FROM BidTransaction bt WHERE bt.sessionId = s.id) AS totalBids,
-            
+            (SELECT COUNT(*) FROM BidTransaction bt WHERE bt.sessionId = s.id) AS totalBidsReceived,
             s.status AS status,
             i.imagePath AS imagePath
         FROM AuctionSession s
