@@ -10,6 +10,7 @@ public abstract class User extends Entity{
 
     public User() {
         super();
+        this.status = "ACTIVE";
     }
 
     public User(String id, String username, String password, String fullName, String role) {
