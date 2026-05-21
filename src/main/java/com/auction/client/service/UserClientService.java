@@ -17,29 +17,6 @@ public class UserClientService {
     public static UserClientService getInstance() { return INSTANCE; }
 
     // Lấy toàn bộ danh sách người dùng từ Server
-    public List<ItemDTO> getAllProducts() {
-        ClientSocket socket = ClientSocket.getInstance();
-
-        try {
-            GetAllItemsResponse response =
-                    socket.sendRequestAndWait(new GetAllItemsRequest(), GetAllItemsResponse.class);
-
-            if (!response.isSuccess()) {
-                throw new RuntimeException(response.getMessage());
-            }
-
-            return response.getItems() != null
-                    ? response.getItems()
-                    : new ArrayList<>();
-
-        } catch (Exception e) {
-            System.err.println("[ProductService] getAllProducts failed: " + e.getMessage());
-
-            throw new RuntimeException("Unable to load product list", e);
-        }
-    }
-
-    // Lấy toàn bộ danh sách người dùng từ Server
     public List<UserSessionDTO> getAllUsers() {
         ClientSocket socket = ClientSocket.getInstance();
 

@@ -1,7 +1,6 @@
 package com.auction.client.service;
 
 import com.auction.client.network.ClientSocket;
-import com.auction.client.service.AuctionService;
 import com.auction.response.BidUpdateResponse;
 import com.auction.response.SessionWatchResponse;
 

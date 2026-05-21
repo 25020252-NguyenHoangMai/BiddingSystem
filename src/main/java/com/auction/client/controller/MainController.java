@@ -453,21 +453,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         }
     }
 
-    private void updateAuctionTable(List<ItemDTO> items) {
-        auctionList.setAll(items);
-        tableAuctions.setItems(auctionList);
-
-        if (items.isEmpty()) {
-            tableAuctions.setPlaceholder(new Label("No item"));
-        }
-    }
-
-    private void handleLoadProductsError(Throwable ex) {
-        ex.printStackTrace();
-        tableAuctions.setPlaceholder(new Label("Fail to load data"));
-        showError("Cannot load data: " + ex.getMessage());
-    }
-
     private void setupRowClickToDetail() {
         tableAuctions.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
@@ -646,7 +631,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     private ItemDTO getSelectedAuction() {
         ItemDTO selected = tableAuctions.getSelectionModel().getSelectedItem();
 
-        if (selected != null) {
+        if (selected == null) {
             showError("Please select an item");
             return null;
         }

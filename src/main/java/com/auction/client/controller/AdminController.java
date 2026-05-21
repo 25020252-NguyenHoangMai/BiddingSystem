@@ -85,46 +85,44 @@ public class AdminController {
         });
     }
 
-    private void loadDataFromServer() {
-        itemTable.setPlaceholder(new javafx.scene.control.Label("Đang tải dữ liệu..."));
-        userTable.setPlaceholder(new javafx.scene.control.Label("Đang tải dữ liệu..."));
+    private record LoadResult(List<ItemDTO> products, List<UserSessionDTO> users) {}
 
-        Task<Void> task = new Task<>() {
+    private void loadDataFromServer() {
+        itemTable.setPlaceholder(new Label("Đang tải dữ liệu..."));
+        userTable.setPlaceholder(new Label("Đang tải dữ liệu..."));
+
+        Task<LoadResult> task = new Task<>() {
             @Override
-            protected Void call() throws Exception {
+            protected LoadResult call() throws Exception {
                 List<ItemDTO> products = productService.getAllProducts();
                 List<UserSessionDTO> users = userService.getAllUsers();
-
-                Platform.runLater(() -> {
-                    masterDataItems.setAll(products);
-                    masterDataUsers.setAll(users);
-
-                    if (products.isEmpty()) {
-                        itemTable.setPlaceholder(new javafx.scene.control.Label("Không có sản phẩm nào"));
-                    }
-                    if (users.isEmpty()) {
-                        userTable.setPlaceholder(new javafx.scene.control.Label("Không có người dùng nào"));
-                    }
-                });
-
-                return null;
+                return new LoadResult(products, users);
             }
         };
 
-        task.setOnFailed(e -> Platform.runLater(() -> {
-            itemTable.setPlaceholder(new javafx.scene.control.Label("Lỗi tải dữ liệu"));
-            userTable.setPlaceholder(new javafx.scene.control.Label("Lỗi tải dữ liệu"));
+        task.setOnSucceeded(e -> {
+            LoadResult r = task.getValue();
+            masterDataItems.setAll(r.products());
+            masterDataUsers.setAll(r.users());
+
+            if (r.products().isEmpty())
+                itemTable.setPlaceholder(new Label("Không có sản phẩm nào"));
+            if (r.users().isEmpty())
+                userTable.setPlaceholder(new Label("Không có người dùng nào"));
+        });
+
+        task.setOnFailed(e -> {
+            itemTable.setPlaceholder(new Label("Lỗi tải dữ liệu"));
+            userTable.setPlaceholder(new Label("Lỗi tải dữ liệu"));
 
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Lỗi");
             alert.setHeaderText(null);
             alert.setContentText("Lỗi khi tải dữ liệu: " + task.getException().getMessage());
             alert.show();
-        }));
+        });
 
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
+        runTask(task);
     }
 
     private void setupSearchFilters() {
@@ -226,9 +224,7 @@ public class AdminController {
                 err.show();
             }));
 
-            Thread thread = new Thread(task);
-            thread.setDaemon(true);
-            thread.start();
+            runTask(task);
         });
     }
 
@@ -304,9 +300,7 @@ public class AdminController {
                 err.show();
             }));
 
-            Thread thread = new Thread(task);
-            thread.setDaemon(true);
-            thread.start();
+            runTask(task);
         });
     }
 
@@ -338,6 +332,12 @@ public class AdminController {
                 err.show();
             }
         });
+    }
+
+    private <T> void runTask(Task<T> task) {
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 }
 

@@ -12,6 +12,7 @@ import javafx.scene.control.Label;
 
 import com.auction.client.ClientSession;
 import com.auction.response.LoginResponse;
+import javafx.stage.Stage;
 
 import java.util.ResourceBundle;
 
@@ -71,31 +72,15 @@ public class LoginController implements Initializable {
                 ClientSession.setCurrentUser(response.getUser());
 
                 String role = response.getUser().getRole();
+                Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
 
                 if ("ADMIN".equalsIgnoreCase(role)) {
-                    // Lấy stage hiện tại trước khi chuyển màn
-                    javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-
-                    com.auction.client.util.SceneUtil.changeScene(
-                            event,
-                            "/views/admin_dashboard.fxml",
-                            "Admin Dashboard"
-                    );
-                    if (stage != null) {
-                        stage.setMaximized(true);
-                    }
-
+                    com.auction.client.util.SceneUtil.changeScene(event, "/views/admin_dashboard.fxml", "Admin Dashboard");
                 } else {
-                    javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-                    com.auction.client.util.SceneUtil.changeScene(
-                            event,
-                            "/views/main.fxml",
-                            "Auction Dashboard"
-                    );
-                    if (stage != null) {
-                        stage.setMaximized(true);
-                    }
+                    com.auction.client.util.SceneUtil.changeScene(event, "/views/main.fxml", "Auction Dashboard");
                 }
+
+                stage.setMaximized(true);
             } else {
                 showError(response.getMessage());
             }
