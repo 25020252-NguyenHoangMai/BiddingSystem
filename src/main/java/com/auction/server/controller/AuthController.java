@@ -128,6 +128,7 @@ public class AuthController {
         dto.setUsername(user.getUsername());
         dto.setFullName(user.getFullName());
         dto.setRole(user.getRole());
+        dto.setStatus(user.getStatus());
 
         if (user instanceof Bidder bidder) {
             dto.setBalance(bidder.getBalance());

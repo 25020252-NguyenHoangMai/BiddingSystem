@@ -15,6 +15,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -54,13 +55,28 @@ public class ProfileController {
     private void refreshSellerUI(UserSessionDTO user) {
         boolean isSeller = user.isSellerEnabled();
 
-        // Nếu đã là Seller: ẩn nút, hiện Active Listings
-        btnEnableSeller.setVisible(!isSeller);
-        btnEnableSeller.setManaged(!isSeller);
+//        // Nếu đã là Seller: ẩn nút, hiện Active Listings
+//        btnEnableSeller.setVisible(!isSeller);
+//        btnEnableSeller.setManaged(!isSeller);
 
         // Label mô tả trạng thái role
         if (isSeller) {
+            btnEnableSeller.setVisible(true);
+            btnEnableSeller.setManaged(true);
+
             usernameLabel.setText("@" + user.getUsername() + " Seller");
+            btnEnableSeller.setText("Auctioned Products History");
+            btnEnableSeller.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 20; -fx-cursor: hand;");
+            btnEnableSeller.setOnAction(event -> navigateToSellerHistory());
+        } else {
+            usernameLabel.setText("@" + user.getUsername());
+
+            // Show the original "Enable Seller" button
+            btnEnableSeller.setVisible(true);
+            btnEnableSeller.setManaged(true);
+            btnEnableSeller.setText("Enable Seller");
+            btnEnableSeller.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-font-family: 'Segoe UI';\" text=\"Enable Seller");
+            btnEnableSeller.setOnAction(event -> handleEnableSeller());
         }
     }
 
@@ -110,7 +126,8 @@ public class ProfileController {
                 ok.setTitle("Thành công");
                 ok.setHeaderText(null);
                 ok.setContentText("Tài khoản đã được nâng cấp lên Seller!\n"
-                                + "Nút 'Add Product' đã xuất hiện ở màn hình chính."
+                                + "Nút 'Add Product' đã xuất hiện ở màn hình chính.\n"
+                                + "Auctioned Products History is available to see."
                 );
                 ok.showAndWait();
             });
@@ -132,6 +149,37 @@ public class ProfileController {
         });
     }
 
+    private void navigateToSellerHistory() {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/views/seller_history.fxml")
+            );
+
+            Parent root = loader.load();
+
+            SellerHistoryController controller = loader.getController();
+            if (controller != null) {
+                controller.loadSellerHistoryFromServer(ClientSession.getCurrentUser());
+            }
+
+            Stage stage = (Stage) avatarPane.getScene().getWindow();
+
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.setTitle("Auctioned Products History");
+            stage.centerOnScreen();
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Navigation Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Cannot open auctioned products screen.");
+            alert.showAndWait();
+        }
+    }
 
     @FXML
     private void handleEditProfile() {

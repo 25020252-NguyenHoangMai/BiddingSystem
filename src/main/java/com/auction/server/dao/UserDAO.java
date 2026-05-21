@@ -18,16 +18,16 @@ public class UserDAO {
         String password = rs.getString("password");
         String fullName = rs.getString("fullName");
         String role = rs.getString("role");
-        String status = rs.getString("status");
+
 
         if ("ADMIN".equalsIgnoreCase(role)) {
-            return new Admin(id, username, password, fullName, status);
+            return new Admin(id, username, password, fullName);
         } else if ("BIDDER".equalsIgnoreCase(role)) {
             double balance = rs.getDouble("balance");
             boolean sellerEnabled = rs.getBoolean("sellerEnabled");
             double reservedBalance = rs.getDouble("reservedBalance");
 
-            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance, reservedBalance, status);
+            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance, reservedBalance);
             bidder.setSellerEnabled(sellerEnabled);
             return bidder;
         }

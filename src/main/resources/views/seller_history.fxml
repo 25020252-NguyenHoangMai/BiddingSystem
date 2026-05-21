@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox prefHeight="600.0" prefWidth="1000.0" spacing="15.0" style="-fx-background-color: #f4f4f4;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SellerHistoryController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+
+    <!-- ===== HEADER BAR ===== -->
+    <HBox alignment="CENTER_LEFT" spacing="15.0">
+        <Button fx:id="btnBack" mnemonicParsing="false" style="-fx-background-radius: 20; -fx-cursor: hand;" text="← Back to Profile" />
+
+        <Label text="My Listed Products">
+            <font>
+                <Font name="System Bold" size="20.0" />
+            </font>
+        </Label>
+
+        <Region HBox.hgrow="ALWAYS" />
+
+        <HBox alignment="CENTER_RIGHT" spacing="10.0">
+            <!-- Category Filter -->
+            <MenuButton fx:id="menuItemType" prefWidth="140.0" text="All Categories" />
+
+            <!-- Search Bar -->
+            <HBox alignment="CENTER_RIGHT" spacing="0.0">
+                <TextField fx:id="txtSearch" prefWidth="250.0" promptText="Search by ID, Product Name..."
+                           style="-fx-background-radius: 15 0 0 15; -fx-border-color: #ccc; -fx-border-radius: 15 0 0 15;" />
+                <Button fx:id="btnSearch" mnemonicParsing="false" prefHeight="27.0"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 0 15 15 0; -fx-cursor: hand;" text="🔍 Search">
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </Button>
+            </HBox>
+        </HBox>
+    </HBox>
+
+    <Separator />
+
+    <!-- ===== SUB FILTER BAR ===== -->
+    <HBox alignment="CENTER_LEFT">
+        <MenuButton fx:id="menuFilterStatus" prefWidth="200.0" text="All Statuses" />
+    </HBox>
+
+    <!-- ===== LIST VIEW FOR PRODUCTS ===== -->
+    <ListView fx:id="listProducts" VBox.vgrow="ALWAYS" style="-fx-background-radius: 10; -fx-background-color: transparent;" />
+</VBox>
