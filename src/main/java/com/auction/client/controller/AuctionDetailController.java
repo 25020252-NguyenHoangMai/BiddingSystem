@@ -7,6 +7,7 @@ import com.auction.dto.BidHistoryEntryDTO;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
 import com.auction.response.*;
+import com.auction.server.service.BidIncrementService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -57,6 +58,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     private Timeline countdownTimeline;
     private volatile boolean watching = false;
+    private boolean isModeOn = false;
     private XYChart.Series<String, Number> priceSeries;
     private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -572,11 +574,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     @FXML
     private void handleAutoBid(ActionEvent event) {
-        Double maxBid = requestAutoBidAmount();
-
-        if (maxBid == null) {
-            return;
-        }
 
         UserSessionDTO currentUser = ClientSession.getCurrentUser();
 
@@ -585,15 +582,40 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             return;
         }
 
-        prepareAutoBidButton();
+        isModeOn = !isModeOn;
 
-        Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
+        if (isModeOn) {
+            Double maxBid = requestAutoBidAmount();
 
-        configureAutoBidHandlers(task);
+            if (maxBid == null) {
+                isModeOn = false;
+                return;
+            }
+            prepareAutoBidButton();
 
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
+            Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
+
+            configureAutoBidHandlers(task, true);
+
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            thread.start();
+        } else {
+
+            prepareAutoBidButton();
+
+            // dùng mẹo ghi đè maxBid bằng một số hợp lệ
+            BidIncrementService incrementService = new BidIncrementService();
+            double currentPrice = currentItem.getCurrentPrice();
+            double minimumNextBid = incrementService.getMinimumNextBid(currentPrice);
+
+            Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, minimumNextBid);
+            configureAutoBidHandlers(task, false);
+
+            Thread thread = new Thread(task);
+            thread.setDaemon(true);
+            thread.start();
+        }
     }
 
 
@@ -632,7 +654,11 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     private void resetAutoBidButton() {
         updateBidButtonsState();
-        btnAutoBid.setText("Auto Bid");
+        if (isModeOn) {
+            btnAutoBid.setText("Turn off Auto Bid");
+        } else {
+            btnAutoBid.setText("Turn on Auto Bid");
+        }
     }
 
     private Task<SetAutoBidResponse> createAutoBidTask(UserSessionDTO currentUser, double maxBid) {
@@ -648,7 +674,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         };
     }
 
-    private void configureAutoBidHandlers(Task<SetAutoBidResponse> task) {
+    private void configureAutoBidHandlers(Task<SetAutoBidResponse> task, boolean isActivating) {
         task.setOnSucceeded(e -> {
             resetAutoBidButton();
 
@@ -687,13 +713,23 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     updateBidHint(null);
                 }
 
-                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
+                resetAutoBidButton();
+
+                if (isActivating) {
+                    showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid is successfully activated.");
+                } else {
+                    showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid is successfully deactivated.");
+                }
+
             } else {
+                isModeOn = !isActivating;
+                resetAutoBidButton();
                 showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
             }
         });
 
         task.setOnFailed(e -> {
+            isModeOn = !isActivating;
             resetAutoBidButton();
 
             showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
