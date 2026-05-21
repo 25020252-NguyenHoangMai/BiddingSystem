@@ -384,6 +384,8 @@ public class ItemServiceTest {
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemByItemType("ART"));
         }
 
+
+        //...
         @Test void success_ReturnsMappedItems() throws SQLException {
             ItemDTO dto = new ItemDTO(); dto.setItemType("ART");
             when(itemDAO.getItemByItemType(any(Connection.class), eq("ART"))).thenReturn(List.of(dto));
