@@ -1,5 +1,6 @@
 package com.auction.server.service;
 
+import com.auction.dto.SellerHistoryItemDTO;
 import com.auction.exception.AuctionException;
 import com.auction.exception.ItemNotFoundException;
 import com.auction.model.AuctionSession;
@@ -643,4 +644,17 @@ public class ItemService {
 
         return code.toString();
     }
+
+    public List<SellerHistoryItemDTO> getSellerHistory(String sellerId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new AuctionException("Seller id is required.");
+        }
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            return sessionDAO.getSessionHistoryBySeller(conn, sellerId);
+        } catch (SQLException e) {
+            throw new AuctionException("Get seller history failed: " + e.getMessage());
+        }
+    }
+
 }

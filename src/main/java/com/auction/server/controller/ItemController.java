@@ -1,5 +1,6 @@
 package com.auction.server.controller;
 
+import com.auction.dto.SellerHistoryItemDTO;
 import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.dto.ItemDTO;
@@ -387,6 +388,22 @@ public class ItemController {
         } catch (Exception e) {
             e.printStackTrace();
             return new GetItemImageResponse(false, "Get image failed: " + e.getMessage(), null);
+        }
+    }
+
+    public GetSellerHistoryResponse getSellerHistory(GetSellerHistoryRequest request) {
+        try {
+            if (request == null || request.getUserId() == null || request.getUserId().isBlank()) {
+                return new GetSellerHistoryResponse(false, "Seller id is required", List.of());
+            }
+
+            List<SellerHistoryItemDTO> sessions = itemService.getSellerHistory(request.getUserId());
+
+            return new GetSellerHistoryResponse(true, "Get seller history successfully", sessions);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new GetSellerHistoryResponse(false, "Get seller history failed: " + e.getMessage(), List.of());
         }
     }
 }

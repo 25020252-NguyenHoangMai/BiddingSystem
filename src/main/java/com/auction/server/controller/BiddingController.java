@@ -280,7 +280,7 @@ public class BiddingController {
                 return new GetSessionHistoryResponse(false, "User ID is required", List.of());
             }
 
-            List<SessionHistoryItemDTO> sessions =  bidHistoryService.getSessionHistory(request.getUserId());
+            List<SessionHistoryItemDTO> sessions = bidHistoryService.getSessionHistory(request.getUserId());
 
             return new GetSessionHistoryResponse(
                     true,
