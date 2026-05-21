@@ -30,7 +30,7 @@ public class SessionHistoryController {
 
     private static final String ALL_SESSIONS = "All Sessions";
     private static final String RUNNING_SESSIONS = "In Progress";
-    private static final String WON_SESSIONS = "Won";
+    private static final String FINISHED_SESSIONS = "Finished";
     private static final String CANCELED_SESSIONS = "Canceled";
 
     private static final String ALL_TYPES = "All Types";
@@ -74,7 +74,7 @@ public class SessionHistoryController {
 
         addMenuOption(menuFilter, ALL_SESSIONS);
         addMenuOption(menuFilter, RUNNING_SESSIONS);
-        addMenuOption(menuFilter, WON_SESSIONS);
+        addMenuOption(menuFilter, FINISHED_SESSIONS);
         addMenuOption(menuFilter, CANCELED_SESSIONS);
     }
 
@@ -184,11 +184,11 @@ public class SessionHistoryController {
                 : txtSearch.getText().toLowerCase().trim();
 
         filteredData.setPredicate(session -> {
-            if (!"All Sessions".equals(statusFilter)) {
+            if (!ALL_SESSIONS.equals(statusFilter)) {
                 String expectedStatus = switch (statusFilter) {
-                    case "In Progress" -> "RUNNING";
-                    case "Won" -> "WON";
-                    case "Canceled" -> "CANCELED";
+                    case RUNNING_SESSIONS -> "RUNNING";
+                    case FINISHED_SESSIONS -> "FINISHED";
+                    case CANCELED_SESSIONS -> "CANCELED";
                     default -> "";
                 };
 

@@ -61,9 +61,9 @@ public class SellerProductController {
     private void updateStatusStyle(String status) {
         if ("DELETED".equalsIgnoreCase(status)) {
             lblStatusTag.setStyle("-fx-background-color: #ffebee; -fx-text-fill: #c62828; -fx-background-radius: 20; -fx-padding: 4 12; -fx-font-weight: bold;");
-        } else if ("END".equalsIgnoreCase(status)) {
+        } else if ("FINISHED".equalsIgnoreCase(status)) {
             lblStatusTag.setStyle("-fx-background-color: #e8f5e9; -fx-text-fill: #2e7d32; -fx-background-radius: 20; -fx-padding: 4 12; -fx-font-weight: bold;");
-        } else if ("RUNNING".equalsIgnoreCase(status)) {
+        } else if ("RUNNING".equalsIgnoreCase(status) || "OPEN".equalsIgnoreCase(status)) {
             lblStatusTag.setStyle("-fx-background-color: #e1f5fe; -fx-text-fill: #01579b; -fx-background-radius: 20; -fx-padding: 4 12; -fx-font-weight: bold;");
         } else {
             lblStatusTag.setStyle("-fx-background-color: #eeeeee; -fx-text-fill: #424242; -fx-background-radius: 20; -fx-padding: 4 12; -fx-font-weight: bold;");
