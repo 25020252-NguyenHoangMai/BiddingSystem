@@ -157,6 +157,13 @@ public class AutoBiddingService {
                     sessionId, 0.0, null, null, null);
         }
 
+        try {
+            bidValidationService.requireBidder(bidderId);
+        } catch (RuntimeException e) {
+            removeAutoBid(sessionId, bidderId);
+            return buildCurrentStateResult(false, e.getMessage(), session);
+        }
+
         AutoBid autoBid;
 
         try (Connection conn = DatabaseManager.getInstance().getConnection()) {

@@ -568,7 +568,8 @@ public class SessionService { // Quản lí phiên đấu giá
         }
 
         User admin = userDAO.getUserById(adminId);
-        if (admin == null || !"ADMIN".equalsIgnoreCase(admin.getRole())) {
+        if (admin == null || !"ADMIN".equalsIgnoreCase(admin.getRole())
+                            || !"ACTIVE".equalsIgnoreCase(admin.getStatus())) {
             throw new AuctionException("Only admin can cancel auction.");
         }
 
@@ -627,6 +628,11 @@ public class SessionService { // Quản lí phiên đấu giá
 
         if (sessionId == null || sessionId.isBlank()) {
             throw new AuctionException("Session id is required.");
+        }
+
+        User seller = userDAO.getUserById(sellerId);
+        if (seller == null || !"ACTIVE".equalsIgnoreCase(seller.getStatus())) {
+            throw new AuctionException("Account is disabled.");
         }
 
         try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
@@ -718,6 +724,11 @@ public class SessionService { // Quản lí phiên đấu giá
 
         if (newEndTime == null) {
             throw new AuctionException("Auction end time is required.");
+        }
+
+        User seller = userDAO.getUserById(sellerId);
+        if (seller == null || !"ACTIVE".equalsIgnoreCase(seller.getStatus())) {
+            throw new AuctionException("Account is disabled.");
         }
 
         try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {

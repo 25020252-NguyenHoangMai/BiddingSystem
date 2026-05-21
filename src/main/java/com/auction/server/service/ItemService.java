@@ -56,7 +56,7 @@ public class ItemService {
             throw new AuctionException("SellerId must not be null!");
         }
 
-        User user = userService.getUserById(sellerId);
+        User user = userService.requireActiveUserById(sellerId);
 
         if (!(user instanceof Bidder bidder)) {
             throw new AuctionException("Only bidder accounts can enable seller features.");
@@ -183,6 +183,8 @@ public class ItemService {
         if (sellerId == null || sellerId.isBlank()) {
             throw new AuctionException("Seller id is required.");
         }
+
+        userService.requireActiveUserById(sellerId);
 
         if (itemDTO == null) {
             throw new AuctionException("ItemDTO must not be null.");
@@ -552,7 +554,7 @@ public class ItemService {
             throw new AuctionException("End time must be after start time");
         }
 
-        User user = userService.getUserById(sellerId);
+        User user = userService.requireActiveUserById(sellerId);
         if (!(user instanceof Bidder bidder)) {
             throw new AuctionException("Only bidder accounts can enable seller features.");
         }

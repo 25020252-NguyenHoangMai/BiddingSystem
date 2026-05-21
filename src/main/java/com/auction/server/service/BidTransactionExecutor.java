@@ -4,6 +4,7 @@ import com.auction.exception.AuctionException;
 import com.auction.exception.InsufficientBalanceException;
 import com.auction.model.AuctionSession;
 import com.auction.model.BidTransaction;
+import com.auction.model.User;
 import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.SessionDAO;
@@ -95,6 +96,7 @@ public class BidTransactionExecutor {
             );
         }
 
+        bidValidationService.requireBidder(bidderId);
         bidValidationService.validateSellerCannotBidOwnAuction(session, bidderId);
 
         if (!bidValidationService.isSessionCurrentlyBiddable(session)) {
