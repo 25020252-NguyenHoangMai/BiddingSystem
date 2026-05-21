@@ -66,17 +66,8 @@ public class ProfileController {
 
             usernameLabel.setText("@" + user.getUsername() + " Seller");
             btnEnableSeller.setText("Auctioned Products History");
-            btnEnableSeller.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 20; -fx-cursor: hand;");
+            btnEnableSeller.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;");
             btnEnableSeller.setOnAction(event -> navigateToSellerHistory());
-        } else {
-            usernameLabel.setText("@" + user.getUsername());
-
-            // Show the original "Enable Seller" button
-            btnEnableSeller.setVisible(true);
-            btnEnableSeller.setManaged(true);
-            btnEnableSeller.setText("Enable Seller");
-            btnEnableSeller.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-font-family: 'Segoe UI';\" text=\"Enable Seller");
-            btnEnableSeller.setOnAction(event -> handleEnableSeller());
         }
     }
 
