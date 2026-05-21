@@ -7,24 +7,17 @@ import com.auction.client.util.ImageUtil;
 import com.auction.dto.UserSessionDTO;
 
 import com.auction.request.UnwatchDashboardRequest;
-import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.awt.event.ActionEvent;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 
 public class ProfileController {
 
@@ -139,23 +132,6 @@ public class ProfileController {
         });
     }
 
-//    // ===== ACTIONS =====
-//    @FXML
-//    private void handleEditProfile() {
-//        UserSessionDTO user = ClientSession.getCurrentUser();
-//        if (user == null) return;
-//
-//        FileChooser chooser = new FileChooser();
-//        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
-//        File selected = chooser.showOpenDialog(avatarPane.getScene().getWindow());
-//
-//        if (selected != null) {
-//            // Lưu xong thì gọi lại loadAvatar để cập nhật giao diện
-//            ImageUtil.saveAvatarAsync(user.getId(), selected, path -> {
-//                ImageUtil.loadAvatar(user.getId(), user.getUsername(), avatarImageView, avatarLabel);
-//            });
-//        }
-//    }
 
     @FXML
     private void handleEditProfile() {

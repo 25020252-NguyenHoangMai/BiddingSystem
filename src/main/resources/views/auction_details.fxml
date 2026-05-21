@@ -149,6 +149,23 @@
                 </VBox>
 
             </VBox>
+
+            <HBox fx:id="sellerActionsBox" spacing="10" managed="false" visible="false">
+                <Button fx:id="btnUpdateProduct"
+                        HBox.hgrow="ALWAYS"
+                        maxWidth="Infinity"
+                        onAction="#handleUpdateProduct"
+                        prefHeight="38.0"
+                        style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold;"
+                        text="Update Product" />
+                <Button fx:id="btnCancelAuction"
+                        HBox.hgrow="ALWAYS"
+                        maxWidth="Infinity"
+                        onAction="#handleCancelAuction"
+                        prefHeight="38.0"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"
+                        text="❌ Cancel Auction" />
+            </HBox>
         </VBox>
 
         <!-- ============ RIGHT PANEL – Bid History + Price Chart ============ -->

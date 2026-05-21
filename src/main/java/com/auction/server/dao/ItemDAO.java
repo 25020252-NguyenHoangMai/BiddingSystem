@@ -28,29 +28,6 @@ public class ItemDAO {
         return data;
     }
 
-    private ItemDTO mapToDashboardDTO(ResultSet rs) throws SQLException {
-        ItemDTO dto = mapToDTO(rs);
-
-        dto.setSellerUsername(rs.getString("sellerUsername"));
-        dto.setSessionId(rs.getString("sessionId"));
-        dto.setCurrentPrice(rs.getDouble("currentPrice"));
-        dto.setSessionStatus(rs.getString("sessionStatus"));
-
-        Timestamp startTime = rs.getTimestamp("startTime");
-        if (startTime != null) {
-            dto.setStartTimeMillis(startTime.getTime());
-        }
-
-        Timestamp endTime = rs.getTimestamp("endTime");
-        if (endTime != null) {
-            dto.setEndTimeMillis(endTime.getTime());
-        }
-
-        dto.setCurrentWinnerUsername(rs.getString("currentWinnerUsername"));
-
-        return dto;
-    }
-
 
     //=============== thêm sản phẩm ===============
     public void insertItem(Connection conn, Item item) {
@@ -250,14 +227,13 @@ public class ItemDAO {
             winner.username AS currentWinnerUsername
         FROM Item i
         LEFT JOIN Users seller ON i.sellerId = seller.id
-        OUTER APPLY (
+        CROSS APPLY (
             SELECT TOP 1 *
             FROM AuctionSession s
             WHERE s.itemId = i.id AND s.status IN ('OPEN', 'RUNNING')
             ORDER BY s.startTime DESC
         ) s
         LEFT JOIN Users winner ON s.currentWinnerId = winner.id
-        WHERE s.id IS NOT NULL
         ORDER BY s.startTime DESC
         """;
 
@@ -278,7 +254,7 @@ public class ItemDAO {
                     dto.setEndTimeMillis(endTime.getTime());
                 }
 
-                list.add(mapToDashboardDTO(rs));
+                list.add(dto);
             }
 
         } catch (SQLException e) {

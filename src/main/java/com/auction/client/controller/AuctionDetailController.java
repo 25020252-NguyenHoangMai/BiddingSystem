@@ -19,9 +19,15 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import java.io.IOException;
 
 import java.io.ByteArrayInputStream;
 import java.text.NumberFormat;
@@ -39,7 +45,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     @FXML private GridPane gridSpecs;
     @FXML private TextField txtBidAmount;
     @FXML private ListView<String> lvBidHistory;
-    @FXML private Button btnBack, btnPlaceBid, btnAutoBid;
+    @FXML private Button btnBack, btnPlaceBid, btnAutoBid, btnUpdateProduct, btnCancelAuction;
+    @FXML private HBox sellerActionsBox;
     @FXML private LineChart<String, Number> bidPriceChart;
     @FXML private ImageView productImageView;
 
@@ -59,6 +66,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
+    private final ProductService productService = ProductService.getInstance();
 
 
     // ===== INIT =====
@@ -386,17 +394,18 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     // Vô hiệu hóa tính năng đặt bid nếu là Seller
     private void checkSellerPrivileges(ItemDTO item) {
         var currentUser = ClientSession.getCurrentUser();
+        boolean isSeller = currentUser != null && Objects.equals(currentUser.getId(), item.getSellerId());
         // Kiểm tra ID người dùng hiện tại có trùng với SellerId của món hàng không
-        if (currentUser != null && Objects.equals(currentUser.getId(), item.getSellerId())) {
+        if (isSeller) {
             txtBidAmount.setDisable(true);
             txtBidAmount.setPromptText("You cannot bid on your own item");
-
             btnPlaceBid.setDisable(true);
             btnPlaceBid.setText("Management Mode");
-
             btnAutoBid.setDisable(true);
-
             lblMinBidHint.setText("Monitoring auction as Seller");
+
+            sellerActionsBox.setVisible(true);
+            sellerActionsBox.setManaged(true);
         }
     }
 
@@ -891,5 +900,88 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    @FXML
+    private void handleUpdateProduct() {
+        if (currentItem == null) return;
+
+        String status = currentItem.getSessionStatus();
+        if (!"OPEN".equals(status) && !"RUNNING".equals(status)) {
+            showAlert(Alert.AlertType.WARNING, "Update Product", "Only OPEN or RUNNING auctions can be updated.");
+            return;
+        }
+
+        try {
+            var resource = getClass().getResource("/views/add_product2.fxml");
+            if (resource == null) {
+                showAlert(Alert.AlertType.ERROR, "Error", "Cannot find file: /views/add_product2.fxml");
+                return;
+            }
+
+            FXMLLoader loader = new FXMLLoader(resource);
+            Parent root = loader.load();
+
+            AddProduct2Controller controller = loader.getController();
+            controller.setEditingItem(currentItem);
+
+            Stage editStage = new Stage();
+            editStage.setTitle("Update Auction");
+            editStage.initOwner(btnBack.getScene().getWindow());
+            editStage.initModality(Modality.WINDOW_MODAL);
+            editStage.setScene(new Scene(root));
+            editStage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Error", "Cannot open update form: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleCancelAuction() {
+        if (currentItem == null) return;
+
+        String status = currentItem.getSessionStatus();
+        if (!"OPEN".equals(status) && !"RUNNING".equals(status)) {
+            showAlert(Alert.AlertType.WARNING, "Cancel Auction", "Only OPEN or RUNNING auctions can be canceled.");
+            return;
+        }
+
+        if (currentItem.getSessionId() == null || currentItem.getSessionId().isBlank()) {
+            showAlert(Alert.AlertType.ERROR, "Cancel Auction", "Auction session id is missing.");
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Cancel Auction");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Are you sure you want to cancel this auction?");
+
+        var result = confirm.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK) return;
+
+        Task<ItemDTO> task = new Task<>() {
+            @Override
+            protected ItemDTO call() {
+                return productService.cancelAuctionBySeller(currentItem.getSessionId());
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            showAlert(Alert.AlertType.INFORMATION, "Cancel Auction", "Auction canceled successfully.");
+            // Disable nút sau khi cancel
+            btnCancelAuction.setDisable(true);
+            btnUpdateProduct.setDisable(true);
+        });
+
+        task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+            showAlert(Alert.AlertType.ERROR, "Error", ex != null ? ex.getMessage() : "Cancel auction failed.");
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 }

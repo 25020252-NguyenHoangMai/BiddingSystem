@@ -26,6 +26,7 @@ public class    MainServer {
         UserService userService = new UserService(userDAO);
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
 
+        BidHistoryService bidHistoryService = new BidHistoryService(bidDAO, userService);
         BidIncrementService bidIncrementService = new BidIncrementService();
         BidReservationCalculator bidReservationCalculator = new BidReservationCalculator();
         BidValidationService bidValidationService = new BidValidationService(userService, bidIncrementService);
@@ -45,7 +46,7 @@ public class    MainServer {
                                             sessionWatchRegistry, imageStorageService);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
-                                                userService, bidDAO);
+                                                userService, bidHistoryService);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
                                                 sessionService, userService, bidIncrementService);
 

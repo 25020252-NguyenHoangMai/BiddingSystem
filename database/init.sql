@@ -1,6 +1,6 @@
 USE [master]
 GO
-/****** Object:  Database [BiddingSystem]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Database [BiddingSystem]    Script Date: 5/21/2026 2:03:19 PM ******/
 CREATE DATABASE [BiddingSystem]
  CONTAINMENT = NONE
  ON  PRIMARY
@@ -82,7 +82,7 @@ ALTER DATABASE [BiddingSystem] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLE
 GO
 USE [BiddingSystem]
 GO
-/****** Object:  Table [dbo].[AuctionSession]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Table [dbo].[AuctionSession]    Script Date: 5/21/2026 2:03:19 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -101,7 +101,7 @@ CREATE TABLE [dbo].[AuctionSession](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[AutoBid]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Table [dbo].[AutoBid]    Script Date: 5/21/2026 2:03:19 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -120,7 +120,7 @@ CREATE TABLE [dbo].[AutoBid](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[BidTransaction]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Table [dbo].[BidTransaction]    Script Date: 5/21/2026 2:03:19 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -137,7 +137,7 @@ CREATE TABLE [dbo].[BidTransaction](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[Item]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Table [dbo].[Item]    Script Date: 5/21/2026 2:03:19 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -161,7 +161,7 @@ CREATE TABLE [dbo].[Item](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[Users]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Table [dbo].[Users]    Script Date: 5/21/2026 2:03:19 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -175,6 +175,8 @@ CREATE TABLE [dbo].[Users](
     [sellerEnabled] [bit] NOT NULL,
     [role] [nvarchar](50) NULL,
     [reservedBalance] [money] NOT NULL,
+    [status] [nvarchar](20) NOT NULL,
+    [deactivatedAt] [datetime2](7) NULL,
     CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED
 (
 [id] ASC
@@ -187,7 +189,7 @@ CREATE TABLE [dbo].[Users](
     GO
     SET ANSI_PADDING ON
     GO
-/****** Object:  Index [IX_AutoBid]    Script Date: 5/20/2026 3:30:50 PM ******/
+/****** Object:  Index [IX_AutoBid]    Script Date: 5/21/2026 2:03:19 PM ******/
 CREATE UNIQUE NONCLUSTERED INDEX [IX_AutoBid] ON [dbo].[AutoBid]
 (
 	[bidderId] ASC,
@@ -207,6 +209,8 @@ ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_balance]  DEFAULT ((0.0)) FO
 ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_sellerEnabled]  DEFAULT ((0)) FOR [sellerEnabled]
     GO
 ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_reservedBalance]  DEFAULT ((0.0)) FOR [reservedBalance]
+    GO
+ALTER TABLE [dbo].[Users] ADD  CONSTRAINT [DF_Users_status]  DEFAULT ('ACTIVE') FOR [status]
     GO
 ALTER TABLE [dbo].[AuctionSession]  WITH CHECK ADD  CONSTRAINT [FK_AuctionSession_AuctionSession] FOREIGN KEY([itemId])
     REFERENCES [dbo].[Item] ([id])

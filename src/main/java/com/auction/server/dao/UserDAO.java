@@ -386,8 +386,8 @@ public class UserDAO {
     }
 
     //=============== xóa user ===============
-    public void deleteUser(String userId) {
-        String sql = "DELETE FROM Users WHERE id = ?";
+    public void deactivateUser(String userId) {
+        String sql = "UPDATE Users SET status = 'DISABLE', deactivateAt = SYSDATETIME() WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
