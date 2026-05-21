@@ -43,6 +43,17 @@ public class UserService {
         }
     }
 
+// method public để các service khác gọi
+    public User requireActiveUserById(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new AuctionException("User id is required!");
+        }
+
+        User user = userDAO.getUserById(userId);
+        requireActiveUser(user);
+        return user;
+    }
+
 
     //=============== đăng ký ===============
     public void register(User user) {
@@ -99,7 +110,7 @@ public class UserService {
         }
 
         if (!STATUS_ACTIVE.equalsIgnoreCase(user.getStatus())) {
-            throw new AuctionException("Account is disabled");
+            throw new AuthenticationException("Account is disabled");
         }
 
         if (!BCrypt.checkpw(password, user.getPassword())) {

@@ -41,7 +41,7 @@ public class BidValidationService {
 
     public Bidder requireBidder(String bidderId) {
         try {
-            User user = userService.getUserById(bidderId);
+            User user = userService.requireActiveUserById(bidderId);
 
             if (!(user instanceof Bidder bidder)) {
                 throw new IllegalArgumentException("Only bidder accounts can place bids.");
