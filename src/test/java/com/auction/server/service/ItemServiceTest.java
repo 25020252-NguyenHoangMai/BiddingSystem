@@ -423,5 +423,6 @@ public class ItemServiceTest {
             verify(itemDAO, times(1)).deleteItem(any(Connection.class), eq("I1"));
             verify(mockConn, times(1)).commit();
         }
+
     }
 }
