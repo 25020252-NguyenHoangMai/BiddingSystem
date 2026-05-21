@@ -6,15 +6,21 @@ import com.auction.exception.UserNotFoundException;
 //import com.auction.server.factory.UserFromDTOFactory;
 import com.auction.model.Bidder;
 import com.auction.model.User;
+import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.UserDAO;
 //import com.auction.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 
 public class UserService {
     private  UserDAO userDAO;
+
+    private static final String STATUS_ACTIVE = "ACTIVE";
+    private static final String STATUS_DISABLED = "DISABLED";
 
     public UserService() {
         this(new UserDAO());
@@ -25,6 +31,16 @@ public class UserService {
             throw new IllegalArgumentException("UserDAO cannot be null");
         }
         this.userDAO = userDAO;
+    }
+
+    private void requireActiveUser(User user) {
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
+
+        if (!STATUS_ACTIVE.equalsIgnoreCase(user.getStatus())) {
+            throw new AuctionException("Account is disabled");
+        }
     }
 
 
@@ -82,6 +98,10 @@ public class UserService {
             throw new AuthenticationException("Username does not exist!");
         }
 
+        if (!STATUS_ACTIVE.equalsIgnoreCase(user.getStatus())) {
+            throw new AuctionException("Account is disabled");
+        }
+
         if (!BCrypt.checkpw(password, user.getPassword())) {
             throw new AuthenticationException("Incorrect password!");
         }
@@ -93,7 +113,7 @@ public class UserService {
 
 
 
-
+// method không dùng vì không có tính năng này
     //=============== đổi mật khẩu ===============
     public void changePassword(String userId, String newPassword) {
         if (userId == null || userId.isBlank()) {
@@ -104,6 +124,8 @@ public class UserService {
             throw new AuctionException("New password is required!");
         }
 
+        User user = userDAO.getUserById(userId);
+        requireActiveUser(user);
         //băm password
         String hashed = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         userDAO.updatePassword(userId, hashed);
@@ -130,6 +152,8 @@ public class UserService {
         if (current == null) {
             throw new UserNotFoundException("User not found!");
         }
+
+        requireActiveUser(current);
 
         User existing = userDAO.getUserByUsername(username);
         if (existing != null && !existing.getId().equals(userId)) {
@@ -222,6 +246,8 @@ public class UserService {
         if (user == null) {
             throw new UserNotFoundException("User not found!");
         }
+        requireActiveUser(user);
+
         if (!(user instanceof Bidder bidder)) {
             throw new AuctionException("Only bidder accounts can enable seller mode.");
         }
@@ -242,6 +268,9 @@ public class UserService {
             throw new AuctionException("Amount must be greater than 0.");
         }
 
+        User user = userDAO.getUserById(userId);
+        requireActiveUser(user);
+
         userDAO.updateBalance(userId, amount);
         return userDAO.getUserById(userId);
     }
@@ -254,6 +283,26 @@ public class UserService {
         User user = userDAO.getUserById(userId);
         if (user == null) {
             throw new UserNotFoundException("User not found!");
+        }
+
+        if (STATUS_DISABLED.equalsIgnoreCase(user.getStatus())) {
+            throw new AuctionException("User is already disabled!");
+        }
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                userDAO.deactivateUser(conn, userId);
+                conn.commit();
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("Deactivate user failed! " + e.getMessage());
         }
 
         //userDAO.deleteUser(userId);
