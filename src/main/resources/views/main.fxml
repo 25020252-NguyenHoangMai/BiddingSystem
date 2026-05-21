@@ -59,7 +59,7 @@
         </TableView>
 
         <HBox alignment="CENTER_RIGHT" spacing="15">
-            <Button fx:id="cancelBtn" managed="true" onAction="#handleCancelAuction" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="❌ Cancel Product" visible="true" />
+            <Button fx:id="cancelAuctionBtn" managed="true" onAction="#handleCancelAuction" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="❌ Cancel Product" visible="true" />
 
             <Button fx:id="updateBtn" managed="true" onAction="#handleUpdateProduct" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="Update Product" visible="true" />
 

@@ -45,7 +45,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     @FXML private Label balanceLabel;
     @FXML private Button addBtn;
     @FXML private Button updateBtn;
-    @FXML private Button cancelBtn;
+    @FXML private Button cancelAuctionBtn;
     @FXML private TextField searchField;
 
     @FXML
@@ -210,6 +210,12 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         boolean isSeller = user.isSellerEnabled();
         addBtn.setVisible(isSeller);
         addBtn.setManaged(isSeller);
+
+        updateBtn.setVisible(isSeller);
+        updateBtn.setManaged(isSeller);
+
+        cancelAuctionBtn.setVisible(isSeller);
+        cancelAuctionBtn.setManaged(isSeller);
     }
 
     // ===== TABLE CONFIG =====
@@ -406,7 +412,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         try {
             var resource = getClass().getResource("/views/profile.fxml");
             if (resource == null) {
-                showError("Khong tim thay file: /views/profile.fxml");
+                showError("Cannot find file: /views/profile.fxml");
                 return;
             }
 
@@ -443,7 +449,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             depositStage.show();
         } catch (IOException e) {
             e.printStackTrace();
-            showError("Lỗi mở màn hình nạp tiền: " + e.getMessage());
+            showError("Error opening deposit screen: " + e.getMessage());
         }
     }
 
@@ -535,10 +541,145 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     }
 
     @FXML
-    private void handleUpdateProduct() {}
+    private void handleUpdateProduct() {
+        ItemDTO selected = getSelectedAuction();
+
+        if (selected == null) {
+            return;
+        }
+
+        if (!isOwnItem(selected)) {
+            showError("You can only update your own auction.");
+            return;
+        }
+
+        String status = selected.getSessionStatus();
+
+        if (!"OPEN".equals(status) && !"RUNNING".equals(status)) {
+            showError("Only OPEN or RUNNING auctions can be updated.");
+            return;
+        }
+
+        openEditProductForm(selected);
+    }
 
     @FXML
-    private void handleCancelAuction() {}
+    private void handleCancelAuction() {
+        ItemDTO selected = getSelectedAuction();
+
+        if (selected == null) {
+            return;
+        }
+
+        if (!isOwnItem(selected)) {
+            showError("You can only cancel your own auction.");
+            return;
+        }
+
+        String status = selected.getSessionStatus();
+
+        if (!"OPEN".equals(status) && !"RUNNING".equals(status)) {
+            showError("Only OPEN or RUNNING auctions can be canceled.");
+            return;
+        }
+
+        if (selected.getSessionId() == null || selected.getSessionId().isBlank()) {
+            showError("Auction session id is missing.");
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Cancel Auction");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Are you sure you want to cancel this auction?");
+
+        var result = confirm.showAndWait();
+
+        if (result.isEmpty() || result.get() != ButtonType.OK) {
+            return;
+        }
+
+        cancelAuctionAsync(selected);
+    }
+
+    private void cancelAuctionAsync(ItemDTO item) {
+        Task<ItemDTO> task = new Task<>() {
+            @Override
+            protected ItemDTO call() {
+                return productService.cancelAuctionBySeller(item.getSessionId());
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Cancel Auction");
+            alert.setHeaderText(null);
+            alert.setContentText("Auction canceled successfully.");
+            alert.showAndWait();
+
+            auctionList.removeIf(i -> Objects.equals(i.getId(), item.getId()));
+        });
+
+        task.setOnFailed(event -> {
+            Throwable ex = task.getException();
+
+            showError(
+                    ex != null
+                            ? ex.getMessage()
+                            : "Cancel auction failed."
+            );
+        });
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private boolean isOwnItem(ItemDTO item) {
+        UserSessionDTO user = ClientSession.getCurrentUser();
+
+        return user != null
+                && item != null
+                && Objects.equals(user.getId(), item.getSellerId());
+    }
+
+    private ItemDTO getSelectedAuction() {
+        ItemDTO selected = tableAuctions.getSelectionModel().getSelectedItem();
+
+        if (selected != null) {
+            showError("Please select an item");
+            return null;
+        }
+
+        return selected;
+    }
+
+    private void openEditProductForm(ItemDTO item) {
+        try {
+            var resource = getClass().getResource("/views/add_product2.fxml");
+
+            if (resource == null) {
+                showError("Cannot find file: /views/add_product2.fxml");
+                return;
+            }
+
+            FXMLLoader loader = new FXMLLoader(resource);
+            Parent root = loader.load();
+
+            AddProduct2Controller controller = loader.getController();
+            controller.setEditingItem(item);
+
+            Stage editStage = createModalStage("Update Auction", root);
+
+            editStage.setOnHidden(event -> loadProductsAsync());
+
+            editStage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Cannot open update form: " + e.getMessage());
+        }
+    }
 
     // Đòng hết tất cả màn hình khi log out
     private void closeChildStages() {
