@@ -1,10 +1,10 @@
 package com.auction.server.dao;
 
+import com.auction.dto.SessionHistoryItemDTO;
 import com.auction.exception.AuctionException;
 import com.auction.model.BidTransaction;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
