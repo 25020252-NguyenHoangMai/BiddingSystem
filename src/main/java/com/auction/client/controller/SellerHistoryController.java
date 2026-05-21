@@ -26,9 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SellerHistoryController {
+    private UserSessionDTO currentUser;
 
     private static final String PROFILE_FXML = "/views/profile.fxml";
-    private static final String SELLER_ITEM_CELL_FXML = "/views/product.fxml";
+    private static final String SELLER_ITEM_CELL_FXML = "/views/seller_product_cell.fxml";
 
 
     @FXML private Button btnBack;
@@ -252,6 +253,7 @@ public class SellerHistoryController {
 
     // Khi bấm nút Auctioned Products History tại màn hình profile sẽ gọi tới method này
     public void loadSellerHistoryFromServer(UserSessionDTO currentUser) {
+        this.currentUser = currentUser;
 
         if (currentUser == null || currentUser.getId() == null || currentUser.getId().isBlank()) {
             showAlert(Alert.AlertType.ERROR, "Auctioned Product History", "User auctioned product not found.");
@@ -291,6 +293,12 @@ public class SellerHistoryController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    public void refresh() {
+        if (currentUser != null) {
+            loadSellerHistoryFromServer(currentUser);
+        }
     }
 
     private Stage createModalStage(String title, Parent root) {

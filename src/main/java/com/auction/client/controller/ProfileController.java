@@ -34,6 +34,7 @@ public class ProfileController {
     @FXML private Label avatarLabel;
 
     private final UserClientService userClientService = UserClientService.getInstance();
+    private SellerHistoryController sellerHistoryController;
 
     // ===== INIT =====
     @FXML
@@ -159,6 +160,13 @@ public class ProfileController {
             stage.setScene(scene);
             stage.setTitle("Auctioned Products History");
             stage.centerOnScreen();
+
+            stage.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+                if (isNowFocused && controller != null) {
+                    controller.refresh();
+                }
+            });
+
             stage.show();
 
         } catch (IOException e) {
