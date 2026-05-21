@@ -31,6 +31,12 @@ public class AuctionService {
                 GetAuctionDetailResponse.class
         );
     }
+    public GetSessionHistoryResponse getSessionHistory(String userId) throws Exception {
+        return socket.sendRequestAndWait(
+                new GetSessionHistoryRequest(userId),
+                GetSessionHistoryResponse.class
+        );
+    }
 
     public void unwatchSession(String sessionId) {
         try {
