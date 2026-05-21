@@ -112,4 +112,62 @@ public class BidDAO {
 
         return list;
     }
+
+    public List<SessionHistoryItemDTO> getSessionHistoryByBidder(Connection conn, String bidderId) {
+        String sql = """
+        WITH RankedUserBids AS (
+            SELECT
+                bt.id,
+                bt.sessionId,
+                bt.bidderId,
+                bt.bidAmount,
+                bt.bidTime,
+                ROW_NUMBER() OVER (
+                    PARTITION BY bt.sessionId
+                    ORDER BY bt.bidTime DESC, bt.bidAmount DESC, bt.id DESC
+                ) AS rn
+            FROM BidTransaction bt
+            WHERE bt.bidderId = ?
+        )
+        SELECT
+            s.id AS sessionId,
+            i.name AS productName,
+            i.itemType AS productType,
+            i.sellerId AS sellerId,
+            seller.username AS sellerUsername,
+            seller.fullName AS sellerFullName,
+            r.bidAmount AS userLastBid,
+            s.currentPrice AS currentPrice,
+            r.bidTime AS lastBidTime,
+            CASE
+                WHEN s.status = 'CANCELED' THEN 'CANCELED'
+                WHEN s.status IN ('FINISHED', 'PAID') AND s.currentWinnerId = ? THEN 'WON'
+                WHEN s.status IN ('FINISHED', 'PAID') THEN 'LOST'
+                ELSE s.status
+            END AS status,
+            i.imagePath AS imagePath
+        FROM RankedUserBids r
+        JOIN AuctionSession s ON s.id = r.sessionId
+        JOIN Item i ON i.id = s.itemId
+        JOIN Users seller ON seller.id = i.sellerId
+        WHERE r.rn = 1
+        ORDER BY r.bidTime DESC
+    """;
+
+        List<SessionHistoryItemDTO> list = new ArrayList<>();
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, bidderId);
+            ps.setString(2, bidderId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToSessionHistoryItemDTO(rs));
+                }
+            }
+            return list;
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting session history: " + e.getMessage());
+        }
+    }
 }
