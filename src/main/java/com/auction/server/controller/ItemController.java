@@ -228,9 +228,44 @@ public class ItemController {
                 return new SellerUpdateItemResponse(false, "Item cannot be null", null);
             }
 
+            ItemDTO itemDTO = request.getItem();
+            //ko tin imagepath từ client
+            itemDTO.setImagePath(null);
+
+            byte[] imageBytes = itemDTO.getImageBytes();
+            String imageFileName = itemDTO.getImageFileName();
+
+            boolean hasNewImage = imageBytes != null && imageBytes.length > 0;
+
+            if (hasNewImage) {
+                if (imageFileName == null || imageFileName.isBlank()) {
+                    return new SellerUpdateItemResponse(
+                            false,
+                            "Image file name is required when uploading a new image",
+                            null
+                    );
+                }
+
+                try {
+                    String newImagePath = imageStorageService.saveItemImage(
+                            imageBytes,
+                            imageFileName
+                    );
+
+                    itemDTO.setImagePath(newImagePath);
+
+                } catch (Exception e) {
+                    return new SellerUpdateItemResponse(
+                            false,
+                            "Image upload failed: " + e.getMessage(),
+                            null
+                    );
+                }
+            }
+
             ItemDTO updatedItem = itemService.updateItemBySeller(
                     request.getSellerId(),
-                    request.getItem()
+                    itemDTO
             );
 
             dashboardWatchRegistry.broadcastDashboardUpdate(

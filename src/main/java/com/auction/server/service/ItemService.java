@@ -261,6 +261,10 @@ public class ItemService {
 
         itemDTO.setSellerId(existingItem.getSellerId());
 
+        if (itemDTO.getImagePath() == null || itemDTO.getImagePath().isBlank()) {
+            itemDTO.setImagePath(existingItem.getImagePath());
+        }
+
         Item item = ItemFromDTOFactory.createItem(itemDTO);
 
         itemDAO.updateItem(conn, item);
