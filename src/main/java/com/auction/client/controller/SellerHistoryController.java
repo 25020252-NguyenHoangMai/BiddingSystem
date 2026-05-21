@@ -41,7 +41,7 @@ public class SellerHistoryController {
 
     private static final String ALL_SESSIONS = "All Sessions";
     private static final String RUNNING_SESSIONS = "In Progress";
-    private static final String END_SESSIONS = "End";
+    private static final String FINISHED_SESSIONS = "Finished";
     private static final String CANCELED_SESSIONS = "Canceled";
     private static final String ALL_TYPES = "All Types";
 
@@ -76,7 +76,7 @@ public class SellerHistoryController {
 
         addMenuOption(menuFilterStatus, ALL_SESSIONS);
         addMenuOption(menuFilterStatus, RUNNING_SESSIONS);
-        addMenuOption(menuFilterStatus, END_SESSIONS);
+        addMenuOption(menuFilterStatus, FINISHED_SESSIONS);
         addMenuOption(menuFilterStatus, CANCELED_SESSIONS);
     }
 
@@ -110,11 +110,11 @@ public class SellerHistoryController {
                 : txtSearch.getText().toLowerCase().trim();
 
         filteredData.setPredicate(session -> {
-            if (!"All Sessions".equals(statusFilter)) {
+            if (!ALL_SESSIONS.equals(statusFilter)) {
                 String expectedStatus = switch (statusFilter) {
-                    case "In Progress" -> "RUNNING";
-                    case "End" -> "END";
-                    case "Canceled" -> "CANCELED";
+                    case RUNNING_SESSIONS -> "RUNNING";
+                    case FINISHED_SESSIONS -> "FINISHED";
+                    case CANCELED_SESSIONS -> "CANCELED";
                     default -> "";
                 };
 

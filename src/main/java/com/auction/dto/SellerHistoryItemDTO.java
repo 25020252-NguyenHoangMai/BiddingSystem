@@ -11,7 +11,7 @@ public class SellerHistoryItemDTO implements Serializable {
     private double currentPrice;
     private long startTimeMillis;
     private long endTimeMillis;
-    private String status; // RUNNING, WON, CANCELED
+    private String status; // RUNNING, FUNISHED, CANCELED
     private String imagePath;
 
     public String getSessionId() {
