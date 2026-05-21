@@ -31,10 +31,6 @@ public class ProfileController {
     // ===== FXML =====
     @FXML private Label fullNameLabel;
     @FXML private Label usernameLabel;
-    @FXML private Label totalBidsLabel;
-    @FXML private Label itemsWonLabel;
-    @FXML private Label activeListingsLabel;
-    @FXML private VBox  activeListingsBox;
 
     // Nút Enable Seller — ẩn nếu đã là Seller
     @FXML private Button btnEnableSeller;
@@ -55,11 +51,6 @@ public class ProfileController {
         fullNameLabel.setText(user.getFullName() != null ? user.getFullName() : user.getUsername());
         usernameLabel.setText("@" + user.getUsername());
 
-        // Stats mặc định
-        totalBidsLabel.setText("0");
-        itemsWonLabel.setText("0");
-        activeListingsLabel.setText("0");
-
         // Ẩn/hiện nút Enable Seller và Active Listings tuỳ role
         refreshSellerUI(user);
 
@@ -73,8 +64,6 @@ public class ProfileController {
         // Nếu đã là Seller: ẩn nút, hiện Active Listings
         btnEnableSeller.setVisible(!isSeller);
         btnEnableSeller.setManaged(!isSeller);
-        activeListingsBox.setVisible(isSeller);
-        activeListingsBox.setManaged(isSeller);
 
         // Label mô tả trạng thái role
         if (isSeller) {
