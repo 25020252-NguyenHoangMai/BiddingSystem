@@ -14,15 +14,14 @@ import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import com.auction.server.dao.DatabaseManager;
-import static org.mockito.Mockito.mockStatic;
 
-
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.Mockito.*;
 
 public class ItemServiceTest {
@@ -30,13 +29,16 @@ public class ItemServiceTest {
     @Mock private ItemDAO itemDAO;
     @Mock private UserService userService;
     @Mock private SessionDAO sessionDAO;
+    @Mock private Connection mockConn;
+    @Mock private DatabaseManager mockDbManager;
 
+    private org.mockito.MockedStatic<DatabaseManager> mockedStaticDbManager;
     private ItemService itemService;
     private Bidder validSeller;
     private Item validItem;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws SQLException {
         MockitoAnnotations.openMocks(this);
         itemService = new ItemService(itemDAO, userService, sessionDAO);
 
@@ -47,8 +49,18 @@ public class ItemServiceTest {
         validItem.setId("I1");
         validItem.setName("Siêu xe UET");
         validItem.setStartingPrice(100.0);
+
+        mockedStaticDbManager = mockStatic(DatabaseManager.class);
+        mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
+        when(mockDbManager.getConnection()).thenReturn(mockConn);
     }
 
+    @AfterEach
+    void cleanUp() {
+        if (mockedStaticDbManager != null) {
+            mockedStaticDbManager.close();
+        }
+    }
 
     @Nested
     class ConstructorTests {
@@ -122,14 +134,15 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.addItem("U1", validItem));
         }
 
-        @Test void success() {
+        @Test void success() throws SQLException {
             when(userService.getUserById("U1")).thenReturn(validSeller);
 
             itemService.addItem("U1", validItem);
 
             assertNotNull(validItem.getId());
             assertEquals("U1", validItem.getSellerId());
-            verify(itemDAO, times(1)).insertItem(validItem);
+            verify(itemDAO, times(1)).insertItem(any(Connection.class), eq(validItem));
+            verify(mockConn, times(1)).commit();
         }
     }
 
@@ -140,7 +153,7 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.addItem("U1", (ItemDTO) null));
         }
 
-        @Test void successAndChecksUppercase() {
+        @Test void successAndChecksUppercase() throws SQLException {
             when(userService.getUserById("U1")).thenReturn(validSeller);
             ItemDTO dto = new ItemDTO();
             dto.setName("Laptop");
@@ -153,7 +166,8 @@ public class ItemServiceTest {
             assertNotNull(result.getId());
             assertEquals("U1", result.getSellerId());
             assertEquals("ELECTRONICS", result.getItemType());
-            verify(itemDAO, times(1)).insertItem(any(Item.class));
+            verify(itemDAO, times(1)).insertItem(any(Connection.class), any(Item.class));
+            verify(mockConn, times(1)).commit();
         }
     }
 
@@ -189,74 +203,75 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.updateItem(validItem));
         }
 
-        @Test void itemNotFoundInDB() {
-            when(itemDAO.getItemById("I1")).thenReturn(null);
+        @Test void itemNotFoundInDB() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(null);
             assertThrows(ItemNotFoundException.class, () -> itemService.updateItem(validItem));
         }
 
-        @Test void sessionRunning() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
+        @Test void sessionRunning() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
             AuctionSession runningSession = new AuctionSession();
             runningSession.setStatus(SessionService.STATUS_RUNNING);
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(runningSession));
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(List.of(runningSession));
 
             assertThrows(AuctionException.class, () -> itemService.updateItem(validItem));
         }
 
-        @Test void sessionFinished() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
+        @Test void sessionFinished() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
             AuctionSession finishedSession = new AuctionSession();
             finishedSession.setStatus(SessionService.STATUS_FINISHED);
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(finishedSession));
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(List.of(finishedSession));
 
             assertThrows(AuctionException.class, () -> itemService.updateItem(validItem));
         }
 
-        @Test void sessionCanceled() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
+        @Test void sessionCanceled() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
             AuctionSession canceledSession = new AuctionSession();
             canceledSession.setStatus(SessionService.STATUS_CANCELED);
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(canceledSession));
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(List.of(canceledSession));
 
             assertThrows(AuctionException.class, () -> itemService.updateItem(validItem));
         }
 
-        @Test void onlyOpenSession_Success() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
+        @Test void onlyOpenSession_Success() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
             AuctionSession openSession = new AuctionSession();
             openSession.setStatus(SessionService.STATUS_OPEN);
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(openSession));
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(List.of(openSession));
 
             assertDoesNotThrow(() -> itemService.updateItem(validItem));
-            verify(itemDAO, times(1)).updateItem(validItem);
+            verify(itemDAO, times(1)).updateItem(any(Connection.class), eq(validItem));
+            verify(mockConn, times(1)).commit();
         }
 
-        @Test void emptySessionsList_Success() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(Collections.emptyList());
+        @Test void emptySessionsList_Success() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(Collections.emptyList());
 
             assertDoesNotThrow(() -> itemService.updateItem(validItem));
-            verify(itemDAO, times(1)).updateItem(validItem);
+            verify(itemDAO, times(1)).updateItem(any(Connection.class), eq(validItem));
         }
 
-        @Test void multipleSessionsOneRunning() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
+        @Test void multipleSessionsOneRunning() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
             AuctionSession open1 = new AuctionSession(); open1.setStatus(SessionService.STATUS_OPEN);
             AuctionSession open2 = new AuctionSession(); open2.setStatus(SessionService.STATUS_OPEN);
             AuctionSession running = new AuctionSession(); running.setStatus(SessionService.STATUS_RUNNING);
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(open1, open2, running));
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(List.of(open1, open2, running));
 
             assertThrows(AuctionException.class, () -> itemService.updateItem(validItem));
         }
 
-        @Test void multipleSessionsAllOpen_Success() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
+        @Test void multipleSessionsAllOpen_Success() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
             AuctionSession open1 = new AuctionSession(); open1.setStatus(SessionService.STATUS_OPEN);
             AuctionSession open2 = new AuctionSession(); open2.setStatus(SessionService.STATUS_OPEN);
-            when(sessionDAO.getSessionsByItemId("I1")).thenReturn(List.of(open1, open2));
+            when(sessionDAO.getSessionsByItemId(any(Connection.class), eq("I1"))).thenReturn(List.of(open1, open2));
 
             assertDoesNotThrow(() -> itemService.updateItem(validItem));
-            verify(itemDAO, times(1)).updateItem(validItem);
+            verify(itemDAO, times(1)).updateItem(any(Connection.class), eq(validItem));
         }
     }
 
@@ -264,15 +279,15 @@ public class ItemServiceTest {
     @Nested
     class GetAllItemsTests {
 
-        @Test void emptyList_ReturnsEmpty() {
-            when(itemDAO.getAllItems()).thenReturn(Collections.emptyList());
+        @Test void emptyList_ReturnsEmpty() throws SQLException {
+            when(itemDAO.getAllItems(any(Connection.class))).thenReturn(Collections.emptyList());
             assertTrue(itemService.getAllItems().isEmpty());
         }
 
-        @Test void multipleItems_ReturnsCorrectSize() {
+        @Test void multipleItems_ReturnsCorrectSize() throws SQLException {
             ItemDTO dto1 = new ItemDTO(); dto1.setItemType("VEHICLE"); dto1.setId("1");
             ItemDTO dto2 = new ItemDTO(); dto2.setItemType("ELECTRONICS"); dto2.setId("2");
-            when(itemDAO.getAllItems()).thenReturn(List.of(dto1, dto2));
+            when(itemDAO.getAllItems(any(Connection.class))).thenReturn(List.of(dto1, dto2));
 
             List<Item> items = itemService.getAllItems();
             assertEquals(2, items.size());
@@ -286,44 +301,25 @@ public class ItemServiceTest {
 
         @Test
         void success_ReturnsDashboardItems() throws Exception {
-
             ItemDTO mockDto = new ItemDTO();
             mockDto.setId("I1");
             mockDto.setName("Siêu xe UET");
             List<ItemDTO> expectedList = List.of(mockDto);
 
-            //giả vờ có Connection
-            java.sql.Connection mockConn = mock(java.sql.Connection.class);
-            DatabaseManager mockDbManager = mock(DatabaseManager.class);
+            when(itemDAO.getAllItemsForDashboard(any(Connection.class))).thenReturn(expectedList);
 
-            when(mockDbManager.getConnection()).thenReturn(mockConn);
-            when(itemDAO.getAllItemsForDashboard(mockConn)).thenReturn(expectedList);
+            List<ItemDTO> result = itemService.getAllItemDTOS();
 
-
-            try (org.mockito.MockedStatic<DatabaseManager> mockedStaticDbManager = mockStatic(DatabaseManager.class)) {
-                mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
-
-                //gọi hàm thật
-                List<ItemDTO> result = itemService.getAllItemDTOS();
-
-
-                assertEquals(1, result.size());
-                assertEquals("I1", result.get(0).getId());
-            }
+            assertEquals(1, result.size());
+            assertEquals("I1", result.get(0).getId());
         }
 
         @Test
         void throwsException_OnSQLException() throws Exception {
-            DatabaseManager mockDbManager = mock(DatabaseManager.class);
-
             when(mockDbManager.getConnection()).thenThrow(new java.sql.SQLException("DB Timeout"));
 
-            try (org.mockito.MockedStatic<DatabaseManager> mockedStaticDbManager = mockStatic(DatabaseManager.class)) {
-                mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
-
-                AuctionException exception = assertThrows(AuctionException.class, () -> itemService.getAllItemDTOS());
-                assertTrue(exception.getMessage().contains("getting dashboard items"));
-            }
+            AuctionException exception = assertThrows(AuctionException.class, () -> itemService.getAllItemDTOS());
+            assertTrue(exception.getMessage().contains("getting dashboard items"));
         }
     }
 
@@ -338,14 +334,14 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.getItemById("  "));
         }
 
-        @Test void notFound_ThrowsException() {
-            when(itemDAO.getItemById("I1")).thenReturn(null);
+        @Test void notFound_ThrowsException() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(null);
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemById("I1"));
         }
 
-        @Test void success_ReturnsItem() {
+        @Test void success_ReturnsItem() throws SQLException {
             ItemDTO dto = new ItemDTO(); dto.setId("I1"); dto.setItemType("VEHICLE");
-            when(itemDAO.getItemById("I1")).thenReturn(dto);
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(dto);
 
             Item item = itemService.getItemById("I1");
             assertNotNull(item);
@@ -361,14 +357,14 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.getItemByName("   "));
         }
 
-        @Test void emptyList_ThrowsException() {
-            when(itemDAO.getItemByName("Laptop")).thenReturn(Collections.emptyList());
+        @Test void emptyList_ThrowsException() throws SQLException {
+            when(itemDAO.getItemByName(any(Connection.class), eq("Laptop"))).thenReturn(Collections.emptyList());
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemByName("Laptop"));
         }
 
-        @Test void success_ReturnsMappedItems() {
+        @Test void success_ReturnsMappedItems() throws SQLException {
             ItemDTO dto = new ItemDTO(); dto.setItemType("ELECTRONICS");
-            when(itemDAO.getItemByName("Laptop")).thenReturn(List.of(dto, dto));
+            when(itemDAO.getItemByName(any(Connection.class), eq("Laptop"))).thenReturn(List.of(dto, dto));
 
             List<Item> items = itemService.getItemByName("Laptop");
             assertEquals(2, items.size());
@@ -383,14 +379,14 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.getItemByItemType("   "));
         }
 
-        @Test void emptyList_ThrowsException() {
-            when(itemDAO.getItemByItemType("ART")).thenReturn(Collections.emptyList());
+        @Test void emptyList_ThrowsException() throws SQLException {
+            when(itemDAO.getItemByItemType(any(Connection.class), eq("ART"))).thenReturn(Collections.emptyList());
             assertThrows(ItemNotFoundException.class, () -> itemService.getItemByItemType("ART"));
         }
 
-        @Test void success_ReturnsMappedItems() {
+        @Test void success_ReturnsMappedItems() throws SQLException {
             ItemDTO dto = new ItemDTO(); dto.setItemType("ART");
-            when(itemDAO.getItemByItemType("ART")).thenReturn(List.of(dto));
+            when(itemDAO.getItemByItemType(any(Connection.class), eq("ART"))).thenReturn(List.of(dto));
 
             List<Item> items = itemService.getItemByItemType("ART");
             assertEquals(1, items.size());
@@ -405,25 +401,27 @@ public class ItemServiceTest {
             assertThrows(AuctionException.class, () -> itemService.removeItem("  "));
         }
 
-        @Test void notFound_ThrowsException() {
-            when(itemDAO.getItemById("I1")).thenReturn(null);
+        @Test void notFound_ThrowsException() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(null);
             assertThrows(ItemNotFoundException.class, () -> itemService.removeItem("I1"));
         }
 
-        @Test void hasSession_ThrowsException() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
-            when(sessionDAO.existsSessionByItemId("I1")).thenReturn(true);
+        @Test void hasSession_ThrowsException() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
+            when(sessionDAO.existsSessionByItemId(any(Connection.class), eq("I1"))).thenReturn(true);
 
             AuctionException e = assertThrows(AuctionException.class, () -> itemService.removeItem("I1"));
             assertTrue(e.getMessage().contains("already been used in an auction session"));
+            verify(mockConn, times(1)).rollback();
         }
 
-        @Test void success_CallsDelete() {
-            when(itemDAO.getItemById("I1")).thenReturn(new ItemDTO());
-            when(sessionDAO.existsSessionByItemId("I1")).thenReturn(false);
+        @Test void success_CallsDelete() throws SQLException {
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(new ItemDTO());
+            when(sessionDAO.existsSessionByItemId(any(Connection.class), eq("I1"))).thenReturn(false);
 
             assertDoesNotThrow(() -> itemService.removeItem("I1"));
-            verify(itemDAO, times(1)).deleteItem("I1");
+            verify(itemDAO, times(1)).deleteItem(any(Connection.class), eq("I1"));
+            verify(mockConn, times(1)).commit();
         }
     }
 }

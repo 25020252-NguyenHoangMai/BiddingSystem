@@ -12,7 +12,6 @@ import com.auction.dto.ItemDTO;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.factory.ItemFromDTOFactory;
 
-
 import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.SQLException;
