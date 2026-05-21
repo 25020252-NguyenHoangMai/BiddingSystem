@@ -18,10 +18,13 @@ public class UserDAO {
         String password = rs.getString("password");
         String fullName = rs.getString("fullName");
         String role = rs.getString("role");
+        String status = rs.getString("status");
 
 
         if ("ADMIN".equalsIgnoreCase(role)) {
-            return new Admin(id, username, password, fullName);
+            Admin admin = new Admin(id, username, password, fullName);
+            admin.setStatus(status);
+            return admin;
         } else if ("BIDDER".equalsIgnoreCase(role)) {
             double balance = rs.getDouble("balance");
             boolean sellerEnabled = rs.getBoolean("sellerEnabled");
@@ -29,6 +32,7 @@ public class UserDAO {
 
             Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance, reservedBalance);
             bidder.setSellerEnabled(sellerEnabled);
+            bidder.setStatus(status);
             return bidder;
         }
         return null;
@@ -387,10 +391,9 @@ public class UserDAO {
     }
 
     //=============== xóa user ===============
-    public void deactivateUser(String userId) {
+    public void deactivateUser(Connection conn, String userId) {
         String sql = "UPDATE Users SET status = 'DISABLED', deactivatedAt = SYSDATETIME() WHERE id = ?";
-        try (Connection conn = DatabaseManager.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
