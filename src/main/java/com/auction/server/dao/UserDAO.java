@@ -18,15 +18,16 @@ public class UserDAO {
         String password = rs.getString("password");
         String fullName = rs.getString("fullName");
         String role = rs.getString("role");
+        String status = rs.getString("status");
 
         if ("ADMIN".equalsIgnoreCase(role)) {
-            return new Admin(id, username, password, fullName);
+            return new Admin(id, username, password, fullName, status);
         } else if ("BIDDER".equalsIgnoreCase(role)) {
             double balance = rs.getDouble("balance");
             boolean sellerEnabled = rs.getBoolean("sellerEnabled");
             double reservedBalance = rs.getDouble("reservedBalance");
 
-            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance, reservedBalance);
+            Bidder bidder = new Bidder(id, username, password, fullName, "BIDDER", balance, reservedBalance, status);
             bidder.setSellerEnabled(sellerEnabled);
             return bidder;
         }
@@ -387,11 +388,14 @@ public class UserDAO {
 
     //=============== xóa user ===============
     public void deactivateUser(String userId) {
-        String sql = "UPDATE Users SET status = 'DISABLE', deactivateAt = SYSDATETIME() WHERE id = ?";
+        String sql = "UPDATE Users SET status = 'DISABLED', deactivatedAt = SYSDATETIME() WHERE id = ?";
         try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, userId);
-            ps.executeUpdate();
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new AuctionException("User not found.");
+            }
         }
 
         catch (SQLException e) {

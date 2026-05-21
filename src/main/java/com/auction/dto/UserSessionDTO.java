@@ -12,6 +12,8 @@ public class UserSessionDTO implements Serializable {
     private double balance;
     private boolean sellerEnabled;
     private double reservedBalance;
+    private String status;
+
 
 
     private transient BooleanProperty selected = new SimpleBooleanProperty(false);
@@ -85,5 +87,13 @@ public class UserSessionDTO implements Serializable {
 
     public double getAvailableBalance() {
         return balance - reservedBalance;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
