@@ -23,6 +23,7 @@ import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.nio.file.*;
+import java.util.function.Consumer;
 
 public class AddProduct2Controller {
 
@@ -43,6 +44,7 @@ public class AddProduct2Controller {
     private volatile boolean submitting;
     private ItemDTO editingItem;
     private boolean editMode;
+    private Consumer<ItemDTO> onUpdateSuccess;
 
     private final Map<String, String[]> categoryFields = Map.of(
             "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
@@ -168,12 +170,11 @@ public class AddProduct2Controller {
 
         task.setOnSucceeded(e -> {
             ItemDTO saved = task.getValue();
-            String message = editMode
-                    ? "Product '" + saved.getName() + "' updated!"
-                    : "Product '" + saved.getName() + "' posted!";
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION, "Product '" + task.getValue().getName() + "' posted!");
-            alert.showAndWait();
+            if (editMode && onUpdateSuccess != null) {
+                onUpdateSuccess.accept(saved);
+            }
+            String message = editMode ? "Product updated!" : "Product posted!";
+            new Alert(Alert.AlertType.INFORMATION, message).showAndWait();
             close();
         });
 
@@ -192,54 +193,107 @@ public class AddProduct2Controller {
         var user = ClientSession.getCurrentUser();
         if (user == null) throw new Exception("Please login first!");
 
-        if (txtName.getText().isBlank()) throw new Exception("Name is required!");
-        if (cbCategory.getValue() == null) throw new Exception("Category is required!");
+        String status = (editMode && editingItem != null) ? editingItem.getSessionStatus() : null;
+        boolean isRunning = "RUNNING".equals(status);
 
-        double price;
-        try {
-            price = Double.parseDouble(txtPrice.getText());
-        } catch (NumberFormatException e) {
-            throw new Exception("Invalid price format!");
+
+        if (!txtName.isDisabled()) {
+            if (txtName.getText().isBlank()) throw new Exception("Name is required!");
+        }
+        if (!cbCategory.isDisabled()) {
+            if (cbCategory.getValue() == null) throw new Exception("Category is required!");
         }
 
-        // Xử lý logic thời gian
-        LocalDateTime startDateTime = LocalDateTime.of(dpStartDate.getValue(),
-                LocalTime.of(spinStartHour.getValue(), spinStartMin.getValue(), spinStartSec.getValue()));
+        double price;
+        if (!txtPrice.isDisabled()) {
+            try {
+                price = Double.parseDouble(txtPrice.getText().trim());
+                if (price <= 0) throw new Exception("Starting price must be greater than zero!");
+            } catch (NumberFormatException e) {
+                throw new Exception("Invalid price format!");
+            }
+        } else {
+            // RUNNING: giữ nguyên giá cũ
+            price = (editingItem != null) ? editingItem.getStartingPrice() : 0;
+        }
 
-        LocalDateTime endDateTime = LocalDateTime.of(dpEndDate.getValue(),
-                LocalTime.of(spinEndHour.getValue(), spinEndMin.getValue(), spinEndSec.getValue()));
+        // Xử lý thời gian bắt đầu
+        LocalDateTime startDateTime;
+        if (!dpStartDate.isDisabled()) {
+            startDateTime = LocalDateTime.of(
+                    dpStartDate.getValue(),
+                    LocalTime.of(spinStartHour.getValue(), spinStartMin.getValue(), spinStartSec.getValue())
+            );
+            LocalDateTime now = LocalDateTime.now();
+            if (startDateTime.isBefore(now.minusMinutes(1))) {
+                throw new Exception("Start time cannot be in the past!");
+            }
+        } else {
+            // RUNNING: lấy lại startTime gốc từ editingItem, không validate lại
+            startDateTime = (editingItem != null && editingItem.getStartTimeMillis() > 0)
+                    ? LocalDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(editingItem.getStartTimeMillis()),
+                    ZoneId.systemDefault())
+                    : LocalDateTime.now();
+        }
 
-        if (endDateTime.isBefore(startDateTime)) {
+        // Xử lý thời gian kết thúc (luôn cho sửa)
+        LocalDateTime endDateTime = LocalDateTime.of(
+                dpEndDate.getValue(),
+                LocalTime.of(spinEndHour.getValue(), spinEndMin.getValue(), spinEndSec.getValue())
+        );
+
+        if (!endDateTime.isAfter(startDateTime)) {
             throw new Exception("End time must be after start time!");
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        if (startDateTime.isBefore(now.minusMinutes(1))) { // Trừ 1 phút để bù trừ độ trễ thao tác
-            throw new Exception("Start time cannot be in the past!");
+        // RUNNING: endTime mới phải lớn hơn endTime cũ (chỉ cho kéo dài, không cho rút ngắn)
+        if (isRunning && editingItem != null && editingItem.getEndTimeMillis() > 0) {
+            LocalDateTime oldEndTime = LocalDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(editingItem.getEndTimeMillis()),
+                    ZoneId.systemDefault()
+            );
+            if (!endDateTime.isAfter(oldEndTime)) {
+                throw new Exception("Running auction: new end time must be later than current end time!");
+            }
         }
 
         long startMillis = startDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        long endMillis = endDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long endMillis   = endDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
         ItemDTO item = new ItemDTO();
-        item.setName(txtName.getText().trim());
+
+        // Name, description, category: dùng giá trị cũ nếu bị lock
+        item.setName(!txtName.isDisabled()
+                ? txtName.getText().trim()
+                : (editingItem != null ? editingItem.getName() : ""));
+        item.setDescription(!txtDescription.isDisabled()
+                ? txtDescription.getText().trim()
+                : (editingItem != null ? editingItem.getDescription() : ""));
+        item.setItemType(!cbCategory.isDisabled()
+                ? cbCategory.getValue().toUpperCase()
+                : (editingItem != null ? editingItem.getItemType() : ""));
+
         item.setStartingPrice(price);
         item.setSellerId(user.getId());
-        item.setItemType(cbCategory.getValue().toUpperCase());
-        item.setDescription(txtDescription.getText().trim());
-
         item.setStartTimeMillis(startMillis);
         item.setEndTimeMillis(endMillis);
 
+        // Dynamic fields: chỉ validate khi không bị lock
         for (var entry : fields.entrySet()) {
-            String val = entry.getValue().getText().trim();
-            if (val.isEmpty()) throw new Exception("Please enter " + entry.getKey());
-            mapField(item, entry.getKey(), val);
+            TextField tf = entry.getValue();
+            String val = tf.getText().trim();
+            if (!tf.isDisabled()) {
+                if (val.isEmpty()) throw new Exception("Please enter " + entry.getKey());
+                mapField(item, entry.getKey(), val);
+            } else {
+                // Giữ lại giá trị cũ từ editingItem
+                mapFieldFromExisting(item, entry.getKey());
+            }
         }
 
         if (selectedImageFile != null) {
             byte[] imageBytes = Files.readAllBytes(selectedImageFile.toPath());
-
             item.setImageBytes(imageBytes);
             item.setImageFileName(selectedImageFile.getName());
         }
@@ -259,6 +313,17 @@ public class AddProduct2Controller {
             case "EngineType" -> item.setEngineType(val);
             case "Brand" -> item.setBrand(val);
             case "Artist" -> item.setArtist(val);
+        }
+    }
+
+    private void mapFieldFromExisting(ItemDTO item, String key) {
+        if (editingItem == null) return;
+        switch (key) {
+            case "Model"      -> item.setModel(editingItem.getModel());
+            case "EngineType" -> item.setEngineType(editingItem.getEngineType());
+            case "Mileage"    -> item.setMileage(editingItem.getMileage());
+            case "Brand"      -> item.setBrand(editingItem.getBrand());
+            case "Artist"     -> item.setArtist(editingItem.getArtist());
         }
     }
 
@@ -427,6 +492,10 @@ public class AddProduct2Controller {
         hourSpinner.getValueFactory().setValue(dateTime.getHour());
         minuteSpinner.getValueFactory().setValue(dateTime.getMinute());
         secondSpinner.getValueFactory().setValue(dateTime.getSecond());
+    }
+
+    public void setOnUpdateSuccess(java.util.function.Consumer<ItemDTO> callback) {
+        this.onUpdateSuccess = callback;
     }
 
     @FXML private void handleCancel(ActionEvent event) { close(); }

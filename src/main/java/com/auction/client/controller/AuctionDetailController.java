@@ -22,6 +22,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -148,7 +149,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         historyTask.setOnSucceeded(e -> {
             GetBidHistoryResponse res = historyTask.getValue();
 
-            if (!watching || historyLoaded) return;
+            if (historyLoaded) return;
 
             if (res == null
                     || !res.isSuccess()
@@ -924,12 +925,26 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
             AddProduct2Controller controller = loader.getController();
             controller.setEditingItem(currentItem);
+            controller.setOnUpdateSuccess(updatedItem -> {
+                Platform.runLater(() -> {
+                    currentItem = updatedItem;
+                    populateBasicInfo(updatedItem);
+                    setupDynamicSpecs(updatedItem);
+                    startCountdown(updatedItem.getEndTimeMillis());
+                });
+            });
 
             Stage editStage = new Stage();
             editStage.setTitle("Update Auction");
             editStage.initOwner(btnBack.getScene().getWindow());
             editStage.initModality(Modality.WINDOW_MODAL);
+            editStage.initStyle(javafx.stage.StageStyle.DECORATED);
+            editStage.setResizable(true);
             editStage.setScene(new Scene(root));
+            editStage.setWidth(860);
+            editStage.setHeight(680);
+            editStage.setMinWidth(700);
+            editStage.setMinHeight(500);
             editStage.show();
 
         } catch (IOException e) {

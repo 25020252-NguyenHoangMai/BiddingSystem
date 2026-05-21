@@ -256,7 +256,7 @@ public class UserService {
             throw new UserNotFoundException("User not found!");
         }
 
-        userDAO.deleteUser(userId);
+        //userDAO.deleteUser(userId);
     }
 
 }
