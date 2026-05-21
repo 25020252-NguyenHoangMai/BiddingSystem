@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #eeeeee; -fx-border-width: 0 0 1 0;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SellerHistoryController">
+<HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #eeeeee; -fx-border-width: 0 0 1 0;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SellerProductController">
 
     <!-- Product Image Image Holder Container -->
     <StackPane style="-fx-border-color: #ddd; -fx-border-radius: 5; -fx-padding: 2;">

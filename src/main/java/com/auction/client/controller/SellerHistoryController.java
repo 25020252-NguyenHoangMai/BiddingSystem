@@ -117,8 +117,12 @@ public class SellerHistoryController {
                     default -> "";
                 };
 
-                if (!expectedStatus.isBlank()
-                        && !expectedStatus.equalsIgnoreCase(safe(session.getStatus()))) {
+                String sessionStatus = safe(session.getStatus());
+                if ("In Progress".equals(statusFilter)) {
+                    if (!"RUNNING".equalsIgnoreCase(sessionStatus) && !"OPEN".equalsIgnoreCase(sessionStatus)) {
+                        return false;
+                    }
+                } else if (!expectedStatus.isBlank() && !expectedStatus.equalsIgnoreCase(sessionStatus)) {
                     return false;
                 }
             }
@@ -138,7 +142,7 @@ public class SellerHistoryController {
     }
 
     private void setupListView() {
-        listProducts.setPlaceholder(new Label("No session history found."));
+        listProducts.setPlaceholder(new Label("No auctioned products history found."));
 
         listProducts.setCellFactory(listView -> new ListCell<>() {
             @Override
