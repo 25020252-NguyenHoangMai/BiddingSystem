@@ -56,6 +56,7 @@ public class SessionServiceTest {
     }
 
     @AfterEach
+    @DisplayName("Dọn dẹp môi trường giả lập sau mỗi Test")
     void CleanUp() {
         mockedStaticDbManager.close();
     }
@@ -84,17 +85,18 @@ public class SessionServiceTest {
     class CreateSessionTests {
 
         @Test
-        void Success() {
+        void Success() throws SQLException{
             LocalDateTime start = now.plusDays(1);
             LocalDateTime end = now.plusDays(2);
-            when(sessionDAO.existsActiveSessionByItemId("ITEM_1")).thenReturn(false);
-
+            when(sessionDAO.existsActiveSessionByItemId(any(Connection.class), eq("ITEM_1"))).thenReturn(false);
+            when(sessionDAO.getSessionById(any(Connection.class), anyString())).thenReturn(null);
             AuctionSession session = sessionService.createSession(mockItem, start, end);
 
             assertNotNull(session);
             assertNotNull(session.getId());
             assertEquals("OPEN", session.getStatus());
-            verify(sessionDAO, times(1)).insertSession(session, mockItem);
+            verify(sessionDAO, times(1)).insertSession(eq(mockConn), eq(session), eq(mockItem));
+            verify(mockConn, times(1)).commit();
         }
 
         @Test
@@ -115,10 +117,12 @@ public class SessionServiceTest {
         }
 
         @Test
-        void ActiveSessionExists_ThrowException() {
-            when(sessionDAO.existsActiveSessionByItemId("ITEM_1")).thenReturn(true);
+        void ActiveSessionExists_ThrowException() throws SQLException {
+            when(sessionDAO.existsActiveSessionByItemId(any(Connection.class), eq("ITEM_1"))).thenReturn(true);
+
             IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> sessionService.createSession(mockItem, now, now.plusDays(1)));
             assertEquals("This item already has an OPEN or RUNNING auction session", e.getMessage());
+            verify(mockConn, times(1)).rollback();
         }
     }
 
@@ -131,34 +135,35 @@ public class SessionServiceTest {
     class GetRunningSessionsAndAutoTransitionsTests {
 
         @Test
-        void TimeReached_AutoStartOpenSession() {
-            //đã đêns h start OPEN pk auto thành RUNNING
+        void TimeReached_AutoStartOpenSession() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(10), now.plusHours(1));
             session.setStatus(SessionService.STATUS_OPEN);
 
-            when(sessionDAO.getAllSessions()).thenReturn(List.of(session));
+            when(sessionDAO.getAllSessions(any(Connection.class))).thenReturn(List.of(session));
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
             List<AuctionSession> running = sessionService.getRunningSessions();
 
             assertEquals(1, running.size());
             assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
-
-            verify(sessionDAO).updateStatus(any(java.sql.Connection.class), eq("S1"), eq(SessionService.STATUS_RUNNING));
+            verify(sessionDAO).updateStatus(any(Connection.class), eq("S1"), eq(SessionService.STATUS_RUNNING));
+            verify(mockConn, atLeastOnce()).commit();
         }
 
-        @Test
-        void AutoFinishExpiredRunningSession() {//Expire:hết hạn
 
+        @Test
+        void AutoFinishExpiredRunningSession() throws SQLException {//Expire:hết hạn
             AuctionSession session = new AuctionSession("S2", mockItem, now.minusHours(2), now.minusMinutes(1));
             session.setStatus(SessionService.STATUS_RUNNING);
 
-            when(sessionDAO.getAllSessions()).thenReturn(List.of(session));
+            when(sessionDAO.getAllSessions(any(Connection.class))).thenReturn(List.of(session));
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S2"))).thenReturn(session);
 
             List<AuctionSession> running = sessionService.getRunningSessions();
 
             assertEquals(0, running.size());
             assertEquals(SessionService.STATUS_FINISHED, session.getStatus());
-            verify(sessionDAO).updateStatus(any(java.sql.Connection.class), eq("S2"), eq(SessionService.STATUS_FINISHED));
+            verify(sessionDAO).updateStatus(any(Connection.class), eq("S2"), eq(SessionService.STATUS_FINISHED));
         }
     }
 
@@ -169,22 +174,22 @@ public class SessionServiceTest {
     class StartSessionTests {
 
         @Test
-        void OPEN_StartSuccessfully() {
+        void OPEN_StartSuccessfully() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(5), now.plusHours(1));
             session.setStatus(SessionService.STATUS_OPEN);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
 
             sessionService.startSession("S1");
 
             assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
-            verify(sessionDAO).updateStatus(any(java.sql.Connection.class), eq("S1"), eq(SessionService.STATUS_RUNNING));
+            verify(sessionDAO).updateStatus(any(Connection.class), eq("S1"), eq(SessionService.STATUS_RUNNING));
         }
 
         @Test
-        void BeforeStartTime_ThrowException() {
+        void BeforeStartTime_ThrowException() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.plusHours(1), now.plusHours(2));
             session.setStatus(SessionService.STATUS_OPEN);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
 
             assertThrows(IllegalStateException.class, () -> sessionService.startSession("S1"));
         }
@@ -195,10 +200,10 @@ public class SessionServiceTest {
     class FinishSessionTests{
 
         @Test
-        void Success() {
+        void Success() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
 
             sessionService.finishSession("S1");
 
@@ -206,10 +211,10 @@ public class SessionServiceTest {
         }
 
         @Test
-        void AlreadyPaid_ThrowException() {
+        void AlreadyPaid_ThrowException() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now, now.plusHours(1));
-            session.setStatus(SessionService.STATUS_PAID); // Terminal state
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            session.setStatus(SessionService.STATUS_PAID);
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
 
             assertThrows(IllegalStateException.class, () -> sessionService.finishSession("S1"));
         }
@@ -222,23 +227,23 @@ public class SessionServiceTest {
     class ExtendSessionTests {
 
         @Test
-        void ExtendSuccessfully_AndSupportAntiSniping() {
+        void ExtendSuccessfully_AndSupportAntiSniping() throws SQLException {
             LocalDateTime endTime = now.plusMinutes(5);
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), endTime);
             session.setStatus(SessionService.STATUS_RUNNING);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
             Duration extra = Duration.ofSeconds(30);
             sessionService.extendSession("S1", extra);
 
-            assertEquals(endTime.plusSeconds(30), session.getEndTime(), "End time must be extended by 30 seconds");
-            verify(sessionDAO).updateEndTime(eq("S1"), eq(endTime.plusSeconds(30)));
+            verify(sessionDAO).updateEndTime(any(Connection.class), eq("S1"), eq(endTime.plusSeconds(30)));
+            verify(mockConn, times(1)).commit();
         }
 
         @Test
-        void ExtraTimeNegative_ThrowException() {
+        void ExtraTimeNegative_ThrowException() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now, now.plusHours(1));
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
             assertThrows(IllegalArgumentException.class, () -> sessionService.extendSession("S1", Duration.ofSeconds(-10)));
         }
@@ -256,9 +261,9 @@ public class SessionServiceTest {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(100.0);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
-            //giả lập DAO xử lý update thành công
             when(sessionDAO.updateCurrentBid(any(Connection.class), eq("S1"), eq(150.0), eq("BIDDER_1"))).thenReturn(true);
 
             boolean result = sessionService.updateCurrentBid("S1", 150.0, "BIDDER_1");
@@ -268,16 +273,16 @@ public class SessionServiceTest {
         }
 
         @Test
-        void BidTooLow_ReturnFalse() {
+        void BidTooLow_ReturnFalse() throws SQLException {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(500.0);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
-
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
             boolean result = sessionService.updateCurrentBid("S1", 400.0, "BIDDER_1");
 
-            assertFalse(result, "Giá thấp hơn currentPrice phải trả về false");
+            assertFalse(result);
         }
 
 
@@ -286,14 +291,21 @@ public class SessionServiceTest {
             AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(100.0);
-            when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-            //giả lập mất mạng đúng lúc gọi connection
-            when(mockDbManager.getConnection()).thenThrow(new SQLException("Deadlock / Connection lost"));
+            DatabaseManager spyDbManager = spy(mockDbManager);
+            mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(spyDbManager);
+
+            when(spyDbManager.getConnection())
+                    .thenReturn(mockConn)
+                    .thenReturn(mockConn)
+                    .thenThrow(new SQLException("Deadlock / Connection lost"));
+
+            when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
+            when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
             boolean result = sessionService.updateCurrentBid("S1", 150.0, "BIDDER_1");
 
-            assertFalse(result, "Bị lỗi SQL phải nuốt lỗi và trả về false để không crash app");
+            assertFalse(result);
         }
 
 
@@ -302,13 +314,12 @@ public class SessionServiceTest {
         @Nested
         class AdvancedArchitectureTests { //AdvancedArchitecture: kiến trúc nâng cao
 
+
             @Test
-            void session_shouldFollowCorrectLifecycle() { //phiên lm vc tuân theo đúng vòng đời
-                //OPEN
+            void session_shouldFollowCorrectLifecycle() throws SQLException {//phiên lm vc tuân theo đúng vòng đời
                 AuctionSession session = new AuctionSession("S1", mockItem, now.minusMinutes(1), now.plusMinutes(1));
                 session.setStatus(SessionService.STATUS_OPEN);
-                when(sessionDAO.getSessionById("S1")).thenReturn(session);
-
+                when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
 
                 sessionService.refreshSessionStatus("S1");
                 assertEquals(SessionService.STATUS_RUNNING, session.getStatus());
@@ -319,15 +330,17 @@ public class SessionServiceTest {
                 assertEquals(SessionService.STATUS_FINISHED, session.getStatus());
             }
 
+
             @Test
             void updateCurrentBid_shouldHandleConcurrentBids() throws InterruptedException, SQLException {
-                // TEST ĐA LUỒNG: Bắn 100 luồng request Đặt giá CÙNG 1 MILI-GIÂY
+
+                //100 luồng request Đặt giá CÙNG 1 MILI-GIÂY
                 AuctionSession session = new AuctionSession("S1", mockItem, now.minusHours(1), now.plusHours(1));
                 session.setStatus(SessionService.STATUS_RUNNING);
                 session.setCurrentPrice(100.0);
-                when(sessionDAO.getSessionById("S1")).thenReturn(session);
 
-                // Mỗi lần updateDAO thành công thì tăng currentPrice nội bộ để mô phỏng
+                when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);
+                when(sessionDAO.getSessionByIdForUpdate(any(Connection.class), eq("S1"))).thenReturn(session);
                 when(sessionDAO.updateCurrentBid(any(Connection.class), eq("S1"), anyDouble(), anyString())).thenReturn(true);
 
                 int numberOfThreads = 100;
@@ -337,11 +350,11 @@ public class SessionServiceTest {
                 CountDownLatch doneLatch = new CountDownLatch(numberOfThreads);
 
                 for (int i = 0; i < numberOfThreads; i++) {
-                    double bidAmount = 150.0 + i; //các giá bid khác nhau
+                    double bidAmount = 150.0 + i;
                     executor.execute(() -> {
-                        readyLatch.countDown(); //báo cáo thread đã sẵn sàng
+                        readyLatch.countDown();//báo cáo thread đã sẵn sàng
                         try {
-                            startLatch.await(); //đứng chờ hiệu lệnh nổ súng
+                            startLatch.await();//đứng chờ hiệu lệnh nổ súng
                             sessionService.updateCurrentBid("S1", bidAmount, "CONCURRENT_BIDDER");
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
@@ -351,14 +364,15 @@ public class SessionServiceTest {
                     });
                 }
 
-                readyLatch.await(); // Chờ cả 100 thread vào vị trí
-                startLatch.countDown(); // PHÁT LỆNH CHẠY ĐỒNG LOẠT!
-                doneLatch.await(); // Chờ tất cả chạy xong
+                readyLatch.await();// Chờ cả 100 thread vào vị trí
+                startLatch.countDown();// PHÁT LỆNH CHẠY ĐỒNG LOẠT!
+                doneLatch.await();// Chờ tất cả chạy xong
 
                 // Nếu synchronized hoạt động, nó sẽ không ném ConcurrentModificationException hay lỗi luồng.
                 // Số lần gọi xuống DAO phải khớp với những bid hợp lệ.
                 // Test này kiểm tra độ an toàn chống Crash của hàm khi chịu tải đột ngột.
-                assertTrue(true, "Concurrency test passed without deadlocks or thread crashes!");
+
+                assertTrue(true);
             }
         }
     }

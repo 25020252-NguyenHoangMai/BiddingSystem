@@ -13,9 +13,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+
 
 public class SessionService { // Quản lí phiên đấu giá
     private static final String SESSION_ID_PREFIX = "SS-";
