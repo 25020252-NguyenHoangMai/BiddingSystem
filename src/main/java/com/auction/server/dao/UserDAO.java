@@ -399,7 +399,7 @@ public class UserDAO {
         }
 
         catch (SQLException e) {
-            throw new AuctionException("An error occurred while deleting user: " + e.getMessage());
+            throw new AuctionException("An error occurred while deactivating user: " + e.getMessage());
         }
     }
 
