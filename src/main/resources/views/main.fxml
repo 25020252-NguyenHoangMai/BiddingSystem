@@ -46,17 +46,8 @@
             </HBox>
         </HBox>
 
-        <TableView fx:id="tableAuctions" style="-fx-background-radius: 8; -fx-border-radius: 8; -fx-overflow-x: hidden;" VBox.vgrow="ALWAYS">
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-            </columnResizePolicy>
-            <columns>
-                <TableColumn fx:id="colProductName" prefWidth="300" text="Product Name" />
-                <TableColumn fx:id="colCurrentPrice" prefWidth="150" text="Current Price ($)" />
-                <TableColumn fx:id="colSeller" prefWidth="150" text="Seller" />
-                <TableColumn fx:id="colTime" prefWidth="150" text="Time Left" />
-            </columns>
-        </TableView>
+        <ListView fx:id="listAuctions" VBox.vgrow="ALWAYS"
+                  style="-fx-background-radius: 8; -fx-border-radius: 8;" />
 
         <HBox alignment="CENTER_RIGHT" spacing="15">
             <Button fx:id="addBtn" managed="true" onAction="#handleAddProduct" prefHeight="40.0" prefWidth="150.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="➕ Add Product" visible="true" />

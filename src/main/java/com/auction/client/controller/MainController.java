@@ -46,16 +46,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     @FXML private Button addBtn;
     @FXML private TextField searchField;
 
-    @FXML
-    private TableView<ItemDTO> tableAuctions;
-    @FXML
-    private TableColumn<ItemDTO, String> colProductName;
-    @FXML
-    private TableColumn<ItemDTO, Double> colCurrentPrice;
-    @FXML
-    private TableColumn<ItemDTO, String> colSeller; // Kiểu String cho tên người bán
-    @FXML
-    private TableColumn<ItemDTO, String> colTime;
+    @FXML private ListView<ItemDTO> listAuctions;
 
     // ===== DATA =====
     private final ObservableList<ItemDTO> auctionList = FXCollections.observableArrayList();
@@ -73,26 +64,16 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     // ===== INIT =====
     @FXML
     public void initialize() {
-        setupTable();
-        tableAuctions.setItems(filteredAuctions);
-        tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
+        setupListView();
+        listAuctions.setItems(filteredAuctions);
+        listAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
 
-        // Cập nhật User Info
         setupUserInfo();
-
-        // Đưa vào danh sách listeners
         ClientSession.addUserChangeListener(userChangeListener);
-
-        // Chuyển màn hình Main sang màn hình đấu giá
-        setupRowClickToDetail();
-
         setupSearchFilter();
 
-        // Đăng ký lắng nghe realtime update từ server
         clientSocket.setDashboardUpdateListener(this);
 
-        // Gửi WatchDashboardRequest VÀ tải danh sách sản phẩm tuần tự trên 1 thread
-        // để tránh race condition: WatchDashboardResponse bị lấy nhầm bởi getAllProducts()
         if (!clientSocket.isDashboardWatching()) {
             sendWatchThenLoad();
         } else {
@@ -102,7 +83,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== Gửi WatchDashboardRequest, chờ xác nhận, rồi mới tải sản phẩm =====
     private void sendWatchThenLoad() {
-        tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
+        listAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
         Task<List<ItemDTO>> task = new Task<>() {
             @Override
             protected List<ItemDTO> call() throws Exception {
@@ -210,88 +191,44 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         addBtn.setManaged(isSeller);
     }
 
-    // ===== TABLE CONFIG =====
-    private void setupTable() {
-        setupProductNameColumn();
-        setupCurrentPriceColumn();
-        setupSellerColumn();
-        setupTimeColumn();
-    }
-
-    private void setupProductNameColumn() {
-        colProductName.setCellValueFactory(data ->
-                new SimpleStringProperty(safe(data.getValue().getName()))
-        );
-    }
-
-    private void setupCurrentPriceColumn() {
-        colCurrentPrice.setCellValueFactory(data ->
-                new SimpleDoubleProperty(data.getValue().getCurrentPrice()).asObject()
-        );
-    }
-
-    private void setupSellerColumn() {
-        colSeller.setCellValueFactory(data ->
-                new SimpleStringProperty(safe(data.getValue().getSellerUsername()))
-        );
-    }
-
-    private void setupTimeColumn() {
-        colTime.setCellValueFactory(data ->
-                new SimpleStringProperty(safe(data.getValue().calculateTimeLeft()))
-        );
-
-        colTime.setCellFactory(column -> createTimeCell());
-    }
-
-    private TableCell<ItemDTO, String> createTimeCell() {
-        return new TableCell<>() {
-
-            private final Timeline timeline = new Timeline(
-                    new KeyFrame(Duration.seconds(1), e -> updateTime()));
-            {
-                timeline.setCycleCount(Animation.INDEFINITE);
-            }
-
-            private void updateTime() {
-                ItemDTO item = getTableRow().getItem();
-
-                if (item != null) {
-                    setText(safe(item.calculateTimeLeft()));
-                }
-            }
+    private void setupListView() {
+        listAuctions.setCellFactory(lv -> new ListCell<>() {
+            private AuctionItemCellController cellController;
 
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(ItemDTO item, boolean empty) {
                 super.updateItem(item, empty);
 
-                if (empty || getTableRow().getItem() == null) {
-                    setText(null);
-                    timeline.stop();
-                } else {
-                    updateTime();
-
-                    if (timeline.getStatus() != Animation.Status.RUNNING) {
-                        timeline.play();
+                if (empty || item == null) {
+                    setGraphic(null);
+                    if (cellController != null) {
+                        cellController.stopCountdown();
+                        cellController = null;
                     }
+                    return;
+                }
+
+                try {
+                    FXMLLoader loader = new FXMLLoader(
+                            getClass().getResource("/views/auction_item_cell.fxml")
+                    );
+                    javafx.scene.layout.HBox root = loader.load();
+                    cellController = loader.getController();
+                    cellController.setData(item);
+                    cellController.setOnViewDetail(() -> openAuctionDetail(item));
+                    setGraphic(root);
+                } catch (java.io.IOException e) {
+                    e.printStackTrace();
+                    setGraphic(new Label("Cannot load item."));
                 }
             }
-
-            @Override
-            public void updateIndex(int index) {
-                super.updateIndex(index);
-
-                // Cell bị recycle → stop timeline cũ
-                if (index < 0) {
-                    timeline.stop();
-                }
-            }
-        };
+        });
     }
+
 
     // ===== LOAD DATA (ASYNC) =====
     private void loadProductsAsync() {
-        tableAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
+        listAuctions.setPlaceholder(new Label("Đang tải dữ liệu..."));
 
         Task<List<ItemDTO>> task = new Task<>() {
 
@@ -312,14 +249,14 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         auctionList.setAll(items);
 
         if (items.isEmpty()) {
-            tableAuctions.setPlaceholder(new Label("No item"));
+            listAuctions.setPlaceholder(new Label("No item"));
         }
     }
 
     private void handleProductLoadingError(Throwable ex) {
         ex.printStackTrace();
 
-        tableAuctions.setPlaceholder(new Label("Cannot load data"));
+        listAuctions.setPlaceholder(new Label("Cannot load data"));
 
         showError("Error loading data: " + ex.getMessage());
     }
@@ -443,17 +380,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             e.printStackTrace();
             showError("Error opening deposit screen: " + e.getMessage());
         }
-    }
-
-    private void setupRowClickToDetail() {
-        tableAuctions.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                ItemDTO selected = tableAuctions.getSelectionModel().getSelectedItem();
-                if (selected != null) {
-                    openAuctionDetail(selected);
-                }
-            }
-        });
     }
 
     private void setupSearchFilter() {
