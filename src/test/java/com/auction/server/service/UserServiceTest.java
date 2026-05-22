@@ -127,6 +127,7 @@ public class UserServiceTest {
 
     @Test
     void testChangePassword_ThanhCong() {
+        when(userDAO.getUserById("U01")).thenReturn(testUserInDB);
         userService.changePassword("U01", "new_password_xịn");
 
         verify(userDAO, times(1)).updatePassword(eq("U01"), anyString());
@@ -139,16 +140,15 @@ public class UserServiceTest {
     class testUpdateProfile {
         @Test
         void UsernameDaTonTaiCuaNguoiKhac_PhaiNemLoi() {
-
+            when(userDAO.getUserById("U01")).thenReturn(testUserInDB);
             User otherPerson = new Bidder();
             otherPerson.setId("U02");
             otherPerson.setUsername("mai_dao");
 
-            testUser.setUsername("mai_dao");
             when(userDAO.getUserByUsername("mai_dao")).thenReturn(otherPerson);
 
             assertThrows(AuctionException.class, () -> {
-                userService.updateProfile(testUser);
+                userService.updateProfile("U01", "Quỳnh mới", "mai_dao", "new_pass");
             });
 
             verify(userDAO, never()).updateUser(any());
@@ -157,12 +157,15 @@ public class UserServiceTest {
         @Test
         void ThanhCong() {
 
+            when(userDAO.getUserById("U01")).thenReturn(testUserInDB);
             when(userDAO.getUserByUsername("quynh_admin")).thenReturn(testUserInDB);
+            when(userDAO.getUserById("U01")).thenReturn(testUserInDB);
 
-            userService.updateProfile(testUser);
+            userService.updateProfile("U01", "Quỳnh mới", "quynh_admin", "new_pass");
 
             // Đảm bảo lệnh update được chạy
-            verify(userDAO, times(1)).updateUser(testUser);
+            verify(userDAO, times(1)).updateUser(any(User.class));
+            verify(userDAO, times(1)).updatePassword(eq("U01"), anyString());
         }
     }
 
