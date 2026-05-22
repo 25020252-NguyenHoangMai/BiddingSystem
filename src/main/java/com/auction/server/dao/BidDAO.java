@@ -190,4 +190,20 @@ public class BidDAO {
             throw new AuctionException("An error occurred while getting session history: " + e.getMessage());
         }
     }
+
+    public boolean existsBidBySessionId(Connection conn, String sessionId) {
+        String sql = "SELECT TOP 1 1 FROM BidTransaction WHERE sessionId = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while checking session bids: " + e.getMessage());
+        }
+    }
+
+    
 }
