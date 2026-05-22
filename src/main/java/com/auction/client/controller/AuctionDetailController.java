@@ -7,7 +7,6 @@ import com.auction.dto.BidHistoryEntryDTO;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.UserSessionDTO;
 import com.auction.response.*;
-import com.auction.server.service.BidIncrementService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -58,7 +57,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.US);
     private Timeline countdownTimeline;
     private volatile boolean watching = false;
-    private boolean isModeOn = false;
     private XYChart.Series<String, Number> priceSeries;
     private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -358,14 +356,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         }
 
         String me = ClientSession.getCurrentUser() != null
-                        ? ClientSession.getCurrentUser().getUsername()
-                        : "";
+                ? ClientSession.getCurrentUser().getUsername()
+                : "";
 
         String entry = BidHistoryFormatter.formatRealtime(
-                        update.getBidderUsername(),
-                        update.getCurrentPrice(),
-                        me
-                );
+                update.getBidderUsername(),
+                update.getCurrentPrice(),
+                me
+        );
 
         if (!lvBidHistory.getItems().contains(entry)) {
             lvBidHistory.getItems().add(0, entry);
@@ -574,6 +572,11 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     @FXML
     private void handleAutoBid(ActionEvent event) {
+        Double maxBid = requestAutoBidAmount();
+
+        if (maxBid == null) {
+            return;
+        }
 
         UserSessionDTO currentUser = ClientSession.getCurrentUser();
 
@@ -582,40 +585,15 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             return;
         }
 
-        isModeOn = !isModeOn;
+        prepareAutoBidButton();
 
-        if (isModeOn) {
-            Double maxBid = requestAutoBidAmount();
+        Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
 
-            if (maxBid == null) {
-                isModeOn = false;
-                return;
-            }
-            prepareAutoBidButton();
+        configureAutoBidHandlers(task);
 
-            Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
-
-            configureAutoBidHandlers(task, true);
-
-            Thread thread = new Thread(task);
-            thread.setDaemon(true);
-            thread.start();
-        } else {
-
-            prepareAutoBidButton();
-
-            // dùng mẹo ghi đè maxBid bằng một số hợp lệ
-            BidIncrementService incrementService = new BidIncrementService();
-            double currentPrice = currentItem.getCurrentPrice();
-            double minimumNextBid = incrementService.getMinimumNextBid(currentPrice);
-
-            Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, minimumNextBid);
-            configureAutoBidHandlers(task, false);
-
-            Thread thread = new Thread(task);
-            thread.setDaemon(true);
-            thread.start();
-        }
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 
 
@@ -654,11 +632,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     private void resetAutoBidButton() {
         updateBidButtonsState();
-        if (isModeOn) {
-            btnAutoBid.setText("Turn off Auto Bid");
-        } else {
-            btnAutoBid.setText("Turn on Auto Bid");
-        }
+        btnAutoBid.setText("Auto Bid");
     }
 
     private Task<SetAutoBidResponse> createAutoBidTask(UserSessionDTO currentUser, double maxBid) {
@@ -674,7 +648,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         };
     }
 
-    private void configureAutoBidHandlers(Task<SetAutoBidResponse> task, boolean isActivating) {
+    private void configureAutoBidHandlers(Task<SetAutoBidResponse> task) {
         task.setOnSucceeded(e -> {
             resetAutoBidButton();
 
@@ -713,23 +687,13 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     updateBidHint(null);
                 }
 
-                resetAutoBidButton();
-
-                if (isActivating) {
-                    showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid is successfully activated.");
-                } else {
-                    showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid is successfully deactivated.");
-                }
-
+                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
             } else {
-                isModeOn = !isActivating;
-                resetAutoBidButton();
                 showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
             }
         });
 
         task.setOnFailed(e -> {
-            isModeOn = !isActivating;
             resetAutoBidButton();
 
             showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
