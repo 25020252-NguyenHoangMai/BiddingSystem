@@ -68,6 +68,10 @@ public class AuctionItemCellController {
                 lblTimeLeft.setText(String.format("%02d:%02d:%02d", h, m, s));
             } else {
                 lblTimeLeft.setText("EXPIRED");
+                if ("OPEN".equalsIgnoreCase(lblStatusTag.getText()) || "RUNNING".equalsIgnoreCase(lblStatusTag.getText())) {
+                    lblStatusTag.setText("FINISHED");
+                    updateStatusStyle("FINISHED");
+                }
                 countdownTimeline.stop();
             }
         }));

@@ -230,7 +230,8 @@ public class ItemDAO {
         CROSS APPLY (
             SELECT TOP 1 *
             FROM AuctionSession s
-            WHERE s.itemId = i.id AND s.status IN ('OPEN', 'RUNNING')
+            WHERE s.itemId = i.id
+                  AND s.status NOT IN ('CANCELLED', 'CANCELED')
             ORDER BY s.startTime DESC
         ) s
         LEFT JOIN Users winner ON s.currentWinnerId = winner.id

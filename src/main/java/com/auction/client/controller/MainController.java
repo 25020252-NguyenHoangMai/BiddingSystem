@@ -45,7 +45,6 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     @FXML private Label balanceLabel;
     @FXML private Button addBtn;
     @FXML private TextField searchField;
-
     @FXML private ListView<ItemDTO> listAuctions;
 
     // ===== FILTER BUTTONS - Status =====
@@ -74,6 +73,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     private final AuctionService auctionService = new AuctionService();
     private final Consumer<UserSessionDTO> userChangeListener =
             user -> Platform.runLater(this::setupUserInfo);
+    private Timeline autoRefreshTimeline;
 
 
     // ===== INIT =====
@@ -95,6 +95,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         } else {
             loadProductsAsync();
         }
+        startAutoRefresh();
     }
 
     // ===== Gửi WatchDashboardRequest, chờ xác nhận, rồi mới tải sản phẩm =====
@@ -181,7 +182,10 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     }
 
     private void removeAuctionItem(ItemDTO item) {
-        auctionList.removeIf(i -> Objects.equals(i.getSessionId(), item.getSessionId()));
+        if (item == null) {
+            return;
+        }
+        auctionList.removeIf(i -> Objects.equals(i.getId(), item.getId()));
         applyFilters();
     }
 
@@ -405,11 +409,11 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== FILTER SETUP =====
     private void setupFilterButtons() {
-        activeStatusFilter = "RUNNING";
-        setButtonActive(btnStatusAll,     false);
-        setButtonActive(btnStatusRunning, true);
-        setButtonActive(btnStatusClosed,  false);
-        setButtonActive(btnCatAll, true);
+        activeStatusFilter = null;
+        setButtonActive(btnStatusAll,true);
+        setButtonActive(btnStatusRunning,false);
+        setButtonActive(btnStatusClosed, false);
+        setButtonActive(btnCatAll,true);
         applyFilters();
     }
 
@@ -418,11 +422,11 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         ToggleButton clicked = (ToggleButton) event.getSource();
         if      (clicked == btnStatusAll)      activeStatusFilter = null;
         else if (clicked == btnStatusRunning)  activeStatusFilter = "RUNNING";
-        else if (clicked == btnStatusClosed)   activeStatusFilter = "FINISHED";
+        else if (clicked == btnStatusClosed)   activeStatusFilter = "CLOSED";
 
         setButtonActive(btnStatusAll,      activeStatusFilter == null);
         setButtonActive(btnStatusRunning,  "RUNNING".equals(activeStatusFilter));
-        setButtonActive(btnStatusClosed,   "FINISHED".equals(activeStatusFilter));
+        setButtonActive(btnStatusClosed,   "CLOSED".equals(activeStatusFilter));
         applyFilters();
     }
 
@@ -445,24 +449,37 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         String keyword = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
 
         filteredAuctions.setPredicate(item -> {
+            if (item == null) { return false;}
+            String status = item.getSessionStatus();
+            if ("CANCELED".equalsIgnoreCase(status)) {
+                return false;
+            }
             // Search filter
             if (!keyword.isBlank()) {
                 String name   = item.getName() == null ? "" : item.getName().toLowerCase();
                 String seller = item.getSellerUsername() == null ? "" : item.getSellerUsername().toLowerCase();
                 if (!name.contains(keyword) && !seller.contains(keyword)) return false;
+
+                boolean matchKeyword = name.contains(keyword) || seller.contains(keyword);
+                if (!matchKeyword) {
+                    return false;
+                }
             }
 
             // Status filter
             if (activeStatusFilter != null) {
-                String status = item.getSessionStatus();
                 if (status == null) return false;
-                if ("RUNNING".equals(activeStatusFilter)) {
-                    if (!"RUNNING".equalsIgnoreCase(status)
-                            && !"OPEN".equalsIgnoreCase(status)) return false;
-                } else if ("FINISHED".equals(activeStatusFilter)) {
-                    if (!"FINISHED".equalsIgnoreCase(status)
-                            && !"PAID".equalsIgnoreCase(status)
-                            && !"CANCELED".equalsIgnoreCase(status)) return false;
+                if ("RUNNING".equalsIgnoreCase(activeStatusFilter)) {
+                    boolean running = "OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
+                    if (!running) {
+                        return false;
+                    }
+                }
+                if ("CLOSED".equalsIgnoreCase(activeStatusFilter)) {
+                    boolean running = "OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
+                    if (running) {
+                        return false;
+                    }
                 }
             }
 
@@ -548,5 +565,38 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         ClientSession.removeUserChangeListener(userChangeListener);
 
         ClientSession.clear();
+    }
+
+    private void startAutoRefresh() {
+
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(5), e -> refreshExpiredAuctions())
+        );
+
+        autoRefreshTimeline.setCycleCount(Animation.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+
+    private void refreshExpiredAuctions() {
+        long now = System.currentTimeMillis();
+        boolean changed = false;
+
+        for (ItemDTO item : auctionList) {
+            if (item == null) {
+                continue;
+            }
+
+            String status = item.getSessionStatus();
+
+            if (("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status)) && item.getEndTimeMillis() <= now) {
+                item.setSessionStatus("FINISHED");
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            listAuctions.refresh();
+            applyFilters();
+        }
     }
 }
