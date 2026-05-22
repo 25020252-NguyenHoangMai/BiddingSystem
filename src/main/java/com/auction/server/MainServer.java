@@ -23,7 +23,7 @@ public class    MainServer {
         DashboardWatchRegistry dashboardWatchRegistry = new DashboardWatchRegistry();
 
         ImageStorageService imageStorageService = new ImageStorageService();
-        UserService userService = new UserService(userDAO);
+        UserService userService = new UserService(userDAO, sessionDAO);
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
 
         BidHistoryService bidHistoryService = new BidHistoryService(bidDAO, userService);

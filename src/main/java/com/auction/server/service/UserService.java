@@ -4,9 +4,12 @@ import com.auction.exception.AuctionException;
 import com.auction.exception.AuthenticationException;
 import com.auction.exception.UserNotFoundException;
 //import com.auction.server.factory.UserFromDTOFactory;
+import com.auction.model.AuctionSession;
 import com.auction.model.Bidder;
 import com.auction.model.User;
 import com.auction.server.dao.DatabaseManager;
+import com.auction.server.dao.ItemDAO;
+import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
 //import com.auction.dto.UserDTO;
 import org.mindrot.jbcrypt.BCrypt;
@@ -18,19 +21,29 @@ import java.util.List;
 
 public class UserService {
     private  UserDAO userDAO;
+    private SessionDAO sessionDAO;
 
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String STATUS_DISABLED = "DISABLED";
 
     public UserService() {
-        this(new UserDAO());
+        this(new UserDAO(), new SessionDAO(new ItemDAO()));
     }
 
     public UserService(UserDAO userDAO) {
+        this(userDAO, new SessionDAO(new ItemDAO()));
+    }
+
+    public UserService(UserDAO userDAO, SessionDAO sessionDAO) {
         if (userDAO == null) {
             throw new IllegalArgumentException("UserDAO cannot be null");
         }
+        if (sessionDAO == null) {
+            throw new IllegalArgumentException("SessionDAO cannot be null");
+        }
+
         this.userDAO = userDAO;
+        this.sessionDAO = sessionDAO;
     }
 
     private void requireActiveUser(User user) {
@@ -305,6 +318,11 @@ public class UserService {
 
             try {
                 userDAO.deactivateUser(conn, userId);
+
+                if (user instanceof Bidder bidder && bidder.isSellerEnabled()) {
+                    cancelActiveSellerSessions(conn, userId);
+                }
+
                 conn.commit();
             } catch (Exception e) {
                 conn.rollback();
@@ -316,7 +334,22 @@ public class UserService {
             throw new AuctionException("Deactivate user failed! " + e.getMessage());
         }
 
-        //userDAO.deleteUser(userId);
+    }
+
+    private void cancelActiveSellerSessions(Connection conn, String sellerId) {
+        List<AuctionSession> activeSessions = sessionDAO.getActiveSessionsBySellerForUpdate(conn, sellerId);
+
+        for (AuctionSession session : activeSessions) {
+            String winnerId = session.getCurrentWinnerId();
+            double currentPrice = session.getCurrentPrice();
+
+            if (winnerId != null && !winnerId.isBlank() && currentPrice > 0) {
+                userDAO.updateReservedBalance(conn, winnerId, -currentPrice);
+            }
+
+            sessionDAO.updateStatus(conn, session.getId(), SessionService.STATUS_CANCELED);
+            session.setStatus(SessionService.STATUS_CANCELED);
+        }
     }
 
 }
