@@ -249,18 +249,26 @@ public class UserDAOTest extends BaseDAOTest {
 
 
     @Nested
-    class TestDeleteUser {
+    class TestDeactivateUser {
 
         @Test
         void Success() throws SQLException {
             when(mockPs.executeUpdate()).thenReturn(1);
-            assertDoesNotThrow(() -> userDAO.deleteUser("U1"));
+
+            assertDoesNotThrow(() -> userDAO.deactivateUser(mockConn, "U1"));
+        }
+
+        @Test
+        void NotFound_ThrowsException() throws SQLException {
+            when(mockPs.executeUpdate()).thenReturn(0);
+            AuctionException e = assertThrows(AuctionException.class, () -> userDAO.deactivateUser(mockConn, "U1"));
+            assertEquals("User not found.", e.getMessage());
         }
 
         @Test
         void whenSQLExceptionOccurs_ThrowAuctionException() throws SQLException {
             when(mockPs.executeUpdate()).thenThrow(new SQLException("Error"));
-            assertThrows(AuctionException.class, () -> userDAO.deleteUser("U1"));
+            assertThrows(AuctionException.class, () -> userDAO.deactivateUser(mockConn, "U1"));
         }
     }
 

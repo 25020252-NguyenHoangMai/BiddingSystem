@@ -46,6 +46,36 @@
             </HBox>
         </HBox>
 
+        <!-- Filter Bar -->
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-padding: 0 0 5 0;">
+
+            <!-- Status Filter -->
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Status:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+                <ToggleButton fx:id="btnStatusAll"     text="All"        onAction="#handleStatusFilter"
+                              style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+                <ToggleButton fx:id="btnStatusRunning" text="🟢 Running" onAction="#handleStatusFilter"
+                              style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+                <ToggleButton fx:id="btnStatusClosed"  text="🔵 Closed"  onAction="#handleStatusFilter"
+                              style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+            </HBox>
+
+            <Label text="|" textFill="#bdc3c7" style="-fx-font-size: 18px;" />
+
+            <!-- Category Filter -->
+            <HBox alignment="CENTER_LEFT" spacing="8">
+                <Label text="Category:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+                <ToggleButton fx:id="btnCatAll"         text="All"           onAction="#handleCategoryFilter"
+                              style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+                <ToggleButton fx:id="btnCatVehicle"     text="🚗 Vehicle"    onAction="#handleCategoryFilter"
+                              style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+                <ToggleButton fx:id="btnCatElectronics" text="📱 Electronics" onAction="#handleCategoryFilter"
+                              style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+                <ToggleButton fx:id="btnCatArt"         text="🎨 Art"        onAction="#handleCategoryFilter"
+                              style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+            </HBox>
+        </HBox>
+
         <ListView fx:id="listAuctions" VBox.vgrow="ALWAYS"
                   style="-fx-background-radius: 8; -fx-border-radius: 8;" />
 

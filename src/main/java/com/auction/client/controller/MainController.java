@@ -48,6 +48,21 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     @FXML private ListView<ItemDTO> listAuctions;
 
+    // ===== FILTER BUTTONS - Status =====
+    @FXML private ToggleButton btnStatusAll;
+    @FXML private ToggleButton btnStatusRunning;
+    @FXML private ToggleButton btnStatusClosed;
+
+    // ===== FILTER BUTTONS - Category =====
+    @FXML private ToggleButton btnCatAll;
+    @FXML private ToggleButton btnCatVehicle;
+    @FXML private ToggleButton btnCatElectronics;
+    @FXML private ToggleButton btnCatArt;
+
+    // ===== FILTER STATE =====
+    private String activeStatusFilter   = null;
+    private String activeCategoryFilter = null;
+
     // ===== DATA =====
     private final ObservableList<ItemDTO> auctionList = FXCollections.observableArrayList();
     private final FilteredList<ItemDTO> filteredAuctions = new FilteredList<>(auctionList, p -> true);
@@ -71,6 +86,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         setupUserInfo();
         ClientSession.addUserChangeListener(userChangeListener);
         setupSearchFilter();
+        setupFilterButtons();
 
         clientSocket.setDashboardUpdateListener(this);
 
@@ -158,14 +174,15 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
             if (Objects.equals(current.getId(), item.getId())) {
                 auctionList.set(i, item);
+                applyFilters();
                 return;
             }
         }
     }
 
-    private void removeAuctionItem(ItemDTO item) {
-        auctionList.removeIf(i ->
-                Objects.equals(i.getId(), item.getId()));
+    private void removeAuctionItem(ItemDTO item) {updateAuctionItem(item);
+        updateAuctionItem(item);
+        applyFilters();
     }
 
     private boolean isValidUpdate(DashboardUpdateResponse update) {
@@ -383,26 +400,92 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     }
 
     private void setupSearchFilter() {
-        searchField.textProperty().addListener((obs, oldValue, newValue) -> {
-            String keyword = (newValue == null)
-                    ? ""
-                    : newValue.trim().toLowerCase();
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilters());
+    }
 
-            filteredAuctions.setPredicate(item -> {
-                if (keyword.isBlank()) return true;
+    // ===== FILTER SETUP =====
+    private void setupFilterButtons() {
+        activeStatusFilter = "RUNNING";
+        setButtonActive(btnStatusAll,     false);
+        setButtonActive(btnStatusRunning, true);
+        setButtonActive(btnStatusClosed,  false);
+        setButtonActive(btnCatAll, true);
+        applyFilters();
+    }
 
-                String name = item.getName() == null
-                        ? ""
-                        : item.getName().toLowerCase();
+    @FXML
+    private void handleStatusFilter(javafx.event.ActionEvent event) {
+        ToggleButton clicked = (ToggleButton) event.getSource();
+        if      (clicked == btnStatusAll)      activeStatusFilter = null;
+        else if (clicked == btnStatusRunning)  activeStatusFilter = "RUNNING";
+        else if (clicked == btnStatusClosed)   activeStatusFilter = "FINISHED";
 
-                String seller = item.getSellerUsername() == null
-                        ? ""
-                        : item.getSellerUsername().toLowerCase();
+        setButtonActive(btnStatusAll,      activeStatusFilter == null);
+        setButtonActive(btnStatusRunning,  "RUNNING".equals(activeStatusFilter));
+        setButtonActive(btnStatusClosed,   "FINISHED".equals(activeStatusFilter));
+        applyFilters();
+    }
 
-                return name.contains(keyword)
-                        || seller.contains(keyword);
-            });
+    @FXML
+    private void handleCategoryFilter(javafx.event.ActionEvent event) {
+        ToggleButton clicked = (ToggleButton) event.getSource();
+        if      (clicked == btnCatAll)         activeCategoryFilter = null;
+        else if (clicked == btnCatVehicle)     activeCategoryFilter = "VEHICLE";
+        else if (clicked == btnCatElectronics) activeCategoryFilter = "ELECTRONICS";
+        else if (clicked == btnCatArt)         activeCategoryFilter = "ART";
+
+        setButtonActive(btnCatAll,         activeCategoryFilter == null);
+        setButtonActive(btnCatVehicle,     "VEHICLE".equals(activeCategoryFilter));
+        setButtonActive(btnCatElectronics, "ELECTRONICS".equals(activeCategoryFilter));
+        setButtonActive(btnCatArt,         "ART".equals(activeCategoryFilter));
+        applyFilters();
+    }
+
+    private void applyFilters() {
+        String keyword = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase();
+
+        filteredAuctions.setPredicate(item -> {
+            // Search filter
+            if (!keyword.isBlank()) {
+                String name   = item.getName() == null ? "" : item.getName().toLowerCase();
+                String seller = item.getSellerUsername() == null ? "" : item.getSellerUsername().toLowerCase();
+                if (!name.contains(keyword) && !seller.contains(keyword)) return false;
+            }
+
+            // Status filter
+            if (activeStatusFilter != null) {
+                String status = item.getSessionStatus();
+                if (status == null) return false;
+                if ("RUNNING".equals(activeStatusFilter)) {
+                    if (!"RUNNING".equalsIgnoreCase(status)
+                            && !"OPEN".equalsIgnoreCase(status)) return false;
+                } else if ("FINISHED".equals(activeStatusFilter)) {
+                    if (!"FINISHED".equalsIgnoreCase(status)
+                            && !"PAID".equalsIgnoreCase(status)
+                            && !"CANCELED".equalsIgnoreCase(status)) return false;
+                }
+            }
+
+            // Category filter
+            if (activeCategoryFilter != null) {
+                String type = item.getItemType();
+                if (type == null) return false;
+                if (!activeCategoryFilter.equalsIgnoreCase(type)) return false;
+            }
+
+            return true;
         });
+    }
+
+    private void setButtonActive(ToggleButton btn, boolean active) {
+        btn.setSelected(active);
+        if (active) {
+            btn.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white; "
+                    + "-fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;");
+        } else {
+            btn.setStyle("-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; "
+                    + "-fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;");
+        }
     }
 
     private void openAuctionDetail(ItemDTO item) {
