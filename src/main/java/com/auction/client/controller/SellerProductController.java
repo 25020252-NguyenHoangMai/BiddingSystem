@@ -112,6 +112,24 @@ public class SellerProductController {
             countdownTimeline = null;
         }
 
+//        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+//            long remaining = endTimeMillis - System.currentTimeMillis();
+//            if (remaining > 0) {
+//                updateCountdownLabel(remaining);
+//            } else {
+//                handleAuctionExpired();
+//            }
+//        }));
+
+        // Kiểm tra và hiển thị tức thì
+        long initialRemaining = endTimeMillis - System.currentTimeMillis();
+        if (initialRemaining <= 0) {
+            handleAuctionExpired();
+            return;
+        }
+        updateCountdownLabel(initialRemaining);
+
+        // Chạy ngầm cập nhật mỗi giây
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             long remaining = endTimeMillis - System.currentTimeMillis();
             if (remaining > 0) {
