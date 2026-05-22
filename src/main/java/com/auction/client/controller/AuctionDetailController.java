@@ -866,7 +866,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             }
 
             ProductService productService = ProductService.getInstance();
-
             byte[] imageBytes = productService.getItemImage(imagePath);
 
             if (imageBytes == null || imageBytes.length == 0) {
@@ -874,9 +873,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             }
 
             Image image = new Image(new ByteArrayInputStream(imageBytes), 380, 260, true, true);
-
             productImageView.setImage(image);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -983,6 +980,21 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         };
 
         task.setOnSucceeded(event -> {
+            ItemDTO updatedItem = task.getValue();
+
+            if (updatedItem != null) {
+                currentItem = updatedItem;
+                populateBasicInfo(updatedItem);
+                setupDynamicSpecs(updatedItem);
+                if (updatedItem.getEndTimeMillis() > 0) {
+                    startCountdown(updatedItem.getEndTimeMillis());
+                }
+                updateBidHint(updatedItem.getMinimumNextBid());
+            } else if (currentItem != null) {
+                currentItem.setSessionStatus("CANCELED");
+                populateBasicInfo(currentItem);
+            }
+
             showAlert(Alert.AlertType.INFORMATION, "Cancel Auction", "Auction canceled successfully.");
             // Disable nút sau khi cancel
             btnCancelAuction.setDisable(true);
