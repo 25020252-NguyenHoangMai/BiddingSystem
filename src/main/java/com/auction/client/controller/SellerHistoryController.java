@@ -123,8 +123,23 @@ public class SellerHistoryController {
                     if (!"RUNNING".equalsIgnoreCase(sessionStatus) && !"OPEN".equalsIgnoreCase(sessionStatus)) {
                         return false;
                     }
-                } else if (!expectedStatus.isBlank() && !expectedStatus.equalsIgnoreCase(sessionStatus)) {
-                    return false;
+                }
+
+                else if (CLOSED_SESSIONS.equals(statusFilter)) {
+                    if (!"FINISHED".equalsIgnoreCase(sessionStatus) && !"PAID".equalsIgnoreCase(sessionStatus)) {
+                        return false;
+                    }
+                }
+
+                else {
+                    String expectedStatus = switch (statusFilter) {
+                        case CANCELED_SESSIONS -> "CANCELED";
+                        default -> "";
+                    };
+
+                    if (!expectedStatus.isBlank() && !expectedStatus.equalsIgnoreCase(sessionStatus)) {
+                        return false;
+                    }
                 }
             }
 
