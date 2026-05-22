@@ -247,14 +247,13 @@ public class AddProduct2Controller {
             throw new Exception("End time must be after start time!");
         }
 
-        // RUNNING: endTime mới phải lớn hơn endTime cũ (chỉ cho kéo dài, không cho rút ngắn)
-        if (isRunning && editingItem != null && editingItem.getEndTimeMillis() > 0) {
-            LocalDateTime oldEndTime = LocalDateTime.ofInstant(
-                    java.time.Instant.ofEpochMilli(editingItem.getEndTimeMillis()),
-                    ZoneId.systemDefault()
-            );
-            if (!endDateTime.isAfter(oldEndTime)) {
-                throw new Exception("Running auction: new end time must be later than current end time!");
+        // RUNNING: cho phép rút ngắn hoặc kéo dài thời gian
+        if (isRunning) {
+
+            LocalDateTime now = LocalDateTime.now();
+
+            if (!endDateTime.isAfter(now)) {
+                throw new Exception("End time must be after current time!");
             }
         }
 

@@ -180,8 +180,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         }
     }
 
-    private void removeAuctionItem(ItemDTO item) {updateAuctionItem(item);
-        updateAuctionItem(item);
+    private void removeAuctionItem(ItemDTO item) {
+        auctionList.removeIf(i -> Objects.equals(i.getSessionId(), item.getSessionId()));
         applyFilters();
     }
 
