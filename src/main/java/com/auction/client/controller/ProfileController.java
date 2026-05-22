@@ -66,7 +66,7 @@ public class ProfileController {
             btnEnableSeller.setManaged(true);
 
             usernameLabel.setText("@" + user.getUsername() + " Seller");
-            btnEnableSeller.setText("Auctioned Products History");
+            btnEnableSeller.setText("Created Sessions");
             btnEnableSeller.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand;");
             btnEnableSeller.setOnAction(event -> navigateToSellerHistory());
         }

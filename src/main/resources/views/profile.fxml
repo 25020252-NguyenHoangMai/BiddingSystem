@@ -5,47 +5,82 @@
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
 
-<VBox alignment="TOP_CENTER" prefHeight="546.0" prefWidth="317.0" spacing="24" style="-fx-background-color: #f4f7f6;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ProfileController">
+<VBox prefHeight="580.0" prefWidth="380.0" style="-fx-background-color: #ecf0f1; -fx-font-family: 'System';" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.ProfileController">
 
-    <padding>
-        <Insets bottom="32" left="32" right="32" top="32" />
-    </padding>
+    <!-- ===== HEADER (Đồng bộ chuẩn Midnight Blue với Main) ===== -->
+    <HBox alignment="CENTER_LEFT" prefHeight="60.0" style="-fx-background-color: #2c3e50; -fx-padding: 0 25;">
+        <Label text="👤 Account Profile" textFill="WHITE">
+            <font>
+                <Font name="System Bold" size="16.0" />
+            </font>
+        </Label>
+    </HBox>
 
-    <!-- Tiêu đề bổ sung để cân bằng độ cao khung giống màn hình Edit Profile -->
-    <Label style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-font-family: 'Segoe UI';" text="My Profile" />
+    <!-- ===== BODY CONTENT ===== -->
+    <VBox alignment="TOP_CENTER" spacing="0" VBox.vgrow="ALWAYS">
+        <padding>
+            <Insets bottom="30" left="35" right="35" top="30" />
+        </padding>
 
-    <!-- ===== AVATAR & USER INFO ===== -->
-    <VBox alignment="CENTER" spacing="10">
+        <!-- ===== AVATAR & USER INFO ===== -->
+        <VBox alignment="CENTER" spacing="10">
+            <!-- Khung bọc Avatar thiết kế viền phẳng cao cấp -->
+            <StackPane fx:id="avatarPane" maxHeight="110.0" maxWidth="110.0" onMouseClicked="#handleEditProfile" prefHeight="110.0" prefWidth="110.0" style="-fx-cursor: hand; -fx-background-color: #34495e; -fx-background-radius: 55; -fx-border-color: #bdc3c7; -fx-border-radius: 55; -fx-border-width: 2;">
+                <children>
+                    <!-- Label mặc định khi chưa có ảnh -->
+                    <Label fx:id="avatarLabel" text="?" textFill="WHITE">
+                        <font>
+                            <Font name="System Bold" size="38.0" />
+                        </font>
+                    </Label>
 
-        <StackPane fx:id="avatarPane" maxHeight="100.0" maxWidth="100.0" onMouseClicked="#handleEditProfile" prefHeight="100.0" prefWidth="100.0" style="-fx-cursor: hand;" styleClass="avatar-container">
-            <children>
-                <Label fx:id="avatarLabel" styleClass="avatar-label" text="?" />
+                    <ImageView fx:id="avatarImageView" fitHeight="106.0" fitWidth="106.0" pickOnBounds="true" preserveRatio="false">
+                        <clip>
+                            <Circle centerX="53.0" centerY="53.0" radius="53.0" />
+                        </clip>
+                    </ImageView>
+                </children>
+            </StackPane>
 
-                <ImageView fx:id="avatarImageView" fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="false">
-                    <clip>
-                        <Circle centerX="50.0" centerY="50.0" radius="50.0" />
-                    </clip>
-                </ImageView>
-            </children>
-        </StackPane>
+            <Label fx:id="fullNameLabel" style="-fx-text-fill: #2c3e50;" text="Full Name">
+                <font>
+                    <Font name="System Bold" size="20.0" />
+                </font>
+                <VBox.margin>
+                    <Insets top="5.0" />
+                </VBox.margin>
+            </Label>
 
-        <Label fx:id="fullNameLabel" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-font-family: 'Segoe UI';" text="Full Name" />
-        <Label fx:id="usernameLabel" style="-fx-text-fill: #95a5a6; -fx-font-family: 'Segoe UI';" text="\@username" />
+            <Label fx:id="usernameLabel" style="-fx-text-fill: #7f8c8d;" text="\@username">
+                <font>
+                    <Font name="System" size="14.0" />
+                </font>
+            </Label>
+        </VBox>
+
+        <!-- Khoảng đệm động giữa Info và Khung chức năng -->
+        <Region prefHeight="20.0" VBox.vgrow="ALWAYS" />
+
+        <!-- ===== ACTION BUTTONS (Đã triệt tiêu hoàn toàn hiệu ứng đổi font/chữ khi hover) ===== -->
+        <VBox alignment="CENTER" fillWidth="true" spacing="14">
+
+            <!-- Edit Profile -->
+            <Button maxWidth="Infinity" onAction="#handleEditProfile" prefHeight="42.0" style="-fx-background-color: #34495e; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-size: 13px; -fx-alignment: CENTER;" text="Edit Profile" />
+
+            <!-- Session History (Đã đổi thành Bidding History như bước trước) -->
+            <Button maxWidth="Infinity" onAction="#handleSessionHistory" prefHeight="42.0" style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-size: 13px; -fx-alignment: CENTER;" text="Joined Sessions" />
+
+            <!-- Enable Seller -->
+            <Button fx:id="btnEnableSeller" maxWidth="Infinity" onAction="#handleEnableSeller" prefHeight="42.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-size: 13px; -fx-alignment: CENTER;" text="Enable Seller" />
+
+            <!-- Đẩy nút Logout xuống đáy tạo bố cục thoáng đạt, cân đối -->
+            <Region prefHeight="15.0" VBox.vgrow="ALWAYS" />
+
+            <!-- Log out -->
+            <Button maxWidth="Infinity" onAction="#handleLogout" prefHeight="42.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand; -fx-font-size: 13px; -fx-alignment: CENTER;" text="Log out" />
+
+        </VBox>
     </VBox>
-
-    <!-- ===== ACTION BUTTONS ===== -->
-    <!-- maxWidth đặt bằng 350 để khung căn chỉnh rộng bằng form Edit Profile -->
-    <VBox alignment="CENTER" fillWidth="true" maxWidth="350" spacing="12">
-
-        <Button maxWidth="Infinity" onAction="#handleEditProfile" prefHeight="38" style="-fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-font-family: 'Segoe UI';" text="Edit Profile" />
-
-        <Button maxWidth="Infinity" onAction="#handleSessionHistory" prefHeight="38" style="-fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-font-family: 'Segoe UI';" text="Session History" />
-
-        <Button fx:id="btnEnableSeller" maxWidth="Infinity" onAction="#handleEnableSeller" prefHeight="38" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-font-family: 'Segoe UI';" text="Enable Seller" />
-
-        <Button maxWidth="Infinity" onAction="#handleLogout" prefHeight="38" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 6; -fx-cursor: hand; -fx-font-family: 'Segoe UI';" text="Log out" />
-
-    </VBox>
-
 </VBox>
