@@ -354,6 +354,33 @@ public class SessionDAO {
         return list;
     }
 
+    public List<AuctionSession> getActiveSessionsBySellerForUpdate (Connection conn, String sellerId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new IllegalArgumentException("sellerId must not be null or empty");
+        }
+        String sql = """
+            
+                SELECT s.*
+            FROM AuctionSession s WITH (UPDLOCK, ROWLOCK)
+            JOIN Item i ON i.id = s.itemId
+            WHERE i.sellerId = ?
+            AND s.status IN ('OPEN', 'RUNNING')
+            """;
+        List<AuctionSession> sessions = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sellerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sessions.add(mapToSession(conn, rs));
+                }
+            }
+            return sessions;
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while locking active seller sessions: " + e.getMessage());
+        }
+    }
+
+
 
     public List<SellerHistoryItemDTO> getSessionHistoryBySeller(Connection conn, String sellerId) {
         String sql = """
