@@ -207,6 +207,9 @@ public class AuthController {
 
             userService.deleteUser(request.getTargetUserId());
             return new DeleteUserResponse(true, "Delete user successfully!");
+
+        } catch (AuctionException e) {
+            return new DeleteUserResponse(false, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             return new DeleteUserResponse(false, "Delete user failed!");

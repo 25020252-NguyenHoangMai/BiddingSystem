@@ -309,6 +309,10 @@ public class UserService {
             throw new UserNotFoundException("User not found!");
         }
 
+        if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+            throw new AuctionException("Admin accounts cannot be disabled.");
+        }
+
         if (STATUS_DISABLED.equalsIgnoreCase(user.getStatus())) {
             throw new AuctionException("User is already disabled!");
         }
