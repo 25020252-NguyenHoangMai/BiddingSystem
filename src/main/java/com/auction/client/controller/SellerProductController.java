@@ -138,6 +138,7 @@ public class SellerProductController {
                 handleAuctionExpired();
             }
         }));
+
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
     }

@@ -9,7 +9,6 @@ public class SessionHistoryItemDTO implements Serializable {
     private String productType;
     private String sellerId;
     private String sellerUsername;
-    private String sellerFullName;
     private double userLastBid;
     private double currentPrice;
     private LocalDateTime lastBidTime;
@@ -54,14 +53,6 @@ public class SessionHistoryItemDTO implements Serializable {
 
     public void setSellerUsername(String sellerUsername) {
         this.sellerUsername = sellerUsername;
-    }
-
-    public String getSellerFullName() {
-        return sellerFullName;
-    }
-
-    public void setSellerFullName(String sellerFullName) {
-        this.sellerFullName = sellerFullName;
     }
 
     public double getUserLastBid() {

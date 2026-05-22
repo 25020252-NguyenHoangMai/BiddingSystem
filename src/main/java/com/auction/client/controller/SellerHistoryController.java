@@ -42,6 +42,8 @@ public class SellerHistoryController {
     private static final String ALL_SESSIONS = "All Sessions";
     private static final String RUNNING_SESSIONS = "In Progress";
     private static final String FINISHED_SESSIONS = "Finished";
+    private static final String PAID_SESSIONS = "Paid";
+    private static final String CLOSED_SESSIONS = "Closed";
     private static final String CANCELED_SESSIONS = "Canceled";
     private static final String ALL_TYPES = "All Types";
 
@@ -76,7 +78,7 @@ public class SellerHistoryController {
 
         addMenuOption(menuFilterStatus, ALL_SESSIONS);
         addMenuOption(menuFilterStatus, RUNNING_SESSIONS);
-        addMenuOption(menuFilterStatus, FINISHED_SESSIONS);
+        addMenuOption(menuFilterStatus, CLOSED_SESSIONS);
         addMenuOption(menuFilterStatus, CANCELED_SESSIONS);
     }
 
@@ -111,14 +113,8 @@ public class SellerHistoryController {
 
         filteredData.setPredicate(session -> {
             if (!ALL_SESSIONS.equals(statusFilter)) {
-                String expectedStatus = switch (statusFilter) {
-                    case RUNNING_SESSIONS -> "RUNNING";
-                    case FINISHED_SESSIONS -> "FINISHED";
-                    case CANCELED_SESSIONS -> "CANCELED";
-                    default -> "";
-                };
-
                 String sessionStatus = safe(session.getStatus());
+
                 if ("In Progress".equals(statusFilter)) {
                     if (!"RUNNING".equalsIgnoreCase(sessionStatus) && !"OPEN".equalsIgnoreCase(sessionStatus)) {
                         return false;

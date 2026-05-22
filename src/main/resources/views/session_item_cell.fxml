@@ -35,7 +35,7 @@
         <HBox spacing="5">
             <Label text="Seller:" style="-fx-text-fill: #777;" />
             <Label fx:id="lblSellerInfo"
-                   text="username (fullname)"
+                   text="username"
                    style="-fx-font-weight: bold; -fx-text-fill: #1f2933;" />
         </HBox>
 

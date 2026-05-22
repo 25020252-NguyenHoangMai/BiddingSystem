@@ -34,7 +34,7 @@ public class SessionItemCellController {
         lblProductType.setText(safe(session.getProductType()));
 
         lblSellerInfo.setText(
-                safe(session.getSellerUsername()) + " (" + safe(session.getSellerFullName()) + ")"
+                safe(session.getSellerUsername())
         );
 
         lblUserLastBid.setText(String.format("%.2f $", session.getUserLastBid()));

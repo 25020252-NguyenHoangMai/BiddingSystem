@@ -31,7 +31,6 @@ public class BidDAO {
         dto.setProductType(rs.getString("productType"));
         dto.setSellerId(rs.getString("sellerId"));
         dto.setSellerUsername(rs.getString("sellerUsername"));
-        dto.setSellerFullName(rs.getString("sellerFullName"));
         dto.setUserLastBid(rs.getDouble("userLastBid"));
         dto.setCurrentPrice(rs.getDouble("currentPrice"));
 

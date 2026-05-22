@@ -209,8 +209,7 @@ public class SessionHistoryController {
 
             return safe(session.getProductName()).toLowerCase().contains(searchText)
                     || safe(session.getSessionId()).toLowerCase().contains(searchText)
-                    || safe(session.getSellerUsername()).toLowerCase().contains(searchText)
-                    || safe(session.getSellerFullName()).toLowerCase().contains(searchText);
+                    || safe(session.getSellerUsername()).toLowerCase().contains(searchText);
         });
     }
 
