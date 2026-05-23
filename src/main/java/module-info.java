@@ -7,6 +7,7 @@ module BiddingSystem {
     requires jbcrypt;
     requires com.zaxxer.hikari; requires java.rmi;
     requires java.desktop;
+    requires org.slf4j;
 
     opens com.auction.client to javafx.graphics, javafx.fxml;
 

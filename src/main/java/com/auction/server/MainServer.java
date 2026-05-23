@@ -24,7 +24,7 @@ public class    MainServer {
 
         ImageStorageService imageStorageService = new ImageStorageService();
         UserService userService = new UserService(userDAO, sessionDAO);
-        ItemService itemService = new ItemService(itemDAO, userService, sessionDAO);
+        ItemService itemService = new ItemService(itemDAO, userService, sessionDAO, bidDAO);
 
         BidHistoryService bidHistoryService = new BidHistoryService(bidDAO, userService);
         BidIncrementService bidIncrementService = new BidIncrementService();
@@ -34,7 +34,7 @@ public class    MainServer {
                                                     bidValidationService, bidReservationCalculator);
 
         AntiSnipingService antiSnipingService = new AntiSnipingService();
-        SessionService sessionService = new SessionService(sessionDAO, userDAO);
+        SessionService sessionService = new SessionService(sessionDAO, userDAO, bidDAO);
         AutoBiddingService autoBiddingService = new AutoBiddingService(bidValidationService, sessionService,
                                                     bidIncrementService, bidTransactionExecutor, userService,
                                                     autoBidDAO, antiSnipingService);

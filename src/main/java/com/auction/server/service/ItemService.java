@@ -7,11 +7,14 @@ import com.auction.model.AuctionSession;
 import com.auction.model.Bidder;
 import com.auction.model.Item;
 import com.auction.model.User;
+import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.ItemDAO;
 import com.auction.dto.ItemDTO;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.factory.ItemFromDTOFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
 import java.sql.Connection;
@@ -28,26 +31,31 @@ public class ItemService {
     private static final String SESSION_ID_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int SESSION_ID_LENGTH = 8;
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final Logger log = LoggerFactory.getLogger(ItemService.class);
 
     private final ItemDAO itemDAO;
     private final UserService userService;
     private final SessionDAO sessionDAO;
+    private final BidDAO bidDAO;
 
-    public ItemService(ItemDAO itemDAO, UserService userService, SessionDAO sessionDAO) {
+    public ItemService(ItemDAO itemDAO, UserService userService, SessionDAO sessionDAO, BidDAO bidDAO) {
         if (itemDAO == null) {
             throw new IllegalArgumentException("ItemDAO must not be null");
         }
-
         if (userService == null) {
             throw new IllegalArgumentException("UserService must not be null");
         }
-
         if (sessionDAO == null) {
             throw new IllegalArgumentException("SessionDAO must not be null");
         }
+        if (bidDAO == null) {
+            throw new IllegalArgumentException("BidDAO must not be null");
+        }
+
         this.itemDAO = itemDAO;
         this.userService = userService;
         this.sessionDAO = sessionDAO;
+        this.bidDAO = bidDAO;
     }
 
     //=============== thêm item đấu giá ===============
@@ -217,7 +225,7 @@ public class ItemService {
                     throw new AuctionException("Only OPEN auctions can update item details.");
                 }
 
-                if (hasBid(session)) {
+                if (hasBid(conn, session)) {
                     throw new AuctionException("Cannot update auction after it has bids.");
                 }
 
@@ -311,9 +319,10 @@ public class ItemService {
         }
     }
 
-    private boolean hasBid(AuctionSession session) {
-        return session.getCurrentWinnerId() != null
-                && !session.getCurrentWinnerId().isBlank();
+    private boolean hasBid(Connection conn, AuctionSession session) {
+        boolean hasWinner = session.getCurrentWinnerId() != null && !session.getCurrentWinnerId().isBlank();
+
+        return hasWinner || bidDAO.existsBidBySessionId(conn, session.getId());
     }
 
     private LocalDateTime toLocalDateTime(long millis, String fieldName) {

@@ -4,6 +4,7 @@ import com.auction.exception.AuctionException;
 import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.model.User;
+import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
 
@@ -29,17 +30,22 @@ public class SessionService { // Quản lí phiên đấu giá
 
     private final SessionDAO sessionDAO;
     private final UserDAO userDAO;
+    private final BidDAO bidDAO;
 
-    public SessionService(SessionDAO sessionDAO, UserDAO userDAO) {
+    public SessionService(SessionDAO sessionDAO, UserDAO userDAO, BidDAO bidDAO) {
         if (sessionDAO == null) {
-            throw new IllegalArgumentException("sessionDAO cannot be null");
+            throw new IllegalArgumentException("SessionDAO cannot be null");
         }
         if (userDAO == null) {
-            throw new IllegalArgumentException("userDAO cannot be null");
+            throw new IllegalArgumentException("UserDAO cannot be null");
+        }
+        if (bidDAO == null) {
+            throw new IllegalArgumentException("BidDAO cannot be null");
         }
 
         this.sessionDAO = sessionDAO;
         this.userDAO = userDAO;
+        this.bidDAO = bidDAO;
     }
 
     public AuctionSession createSession(Item item, LocalDateTime start, LocalDateTime end) {
@@ -742,7 +748,7 @@ public class SessionService { // Quản lí phiên đấu giá
                 }
 
                 validateSellerOwnsSession(sellerId, session);
-                validateNoBidForSellerTimeUpdate(session);
+                validateNoBidForSellerTimeUpdate(conn, session);
                 validateRunningSessionCanUpdateEndTime(session, newEndTime);
 
                 sessionDAO.updateEndTime(conn, session.getId(), newEndTime);
@@ -775,12 +781,13 @@ public class SessionService { // Quản lí phiên đấu giá
         }
     }
 
-    private void validateNoBidForSellerTimeUpdate(AuctionSession session) {
+    private void validateNoBidForSellerTimeUpdate(Connection conn, AuctionSession session) {
         String currentWinnerId = session.getCurrentWinnerId();
 
-        boolean hasBid = currentWinnerId != null && !currentWinnerId.isBlank();
+        boolean hasWinner = currentWinnerId != null && !currentWinnerId.isBlank();
+        boolean hasBid = bidDAO.existsBidBySessionId(conn, session.getId());
 
-        if (hasBid) {
+        if (hasBid || hasWinner) {
             throw new AuctionException("Cannot update auction time after it has bids.");
         }
     }
