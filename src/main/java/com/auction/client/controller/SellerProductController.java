@@ -152,8 +152,10 @@ public class SellerProductController {
     }
 
     private void handleAuctionExpired() {
-        lblTimeRemaining.setVisible(false); // Ẩn hiển thị
-        lblTimeRemaining.setManaged(false);
+//        lblTimeRemaining.setVisible(false); // Ẩn hiển thị
+//        lblTimeRemaining.setManaged(false);
+
+        lblTimeRemaining.setText("EXPIRED");
 
         watching = false;
 
