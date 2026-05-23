@@ -748,6 +748,7 @@ public class SessionService { // Quản lí phiên đấu giá
                 }
 
                 validateSellerOwnsSession(sellerId, session);
+                updateStatusByTime(conn, session); // đồng bộ trạng thái theo thời gian trước khi check rule business
                 validateNoBidForSellerTimeUpdate(conn, session);
                 validateRunningSessionCanUpdateEndTime(session, newEndTime);
 

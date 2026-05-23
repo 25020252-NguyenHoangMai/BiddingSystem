@@ -222,7 +222,7 @@ public class ItemService {
                 AuctionSession session = findOpenSession(sessions);
 
                 if (session == null) {
-                    throw new AuctionException("Only OPEN auctions can update item details.");
+                    throw new AuctionException("Only auctions that have not started can update item details.");
                 }
 
                 if (hasBid(conn, session)) {
@@ -339,7 +339,7 @@ public class ItemService {
         AuctionSession openSession = null;
 
         for (AuctionSession session : sessions) {
-            if (SessionService.STATUS_OPEN.equals(session.getStatus())) {
+            if (isEditableOpenSession(session)) {
                 if (openSession != null) {
                     throw new AuctionException("Item has more than one OPEN auction session.");
                 }
@@ -666,6 +666,20 @@ public class ItemService {
         } catch (SQLException e) {
             throw new AuctionException("Get seller history failed: " + e.getMessage());
         }
+    }
+
+    private boolean isEditableOpenSession(AuctionSession session) {
+        if (session == null || !SessionService.STATUS_OPEN.equals(session.getStatus())) {
+            return false;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (session.getStartTime() == null || session.getEndTime() == null) {
+            return false;
+        }
+
+        return now.isBefore(session.getStartTime()) && session.getEndTime().isAfter(session.getStartTime());
     }
 
 }
