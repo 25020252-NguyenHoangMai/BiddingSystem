@@ -9,10 +9,7 @@ import com.auction.model.AuctionSession;
 import com.auction.model.BidTransaction;
 import com.auction.model.Bidder;
 import com.auction.model.User;
-import com.auction.request.GetBidHistoryRequest;
-import com.auction.request.GetSessionHistoryRequest;
-import com.auction.request.PlaceBidRequest;
-import com.auction.request.SetAutoBidRequest;
+import com.auction.request.*;
 import com.auction.response.*;
 import com.auction.server.dao.BidDAO;
 import com.auction.server.realtime.SessionWatchRegistry;
@@ -295,6 +292,43 @@ public class BiddingController {
                     "Get session history failed: " + e.getMessage(),
                     List.of()
             );
+        }
+    }
+
+    public DisableAutoBidResponse disableAutoBid(DisableAutoBidRequest request) {
+        try {
+            if (request.getSessionId() == null || request.getSessionId().isBlank()) {
+                return new DisableAutoBidResponse(false, "SessionId is required", null,
+                        request.getBidderId(), true, null, null,
+                        null, null);
+            }
+
+            if (request.getBidderId() == null || request.getBidderId().isBlank()) {
+                return new DisableAutoBidResponse(false, "BidderId is required", request.getSessionId(),
+                        null, true, null, null, null,
+                        null);
+            }
+
+            BidResult result = autoBiddingService.disableAutoBid(request.getSessionId(), request.getBidderId());
+
+            return new DisableAutoBidResponse(result.isSuccess(),
+                    result.getMessage(),
+                    result.getSessionId(),
+                    request.getBidderId(),
+                    !result.isSuccess(),
+                    result.getCurrentPrice(),
+                    result.getCurrentWinnerId(),
+                    result.getCurrentWinnerUsername(),
+                    result.getStatus());
+        } catch (IllegalArgumentException e) {
+            return new DisableAutoBidResponse(false, e.getMessage(), request.getSessionId(),
+                    request.getBidderId(), true, null, null,
+                    null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new DisableAutoBidResponse(false, "Disable auto bid failed: unexpected server error!",
+                    request.getSessionId(), request.getBidderId(), true, null,
+                    null, null, null);
         }
     }
 }

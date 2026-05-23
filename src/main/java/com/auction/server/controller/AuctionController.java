@@ -88,6 +88,9 @@ public class AuctionController {
         if (request instanceof GetSessionHistoryRequest getSessionHistoryRequest) {
             return biddingController.getSessionHistory(getSessionHistoryRequest);
         }
+        if (request instanceof DisableAutoBidRequest disableAutoBidRequest) {
+            return biddingController.disableAutoBid(disableAutoBidRequest);
+        }
 
         if (request instanceof WatchSessionRequest watchSessionRequest) {
             return realTimeController.watchSession(watchSessionRequest, observer);

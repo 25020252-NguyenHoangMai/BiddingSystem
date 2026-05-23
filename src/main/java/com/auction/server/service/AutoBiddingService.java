@@ -365,4 +365,41 @@ public class AutoBiddingService {
         String rightId = right.getId() == null ? "" : right.getId();
         return leftId.compareTo(rightId);
     }
+
+    public BidResult disableAutoBid(String sessionId, String bidderId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new IllegalArgumentException("SessionId must not be empty");
+        }
+        if (bidderId == null || bidderId.isBlank()) {
+            throw new IllegalArgumentException("BidderId must not be empty");
+        }
+
+        bidValidationService.requireBidder(bidderId);
+        sessionService.refreshSessionStatus(sessionId);
+
+        AuctionSession session = sessionService.getSession(sessionId);
+        if (session == null) {
+            return new BidResult(false, "Auction session not found: " + sessionId,
+                    sessionId, 0.0, null, null, null);
+        }
+
+        int updatedRows;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            updatedRows = autoBidDAO.deactivateAutoBid(conn, sessionId, bidderId);
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to disable auto bid: " + e.getMessage());
+        }
+
+        AuctionSession latestSession = sessionService.getSession(sessionId);
+        if (latestSession == null) {
+            latestSession = session;
+        }
+
+        String message = updatedRows > 0
+                ? "Auto bid disabled"
+                : "Auto bid is already off";
+
+        return buildCurrentStateResult(true, message, latestSession);
+    }
 }
