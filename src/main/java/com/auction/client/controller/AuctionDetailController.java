@@ -146,8 +146,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         lblStartingPrice.setText(fmt.format(item.getStartingPrice()));
 
+        double displayPrice =
+                (item.getCurrentWinnerUsername() == null
+                        || item.getCurrentWinnerUsername().isBlank())
+                        ? item.getStartingPrice()
+                        : item.getCurrentPrice();
+
         refreshBidState(
-                item.getCurrentPrice(),
+                displayPrice,
                 item.getCurrentWinnerUsername(),
                 item.getSessionStatus()
         );

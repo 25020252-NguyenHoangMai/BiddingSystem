@@ -293,6 +293,9 @@ public class ItemService {
             throw new ItemNotFoundException("Updated item is not found.");
         }
 
+        updatedItem.setCurrentPrice(item.getStartingPrice());
+        updatedItem.setCurrentWinnerUsername(null);
+
         return buildFullItemDTO(updatedItem, session);
     }
 
