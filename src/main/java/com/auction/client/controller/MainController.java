@@ -171,14 +171,13 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     private void updateAuctionItem(ItemDTO item) {
         for (int i = 0; i < auctionList.size(); i++) {
-
-            ItemDTO current = auctionList.get(i);
-
-            if (Objects.equals(current.getId(), item.getId())) {
+            if (Objects.equals(auctionList.get(i).getId(), item.getId())) {
                 auctionList.set(i, item);
                 applyFilters();
+                listAuctions.refresh();
                 return;
             }
+
         }
     }
 
@@ -520,7 +519,19 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             Stage stage = createModalStage("Auction — " + item.getName(), root);
             stage.initModality(Modality.NONE);
             childStages.add(stage);
-            stage.setOnHidden(event -> childStages.remove(stage));
+            stage.setOnHidden(event -> {
+                childStages.remove(stage);
+                // Cập nhật lại item trong list với dữ liệu mới nhất từ controller
+                ItemDTO updatedItem = controller.getCurrentItem();
+                if (updatedItem != null) {
+                    for (int i = 0; i < auctionList.size(); i++) {
+                        if (Objects.equals(auctionList.get(i).getId(), updatedItem.getId())) {
+                            auctionList.set(i, updatedItem);
+                            break;
+                        }
+                    }
+                }
+            });
             stage.show();
         } catch (java.io.IOException e) {
             e.printStackTrace();

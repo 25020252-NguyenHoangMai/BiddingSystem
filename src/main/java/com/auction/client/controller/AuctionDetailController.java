@@ -942,6 +942,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             controller.setOnUpdateSuccess(updatedItem -> {
                 Platform.runLater(() -> {
                     currentItem = updatedItem;
+                    if (updatedItem.getCurrentWinnerUsername() == null
+                            || updatedItem.getCurrentWinnerUsername().isBlank()) {
+                        updatedItem.setCurrentPrice(updatedItem.getStartingPrice());
+                    }
                     populateBasicInfo(updatedItem);
                     setupDynamicSpecs(updatedItem);
                     startCountdown(updatedItem.getEndTimeMillis());
@@ -1041,5 +1045,9 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             btnShowMore.setText("show less ▲");
             descriptionExpanded = true;
         }
+    }
+
+    public ItemDTO getCurrentItem() {
+        return currentItem;
     }
 }
