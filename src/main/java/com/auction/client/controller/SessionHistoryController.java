@@ -86,6 +86,7 @@ public class SessionHistoryController {
         addMenuOption(menuItemType, "VEHICLE");
         addMenuOption(menuItemType, "ELECTRONICS");
         addMenuOption(menuItemType, "ART");
+        addMenuOption(menuItemType, "OTHER");
     }
 
     private void addMenuOption(MenuButton menuButton, String text) {

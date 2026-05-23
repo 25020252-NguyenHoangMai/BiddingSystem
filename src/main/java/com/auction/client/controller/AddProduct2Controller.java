@@ -49,7 +49,8 @@ public class AddProduct2Controller {
     private final Map<String, String[]> categoryFields = Map.of(
             "Vehicle", new String[]{"Model", "EngineType", "Mileage"},
             "Electronics", new String[]{"Brand"},
-            "Art", new String[]{"Artist"}
+            "Art", new String[]{"Artist"},
+            "Other", new String[] {}
     );
 
     @FXML
@@ -91,7 +92,7 @@ public class AddProduct2Controller {
         dynamicFields.getChildren().clear();
         fields.clear();
 
-        if (category == null) {
+        if (category == null || "Other".equalsIgnoreCase(category)) {
             dynamicFields.setVisible(false);
             dynamicFields.setManaged(false);
             return;
@@ -449,6 +450,7 @@ public class AddProduct2Controller {
             case "VEHICLE" -> "Vehicle";
             case "ELECTRONICS" -> "Electronics";
             case "ART" -> "Art";
+            case "OTHER" -> "Other";
             default -> itemType;
         };
     }

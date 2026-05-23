@@ -59,6 +59,12 @@ public class ItemDAO {
                 ps.setNull(9, java.sql.Types.INTEGER);
                 ps.setNull(10, java.sql.Types.NVARCHAR);
                 ps.setString(11, art.getArtist());
+            } else if (item instanceof OtherItem) {
+                ps.setNull(7, java.sql.Types.NVARCHAR);
+                ps.setNull(8, java.sql.Types.NVARCHAR);
+                ps.setNull(9, java.sql.Types.INTEGER);
+                ps.setNull(10, java.sql.Types.NVARCHAR);
+                ps.setNull(11, java.sql.Types.NVARCHAR);
             }
             else {
                 throw new AuctionException("Invalid item type.");
@@ -107,23 +113,25 @@ public class ItemDAO {
                 ps.setNull(8, java.sql.Types.NVARCHAR);
                 ps.setNull(9, java.sql.Types.NVARCHAR);
 
-            }
-            else if (item instanceof Electronics electronic) {
+            } else if (item instanceof Electronics electronic) {
                 ps.setNull(5, java.sql.Types.NVARCHAR);
                 ps.setNull(6, java.sql.Types.NVARCHAR);
                 ps.setNull(7, java.sql.Types.INTEGER);
                 ps.setString(8, electronic.getBrand());
                 ps.setNull(9, java.sql.Types.NVARCHAR);
-            }
-
-            else if (item instanceof Art art) {
+            } else if (item instanceof Art art) {
                 ps.setNull(5, java.sql.Types.NVARCHAR);
                 ps.setNull(6, java.sql.Types.NVARCHAR);
                 ps.setNull(7, java.sql.Types.INTEGER);
                 ps.setNull(8, java.sql.Types.NVARCHAR);
                 ps.setString(9, art.getArtist());
-            }
-            else {
+            } else if (item instanceof OtherItem) {
+                ps.setNull(5, java.sql.Types.NVARCHAR);
+                ps.setNull(6, java.sql.Types.NVARCHAR);
+                ps.setNull(7, java.sql.Types.INTEGER);
+                ps.setNull(8, java.sql.Types.NVARCHAR);
+                ps.setNull(9, java.sql.Types.NVARCHAR);
+            } else {
                 throw new AuctionException("Inavlid item type.");
             }
             ps.setString(10, item.getImagePath());

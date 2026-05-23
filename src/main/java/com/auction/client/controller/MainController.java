@@ -57,6 +57,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     @FXML private ToggleButton btnCatVehicle;
     @FXML private ToggleButton btnCatElectronics;
     @FXML private ToggleButton btnCatArt;
+    @FXML private ToggleButton btnCatOther;
 
     // ===== FILTER STATE =====
     private String activeStatusFilter   = null;
@@ -437,11 +438,14 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         else if (clicked == btnCatVehicle)     activeCategoryFilter = "VEHICLE";
         else if (clicked == btnCatElectronics) activeCategoryFilter = "ELECTRONICS";
         else if (clicked == btnCatArt)         activeCategoryFilter = "ART";
+        else if (clicked == btnCatOther)       activeCategoryFilter = "OTHER";
+
 
         setButtonActive(btnCatAll,         activeCategoryFilter == null);
         setButtonActive(btnCatVehicle,     "VEHICLE".equals(activeCategoryFilter));
         setButtonActive(btnCatElectronics, "ELECTRONICS".equals(activeCategoryFilter));
         setButtonActive(btnCatArt,         "ART".equals(activeCategoryFilter));
+        setButtonActive(btnCatOther,         "OTHER".equals(activeCategoryFilter));
         applyFilters();
     }
 
