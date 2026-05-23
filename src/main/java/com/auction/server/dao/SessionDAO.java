@@ -181,6 +181,28 @@ public class SessionDAO {
         }
     }
 
+    public void updateStartingPrice(Connection conn, String sessionId, double newStartingPrice) {
+        String sql = """
+            UPDATE AuctionSession
+            SET currentPrice = ?
+            WHERE id = ? AND status = 'OPEN'
+            """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDouble(1, newStartingPrice);
+            ps.setString(2, sessionId);
+
+            int rows = ps.executeUpdate();
+
+            if (rows == 0) {
+                throw new AuctionException("Session not found or is no longer OPEN.");
+            }
+            
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while updating starting price: " + e.getMessage());
+        }
+    }
+
     public void updateStatus(Connection conn, String sessionId, String status) {
         String sql = "UPDATE AuctionSession SET status = ? WHERE id = ?";
 
