@@ -22,6 +22,6 @@ public class ItemFactoryRegistry {
         registerFactory("VEHICLE", new VehicleFactory());
         registerFactory("ELECTRONICS", new ElectronicsFactory());
         registerFactory("ART", new ArtFactory());
-        registerFactory("JEWELRY", new JewelryFactory());
+        registerFactory("OTHER", new OtherItemFactory());
     }
 }
