@@ -37,7 +37,7 @@ public class ItemDAO {
             ps.setString(1, item.getId());
             ps.setString(2, item.getName());
             ps.setString(3, item.getDescription());
-            ps.setString(4, item.getClass().getSimpleName().toUpperCase());
+            ps.setString(4, item.getItemType());
             ps.setString(5, item.getSellerId());
             ps.setDouble(6, item.getStartingPrice());
 
@@ -103,7 +103,7 @@ public class ItemDAO {
 
             ps.setString(1, item.getName());
             ps.setString(2, item.getDescription());
-            ps.setString(3, item.getClass().getSimpleName().toUpperCase());
+            ps.setString(3, item.getItemType());
             ps.setDouble(4, item.getStartingPrice());
 
             if (item instanceof Vehicle vehicle) {
