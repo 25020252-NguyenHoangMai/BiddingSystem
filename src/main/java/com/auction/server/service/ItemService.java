@@ -280,9 +280,12 @@ public class ItemService {
 
         itemDAO.updateItem(conn, item);
         sessionDAO.updateSchedule(conn, session.getId(), startTime, endTime);
+        // Đồng bộ currentPrice theo startingPrice mới nếu chưa có ai bid
+        sessionDAO.updateStartingPrice(conn, session.getId(), item.getStartingPrice());
 
         session.setStartTime(startTime);
         session.setEndTime(endTime);
+        session.setCurrentPrice(item.getStartingPrice());
 
         ItemDTO updatedItem = itemDAO.getItemById(conn, itemDTO.getId());
 
