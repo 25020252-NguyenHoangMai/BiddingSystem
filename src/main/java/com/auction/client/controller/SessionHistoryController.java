@@ -25,12 +25,12 @@ import java.util.List;
 
 public class SessionHistoryController {
     private static final String PROFILE_FXML = "/views/profile.fxml";
-    private static final String AUCTION_DETAIL_FXML = "/views/auction_details.fxml";
     private static final String SESSION_ITEM_CELL_FXML = "/views/session_item_cell.fxml";
 
     private static final String ALL_SESSIONS = "All Sessions";
     private static final String RUNNING_SESSIONS = "In Progress";
     private static final String WON_SESSIONS = "Won";
+    private static final String LOST_SESSIONS = "Lost";
     private static final String CANCELED_SESSIONS = "Canceled";
 
     private static final String ALL_TYPES = "All Types";
@@ -75,6 +75,7 @@ public class SessionHistoryController {
         addMenuOption(menuFilter, ALL_SESSIONS);
         addMenuOption(menuFilter, RUNNING_SESSIONS);
         addMenuOption(menuFilter, WON_SESSIONS);
+        addMenuOption(menuFilter, LOST_SESSIONS);
         addMenuOption(menuFilter, CANCELED_SESSIONS);
     }
 
@@ -189,6 +190,7 @@ public class SessionHistoryController {
                 String expectedStatus = switch (statusFilter) {
                     case RUNNING_SESSIONS -> "RUNNING";
                     case WON_SESSIONS -> "WON";
+                    case LOST_SESSIONS -> "LOST";
                     case CANCELED_SESSIONS -> "CANCELED";
                     default -> "";
                 };

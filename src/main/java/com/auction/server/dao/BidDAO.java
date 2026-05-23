@@ -135,6 +135,7 @@ public class BidDAO {
 
     public List<SessionHistoryItemDTO> getSessionHistoryByBidder(Connection conn, String bidderId) {
         String sql = """
+        -- Tạo một bảng tạm thời tên là RankedUserBids để gom nhóm và xếp hạng các lượt đặt bid
         WITH RankedUserBids AS (
             SELECT
                 bt.id,
@@ -142,11 +143,12 @@ public class BidDAO {
                 bt.bidderId,
                 bt.bidAmount,
                 bt.bidTime,
+                -- Sử dụng hàm cửa sổ ROW_NUMBER để đánh số thứ tự 1, 2, 3,... cho từng lượt đặt bid
                 ROW_NUMBER() OVER (
                     PARTITION BY bt.sessionId
                     ORDER BY bt.bidTime DESC, bt.bidAmount DESC, bt.id DESC
-                ) AS rn
-            FROM BidTransaction bt
+                ) AS rn -- Đặt tên cột thứ tự này là rn
+            FROM BidTransaction bt -- Lấy dữ liệu từ bảng BidTransaction
             WHERE bt.bidderId = ?
         )
         SELECT

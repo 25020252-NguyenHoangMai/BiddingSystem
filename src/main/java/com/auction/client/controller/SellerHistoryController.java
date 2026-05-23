@@ -40,9 +40,8 @@ public class SellerHistoryController {
     @FXML private ListView<SellerHistoryItemDTO> listProducts;
 
     private static final String ALL_SESSIONS = "All Sessions";
+    private static final String UPCOMING_SESSIONS = "Upcoming";
     private static final String RUNNING_SESSIONS = "In Progress";
-    private static final String FINISHED_SESSIONS = "Finished";
-    private static final String PAID_SESSIONS = "Paid";
     private static final String CLOSED_SESSIONS = "Closed";
     private static final String CANCELED_SESSIONS = "Canceled";
     private static final String ALL_TYPES = "All Types";
@@ -77,6 +76,7 @@ public class SellerHistoryController {
         menuFilterStatus.setText(ALL_SESSIONS);
 
         addMenuOption(menuFilterStatus, ALL_SESSIONS);
+        addMenuOption(menuFilterStatus, UPCOMING_SESSIONS);
         addMenuOption(menuFilterStatus, RUNNING_SESSIONS);
         addMenuOption(menuFilterStatus, CLOSED_SESSIONS);
         addMenuOption(menuFilterStatus, CANCELED_SESSIONS);
@@ -116,13 +116,7 @@ public class SellerHistoryController {
             if (!ALL_SESSIONS.equals(statusFilter)) {
                 String sessionStatus = safe(session.getStatus());
 
-                if ("In Progress".equals(statusFilter)) {
-                    if (!"RUNNING".equalsIgnoreCase(sessionStatus) && !"OPEN".equalsIgnoreCase(sessionStatus)) {
-                        return false;
-                    }
-                }
-
-                else if (CLOSED_SESSIONS.equals(statusFilter)) {
+                if (CLOSED_SESSIONS.equals(statusFilter)) {
                     if (!"FINISHED".equalsIgnoreCase(sessionStatus) && !"PAID".equalsIgnoreCase(sessionStatus)) {
                         return false;
                     }
@@ -131,6 +125,8 @@ public class SellerHistoryController {
                 else {
                     String expectedStatus = switch (statusFilter) {
                         case CANCELED_SESSIONS -> "CANCELED";
+                        case UPCOMING_SESSIONS -> "UPCOMING";
+                        case RUNNING_SESSIONS -> "RUNNING";
                         default -> "";
                     };
 
