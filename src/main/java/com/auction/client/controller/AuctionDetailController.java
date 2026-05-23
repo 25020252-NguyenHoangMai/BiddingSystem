@@ -45,7 +45,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     @FXML private GridPane gridSpecs;
     @FXML private TextField txtBidAmount;
     @FXML private ListView<String> lvBidHistory;
-    @FXML private Button btnBack, btnPlaceBid, btnAutoBid, btnUpdateProduct, btnCancelAuction;
+    @FXML private Button btnBack, btnPlaceBid, btnAutoBid, btnUpdateProduct, btnCancelAuction, btnShowMore;
     @FXML private HBox sellerActionsBox;
     @FXML private LineChart<String, Number> bidPriceChart;
     @FXML private ImageView productImageView;
@@ -68,6 +68,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
     private final ProductService productService = ProductService.getInstance();
 
+    // State show more/less
+    private static final int DESC_MAX_CHARS = 150;
+    private String fullDescription = "";
+    private boolean descriptionExpanded = false; // Khi mới vô màn hình detail, description đang được thu gọn
 
     // ===== INIT =====
     @FXML
@@ -119,7 +123,21 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private void populateBasicInfo(ItemDTO item) {
         lblCategory.setText(item.getItemType());
         lblName.setText(item.getName());
-        txtDescription.setText(item.getDescription());
+//        txtDescription.setText(item.getDescription());
+
+        fullDescription = item.getDescription() != null ? item.getDescription() : "";
+        if (fullDescription.length() > DESC_MAX_CHARS) {
+            txtDescription.setText(fullDescription.substring(0, DESC_MAX_CHARS) + "...");
+            btnShowMore.setText("... show more ▼");
+            btnShowMore.setVisible(true);
+            btnShowMore.setManaged(true);
+        } else {
+            txtDescription.setText(fullDescription);
+            btnShowMore.setVisible(false);
+            btnShowMore.setManaged(false);
+        }
+
+
         lblSeller.setText(
                 item.getSellerUsername() != null
                         ? item.getSellerUsername()
@@ -1009,5 +1027,19 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    // Handle nút show more show less
+    @FXML
+    private void handleToggleDescription(ActionEvent event) {
+        if (descriptionExpanded) {
+            txtDescription.setText(fullDescription.substring(0, DESC_MAX_CHARS) + "...");
+            btnShowMore.setText("... show more ▼");
+            descriptionExpanded = false;
+        } else {
+            txtDescription.setText(fullDescription);
+            btnShowMore.setText("show less ▲");
+            descriptionExpanded = true;
+        }
     }
 }

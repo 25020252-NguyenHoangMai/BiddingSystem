@@ -7,130 +7,140 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane prefHeight="700.0" prefWidth="1050.0" style="-fx-background-color: #f4f7f6;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionDetailController">
+<GridPane prefHeight="800.0" prefWidth="1300.0" style="-fx-background-color: #f4f7f6;"
+          xmlns="http://javafx.com/javafx/17.0.12"
+          xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="com.auction.client.controller.AuctionDetailController">
 
     <columnConstraints>
-        <ColumnConstraints percentWidth="50.0" />
-        <ColumnConstraints percentWidth="50.0" />
+        <ColumnConstraints percentWidth="55.0" />
+        <ColumnConstraints percentWidth="45.0" />
     </columnConstraints>
     <rowConstraints>
         <RowConstraints vgrow="ALWAYS" />
     </rowConstraints>
 
     <children>
-      <ScrollPane fitToWidth="true">
-         <content>
-      
-              <!-- ============ LEFT PANEL ============ -->
-              <VBox spacing="15.0" style="-fx-border-color: #dee2e6; -fx-border-width: 0 1 0 0;">
-                  <padding>
-                  <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
-               </padding>
-      
-                  <!-- Header row: Back + title + timer -->
-                  <HBox alignment="CENTER_LEFT" spacing="10">
-                      <Button fx:id="btnBack" onAction="#handleBack" style="-fx-background-color: #6c757d; -fx-text-fill: white;" text="← Back" />
-                      <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Auction Detail" />
-                      <Region HBox.hgrow="ALWAYS" />
-                      <Label fx:id="lblTimer" style="-fx-font-family: monospace; -fx-font-size: 16px; -fx-text-fill: #27ae60;                               -fx-background-color: #eafaf1; -fx-padding: 5 10;                               -fx-border-color: #27ae60; -fx-border-radius: 5;" text="00:00:00" />
-                  </HBox>
-      
-                  <!-- Product image + info -->
-                  <HBox alignment="TOP_LEFT" spacing="20">
-      
-                      <!-- PRODUCT IMAGE -->
-                      <ImageView fx:id="productImageView" fitHeight="240" fitWidth="320" preserveRatio="true" smooth="true" style="-fx-border-color: #dfe6e9;                       -fx-border-radius: 10;                       -fx-background-radius: 10;" />
-      
-                      <!-- PRODUCT INFO -->
-                      <VBox spacing="5" HBox.hgrow="ALWAYS">
-      
-                          <Label fx:id="lblCategory" style="-fx-text-fill: #27ae60;                       -fx-font-weight: bold;" text="CATEGORY" />
-      
-                          <Label fx:id="lblName" style="-fx-font-size: 24px;                       -fx-font-weight: bold;                       -fx-text-fill: #2c3e50;" text="Product Name" wrapText="true" />
-      
-                          <Text fx:id="txtDescription" fill="#555" text="Description..." wrappingWidth="320.0" />
-      
-                      </VBox>
-      
-                  </HBox>
-      
-                  <!-- Seller + Starting price -->
-                  <HBox spacing="40">
-                      <VBox>
-                          <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" text="SELLER" />
-                          <Label fx:id="lblSeller" style="-fx-font-weight: bold;" text="Unknown" />
-                      </VBox>
-                      <VBox>
-                          <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" text="STARTING PRICE" />
-                          <Label fx:id="lblStartingPrice" style="-fx-font-weight: bold;" text="\$0" />
-                      </VBox>
-                  </HBox>
-      
-                  <Separator />
-      
-                  <!-- Dynamic specs (Brand / Model / Artist depending on type) -->
-                  <GridPane fx:id="gridSpecs" hgap="15" vgap="8" />
-      
-                  <!-- Current highest bid -->
-                  <VBox spacing="5">
-                      <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 12px;" text="CURRENT HIGHEST BID" />
-                      <Label fx:id="lblCurrentBid" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #27ae60;" text="\$0" />
-                      <Label fx:id="lblLeadingUser" style="-fx-font-weight: bold;" text="Leading: No bids yet" />
-                  </VBox>
-      
-                  <!-- Bid input box -->
-                  <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20;                                   -fx-border-color: #ddd; -fx-border-radius: 8;">
-                      <Label style="-fx-font-weight: bold;" text="Place your bid" />
-      
-                      <TextField fx:id="txtBidAmount" prefHeight="35.0" promptText="Enter amount (e.g. 1500)" />
-      
-                      <Label fx:id="lblMinBidHint" style="-fx-font-size: 11px; -fx-text-fill: #95a5a6;" text="Min next bid: $10" />
-      
-                      <HBox spacing="10">
-                          <Button fx:id="btnPlaceBid" maxWidth="Infinity" onAction="#handlePlaceBid" prefHeight="38.0" style="-fx-background-color: #27ae60;                        -fx-text-fill: white;                        -fx-font-weight: bold;" text="Place Bid" HBox.hgrow="ALWAYS" />
-      
-                          <Button fx:id="btnAutoBid" maxWidth="Infinity" onAction="#handleAutoBid" prefHeight="38.0" style="-fx-background-color: #f39c12;                        -fx-text-fill: white;                        -fx-font-weight: bold;" text="AutoBid" HBox.hgrow="ALWAYS" />
-                      </HBox>
-                  </VBox>
-      
-                  <!-- Balance display -->
-                  <VBox spacing="8" style="-fx-background-color: #2c3e50;              -fx-padding: 15;              -fx-background-radius: 8;">
-      
-                      <VBox spacing="3">
-                          <Label style="-fx-font-size: 11px;                        -fx-text-fill: #bdc3c7;" text="AVAILABLE BALANCE" />
-      
-                          <Label fx:id="lblAvailableBalance" style="-fx-font-size: 18px;                       -fx-font-weight: bold;                       -fx-text-fill: #f1c40f;" text="\$0.00" />
-                      </VBox>
-      
-                  </VBox>
-      
-                  <HBox fx:id="sellerActionsBox" managed="false" spacing="10" visible="false">
-                      <Button fx:id="btnUpdateProduct" maxWidth="Infinity" onAction="#handleUpdateProduct" prefHeight="38.0" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold;" text="Update Product" HBox.hgrow="ALWAYS" />
-                      <Button fx:id="btnCancelAuction" maxWidth="Infinity" onAction="#handleCancelAuction" prefHeight="38.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" text="❌ Cancel Auction" HBox.hgrow="ALWAYS" />
-                  </HBox>
-              </VBox>
-         </content>
-      </ScrollPane>
+        <!-- ============ LEFT PANEL WITH SCROLLPANE ============ -->
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED"
+                    style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; -fx-border-color: #dee2e6; -fx-border-width: 0 1 0 0;"
+                    GridPane.columnIndex="0">
+            <content>
+                <VBox spacing="12.0" style="-fx-background-color: #f4f7f6;">
+                    <padding>
+                        <Insets bottom="20.0" left="25.0" right="25.0" top="20.0" />
+                    </padding>
+
+                    <!-- Header row: Back + title + timer -->
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Button fx:id="btnBack" onAction="#handleBack" style="-fx-background-color: #6c757d; -fx-text-fill: white;" text="← Back" />
+                        <Label style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Auction Detail" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblTimer" style="-fx-font-family: monospace; -fx-font-size: 16px; -fx-text-fill: #27ae60; -fx-background-color: #eafaf1; -fx-padding: 5 10; -fx-border-color: #27ae60; -fx-border-radius: 5;" text="00:00:00" />
+                    </HBox>
+
+                    <!-- Product image + info -->
+                    <HBox alignment="TOP_LEFT" spacing="20">
+
+                        <!-- PRODUCT IMAGE -->
+                        <ImageView fx:id="productImageView" fitHeight="200" fitWidth="300" preserveRatio="true" smooth="true" style="-fx-border-color: #dfe6e9; -fx-border-radius: 10; -fx-background-radius: 10;" />
+
+                        <!-- PRODUCT INFO -->
+                        <VBox spacing="5" HBox.hgrow="ALWAYS">
+
+                            <Label fx:id="lblCategory" style="-fx-text-fill: #27ae60; -fx-font-weight: bold;" text="CATEGORY" />
+
+                            <Label fx:id="lblName" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Product Name" wrapText="true" />
+
+                            <!-- SELLER & STARTING PRICE -->
+                            <HBox spacing="30">
+                                <padding>
+                                    <Insets bottom="5.0" top="5.0" />
+                                </padding>
+                                <VBox>
+                                    <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" text="SELLER" />
+                                    <Label fx:id="lblSeller" style="-fx-font-weight: bold;" text="Unknown" />
+                                </VBox>
+                                <VBox>
+                                    <Label style="-fx-text-fill: #95a5a6; -fx-font-size: 11px;" text="STARTING PRICE" />
+                                    <Label fx:id="lblStartingPrice" style="-fx-font-weight: bold;" text="\$0" />
+                                </VBox>
+                            </HBox>
+
+                            <Text fx:id="txtDescription" fill="#555" text="Description..." wrappingWidth="320.0" />
+
+                            <Button fx:id="btnShowMore" onAction="#handleToggleDescription"
+                                    style="-fx-background-color: transparent; -fx-text-fill: #3498db; -fx-cursor: hand; -fx-padding: 0;"
+                                    text="... show more ▼" />
+
+                        </VBox>
+
+                    </HBox>
+
+                    <Separator />
+
+                    <!-- Dynamic specs (Brand / Model / Artist depending on type) -->
+                    <GridPane fx:id="gridSpecs" hgap="15" vgap="8" />
+
+                    <!-- Current highest bid -->
+                    <VBox spacing="3">
+                        <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 12px;" text="CURRENT HIGHEST BID" />
+                        <Label fx:id="lblCurrentBid" style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #27ae60;" text="\$0" />
+                        <Label fx:id="lblLeadingUser" style="-fx-font-weight: bold;" text="Leading: No bids yet" />
+                    </VBox>
+
+                    <!-- Bid input box -->
+                    <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #ddd; -fx-border-radius: 8;">
+                        <Label style="-fx-font-weight: bold;" text="Place your bid" />
+
+                        <TextField fx:id="txtBidAmount" prefHeight="35.0" promptText="Enter amount (e.g. 1500)" />
+
+                        <Label fx:id="lblMinBidHint" style="-fx-font-size: 11px; -fx-text-fill: #95a5a6;" text="Min next bid: $10" />
+
+                        <HBox spacing="10">
+                            <Button fx:id="btnPlaceBid" maxWidth="Infinity" onAction="#handlePlaceBid" prefHeight="38.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" text="Place Bid" HBox.hgrow="ALWAYS" />
+
+                            <Button fx:id="btnAutoBid" maxWidth="Infinity" onAction="#handleAutoBid" prefHeight="38.0" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold;" text="AutoBid" HBox.hgrow="ALWAYS" />
+                        </HBox>
+                    </VBox>
+
+                    <!-- Balance display -->
+                    <VBox spacing="8" style="-fx-background-color: #2c3e50; -fx-padding: 12; -fx-background-radius: 8;">
+                        <VBox spacing="3">
+                            <Label style="-fx-font-size: 11px; -fx-text-fill: #bdc3c7;" text="AVAILABLE BALANCE" />
+                            <Label fx:id="lblAvailableBalance" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #f1c40f;" text="\$0.00" />
+                        </VBox>
+                    </VBox>
+
+                    <HBox fx:id="sellerActionsBox" managed="false" spacing="10" visible="false">
+                        <Button fx:id="btnUpdateProduct" maxWidth="Infinity" onAction="#handleUpdateProduct" prefHeight="38.0" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold;" text="Update Product" HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnCancelAuction" maxWidth="Infinity" onAction="#handleCancelAuction" prefHeight="38.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" text="❌ Cancel Auction" HBox.hgrow="ALWAYS" />
+                    </HBox>
+                </VBox>
+            </content>
+        </ScrollPane>
 
         <!-- ============ RIGHT PANEL – Bid History + Price Chart ============ -->
         <VBox spacing="15.0" style="-fx-background-color: white;" GridPane.columnIndex="1">
-            <padding><Insets bottom="30.0" left="30.0" right="30.0" top="30.0" /></padding>
+            <padding>
+                <Insets bottom="20.0" left="28.0" right="28.0" top="20.0" />
+            </padding>
 
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Bid History" />
-                <Label style="-fx-background-color: #27ae60; -fx-text-fill: white;                               -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="RECENT" />
+                <Label style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="RECENT" />
             </HBox>
 
-            <ListView fx:id="lvBidHistory" prefHeight="250.0" style="-fx-background-insets: 0; -fx-font-family: 'Courier New'; -fx-font-size: 13px;" VBox.vgrow="SOMETIMES" />
+            <ListView fx:id="lvBidHistory" prefHeight="240.0" style="-fx-background-insets: 0; -fx-font-family: 'Courier New'; -fx-font-size: 13px;" VBox.vgrow="SOMETIMES" />
 
             <!-- Price curve chart -->
-            <VBox spacing="6">
+            <VBox spacing="6" VBox.vgrow="ALWAYS">
                 <HBox alignment="CENTER_LEFT" spacing="10">
                     <Label style="-fx-font-size: 15px; -fx-font-weight: bold;" text="Price Curve" />
-                    <Label style="-fx-background-color: #3498db; -fx-text-fill: white;                                   -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="REALTIME" />
+                    <Label style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 2 10; -fx-background-radius: 10; -fx-font-size: 11px;" text="REALTIME" />
                 </HBox>
 
-                <LineChart fx:id="bidPriceChart" animated="false" prefHeight="220.0" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
+                <LineChart fx:id="bidPriceChart" animated="false" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS">
                     <xAxis>
                         <CategoryAxis label="Time" tickLabelRotation="45" />
                     </xAxis>
@@ -139,7 +149,6 @@
                     </yAxis>
                 </LineChart>
             </VBox>
-
         </VBox>
     </children>
 </GridPane>
