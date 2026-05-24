@@ -84,6 +84,23 @@ public class AuctionItemCellController {
         countdownTimeline.play();
     }
 
+    private void updateCountdownLabel(long endTimeMillis) {
+        long remaining = endTimeMillis - System.currentTimeMillis();
+        if (remaining > 0) {
+            long h = remaining / 3_600_000;
+            long m = (remaining % 3_600_000) / 60_000;
+            long s = (remaining % 60_000) / 1_000;
+            lblTimeLeft.setText(String.format("%02d:%02d:%02d", h, m, s));
+        } else {
+            lblTimeLeft.setText("EXPIRED");
+            if ("OPEN".equalsIgnoreCase(lblStatusTag.getText()) || "RUNNING".equalsIgnoreCase(lblStatusTag.getText())) {
+                lblStatusTag.setText("FINISHED");
+                updateStatusStyle("FINISHED");
+            }
+            if (countdownTimeline != null) countdownTimeline.stop();
+        }
+    }
+
     private void updateStatusStyle(String status) {
         if (status == null) return;
         switch (status.toUpperCase()) {
