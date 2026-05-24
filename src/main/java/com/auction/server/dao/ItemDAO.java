@@ -276,5 +276,66 @@ public class ItemDAO {
 
         return list;
     }
+
+    public List<ItemDTO> getDashboardItemsBySellerId(Connection conn, String sellerId) {
+        List<ItemDTO> list = new ArrayList<>();
+
+        String sql = """
+        SELECT 
+            i.*,
+            seller.username AS sellerUsername,
+            s.id AS sessionId,
+            s.currentPrice,
+            s.status AS sessionStatus,
+            s.startTime,
+            s.endTime,
+            winner.username AS currentWinnerUsername
+        FROM Item i
+        LEFT JOIN Users seller ON i.sellerId = seller.id
+        CROSS APPLY (
+            SELECT TOP 1 *
+            FROM AuctionSession s
+            WHERE s.itemId = i.id
+                  AND s.status NOT IN 'CANCELED'
+            ORDER BY s.startTime DESC
+        ) s
+        LEFT JOIN Users winner ON s.currentWinnerId = winner.id
+        WHERE i.sellerId = ?
+        ORDER BY s.startTime DESC
+        """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sellerId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ItemDTO dto = mapToDTO(rs);
+
+                    dto.setSellerUsername(rs.getString("sellerUsername"));
+                    dto.setSessionId(rs.getString("sessionId"));
+                    dto.setCurrentPrice(rs.getDouble("currentPrice"));
+                    dto.setSessionStatus(rs.getString("sessionStatus"));
+                    dto.setCurrentWinnerUsername(rs.getString("currentWinnerUsername"));
+
+                    Timestamp startTime = rs.getTimestamp("startTime");
+                    if (startTime != null) {
+                        dto.setStartTimeMillis(startTime.getTime());
+                    }
+
+                    Timestamp endTime = rs.getTimestamp("endTime");
+                    if (endTime != null) {
+                        dto.setEndTimeMillis(endTime.getTime());
+                    }
+
+                    list.add(dto);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting seller dashboard items: " + e.getMessage());
+        }
+
+        return list;
+    }
 }
 
