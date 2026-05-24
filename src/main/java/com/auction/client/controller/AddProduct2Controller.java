@@ -421,12 +421,13 @@ public class AddProduct2Controller {
             spinEndSec.setDisable(false);
 
         } else if ("RUNNING".equals(status)) {
-            // RUNNING -> Chỉ cho phép kéo dài endTime (endTime mới > endTime cũ)
-            // Khóa các trường thông tin cơ bản và startTime
-            txtName.setDisable(true);
-            txtDescription.setDisable(true);
-            txtPrice.setDisable(true);
-            cbCategory.setDisable(true);
+            // RUNNING -> Cho phép update tất cả các thông tin trừ startTime
+            txtName.setDisable(false);
+            txtDescription.setDisable(false);
+            txtPrice.setDisable(false);
+            cbCategory.setDisable(false);
+            // dynamic fields cũng cần enable lại
+            fields.values().forEach(tf -> tf.setDisable(false));
 
             dpStartDate.setDisable(true);
             spinStartHour.setDisable(true);
