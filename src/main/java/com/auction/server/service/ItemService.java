@@ -219,17 +219,23 @@ public class ItemService {
                 List<AuctionSession> sessions =
                         sessionDAO.getSessionsByItemIdForUpdate(conn, itemDTO.getId());
 
-                AuctionSession session = findOpenSession(sessions);
+                AuctionSession session = findEditableSession(sessions);
 
                 if (session == null) {
-                    throw new AuctionException("Only auctions that have not started can update item details.");
+                    throw new AuctionException("Only OPEN or RUNNING auctions can update item details.");
                 }
 
                 if (hasBid(conn, session)) {
                     throw new AuctionException("Cannot update auction after it has bids.");
                 }
 
-                ItemDTO result = updateOpenAuctionItem(conn, existingItem, itemDTO, session);
+                ItemDTO result;
+
+                if (isEditableOpenSession(session)) {
+                    result = updateOpenAuctionItem(conn, existingItem, itemDTO, session);
+                } else {
+                    result = updateRunningAuctionItemWithoutChangingStartTime(conn, existingItem, itemDTO, session);
+                }
 
                 conn.commit();
                 return result;
@@ -299,6 +305,44 @@ public class ItemService {
         return buildFullItemDTO(updatedItem, session);
     }
 
+    private ItemDTO updateRunningAuctionItemWithoutChangingStartTime(Connection conn, ItemDTO existingItem,
+                                                                    ItemDTO itemDTO, AuctionSession session) {
+        validateItemFieldsForUpdate(itemDTO);
+
+        LocalDateTime endTime = toLocalDateTime(
+                itemDTO.getEndTimeMillis(),
+                "Auction end time"
+        );
+
+        validateRunningSchedule(session, endTime);
+
+        itemDTO.setSellerId(existingItem.getSellerId());
+
+        if (itemDTO.getImagePath() == null || itemDTO.getImagePath().isBlank()) {
+            itemDTO.setImagePath(existingItem.getImagePath());
+        }
+
+        itemDTO.setStartTimeMillis(session.getStartTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+
+        Item item = ItemFromDTOFactory.createItem(itemDTO);
+
+        itemDAO.updateItem(conn, item);
+        sessionDAO.updateEndTime(conn, session.getId(), endTime);
+        sessionDAO.updateStartingPrice(conn, session.getId(), item.getStartingPrice());
+
+        session.setEndTime(endTime);
+        session.setCurrentPrice(item.getStartingPrice());
+
+        ItemDTO updatedItem = itemDAO.getItemById(conn, itemDTO.getId());
+
+        if (updatedItem == null) {
+            throw new ItemNotFoundException("Updated item is not found.");
+        }
+
+        updatedItem.setCurrentPrice(item.getStartingPrice());
+        return buildFullItemDTO(updatedItem, session);
+    }
+
     private void validateItemFieldsForUpdate(ItemDTO itemDTO) {
         if (itemDTO.getName() == null || itemDTO.getName().isBlank()) {
             throw new AuctionException("Product name cannot be empty.");
@@ -322,6 +366,24 @@ public class ItemService {
 
         if (startTime.isBefore(now.minusMinutes(1))) {
             throw new AuctionException("Auction start time cannot be in the past.");
+        }
+    }
+
+    private void validateRunningSchedule(AuctionSession session, LocalDateTime endTime) {
+        if (!SessionService.STATUS_RUNNING.equals(session.getStatus())) {
+            throw new AuctionException("Only RUNNING auctions can update auction end time with item details.");
+        }
+
+        if (session.getStartTime() == null) {
+            throw new AuctionException("Auction start time is missing.");
+        }
+
+        if (!endTime.isAfter(session.getStartTime())) {
+            throw new AuctionException("Auction end time must be after start time.");
+        }
+
+        if (!endTime.isAfter(LocalDateTime.now())) {
+            throw new AuctionException("Auction end time must be in the future.");
         }
     }
 
@@ -355,6 +417,21 @@ public class ItemService {
         }
 
         return openSession;
+    }
+
+    private AuctionSession findEditableSession(List<AuctionSession> sessions) {
+        AuctionSession editableSession = null;
+
+        for (AuctionSession session : sessions) {
+            if (isEditableOpenSession(session) || SessionService.STATUS_RUNNING.equals(session.getStatus())) {
+                if (editableSession != null) {
+                    throw new AuctionException("Item has more than one editable auction session.");
+                }
+
+                editableSession = session;
+            }
+        }
+        return editableSession;
     }
 
     public List<Item> getAllItems() {
