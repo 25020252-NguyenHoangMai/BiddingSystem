@@ -64,6 +64,9 @@ public class AuctionItemCellController {
     private void startCountdown(long endTimeMillis) {
         if (countdownTimeline != null) countdownTimeline.stop();
 
+        // Hiển thị ngay lập tức, không chờ 1 giây
+        updateCountdownLabel(endTimeMillis);
+
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             long remaining = endTimeMillis - System.currentTimeMillis();
             if (remaining > 0) {
