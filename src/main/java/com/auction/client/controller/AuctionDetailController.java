@@ -470,19 +470,26 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             countdownTimeline.stop();
             countdownTimeline = null;
         }
+        // Hiển thị ngay lập tức, không chờ 1 giây
+        updateCountdownLabel(endTimeMillis);
+
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            long remaining = endTimeMillis - System.currentTimeMillis();
-            if (remaining > 0) {
-                long hours = remaining / 3_600_000;
-                long minutes = (remaining % 3_600_000) / 60_000;
-                long seconds = (remaining % 60_000) / 1_000;
-                lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
-            } else {
-                handleAuctionExpired();
-            }
+            updateCountdownLabel(endTimeMillis);
         }));
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
+    }
+
+    private void updateCountdownLabel(long endTimeMillis) {
+        long remaining = endTimeMillis - System.currentTimeMillis();
+        if (remaining > 0) {
+            long hours = remaining / 3_600_000;
+            long minutes = (remaining % 3_600_000) / 60_000;
+            long seconds = (remaining % 60_000) / 1_000;
+            lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+        } else {
+            handleAuctionExpired();
+        }
     }
 
     private void handleAuctionExpired() {
