@@ -185,7 +185,7 @@ public class SessionDAO {
         String sql = """
             UPDATE AuctionSession
             SET currentPrice = ?
-            WHERE id = ? AND currentWinnerId IS NULL
+            WHERE id = ? AND (currentWinnerId IS NULL OR TRIM(currentWinnerId) = '')
             """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -195,7 +195,7 @@ public class SessionDAO {
             int rows = ps.executeUpdate();
 
             if (rows == 0) {
-                throw new AuctionException("Session not found or is or cannot be updated.");
+                throw new AuctionException("Cannot update starting price: session not found or already has a winner.");
             }
             
         } catch (SQLException e) {
