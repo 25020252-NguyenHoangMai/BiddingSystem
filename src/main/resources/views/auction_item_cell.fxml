@@ -4,72 +4,55 @@
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
-<HBox alignment="CENTER_LEFT" spacing="20.0"
-      style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #eeeeee; -fx-border-width: 0 0 1 0;"
-      xmlns="http://javafx.com/javafx/17"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.auction.client.controller.AuctionItemCellController">
+<HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: white; -fx-padding: 15; -fx-border-color: #eeeeee; -fx-border-width: 0 0 1 0;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionItemCellController">
 
     <StackPane style="-fx-border-color: #ddd; -fx-border-radius: 5; -fx-padding: 2;">
         <ImageView fx:id="imgProduct" fitHeight="150.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="false" />
     </StackPane>
 
     <VBox spacing="8.0" HBox.hgrow="ALWAYS">
-        <Label fx:id="lblProductName" text="Product Name" wrapText="true"
-               style="-fx-font-weight: bold; -fx-font-size: 18px; -fx-text-fill: #1f2933;" />
+        <Label fx:id="lblProductName" style="-fx-font-weight: bold; -fx-font-size: 18px; -fx-text-fill: #1f2933;" text="Product Name" wrapText="true" />
 
         <VBox spacing="3.0">
             <HBox spacing="5">
-                <Label text="Session ID:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
-                <Label fx:id="lblSessionID" text="—"
-                       style="-fx-font-family: 'Monospaced'; -fx-text-fill: #34495e;" />
+                <Label style="-fx-text-fill: #777; -fx-font-size: 12px;" text="Session ID:" />
+                <Label fx:id="lblSessionID" style="-fx-font-family: 'Monospaced'; -fx-text-fill: #34495e;" text="—" />
             </HBox>
             <HBox spacing="5">
-                <Label text="Category:" style="-fx-text-fill: #777; -fx-font-size: 12px;" />
-                <Label fx:id="lblProductType" text="—"
-                       style="-fx-font-style: italic; -fx-text-fill: #555;" />
+                <Label style="-fx-text-fill: #777; -fx-font-size: 12px;" text="Category:" />
+                <Label fx:id="lblProductType" style="-fx-font-style: italic; -fx-text-fill: #555;" text="—" />
             </HBox>
         </VBox>
 
         <HBox spacing="5">
-            <Label text="Seller:" style="-fx-text-fill: #777;" />
-            <Label fx:id="lblSellerInfo" text="—"
-                   style="-fx-font-weight: bold; -fx-text-fill: #1f2933;" />
+            <Label style="-fx-text-fill: #777;" text="Seller:" />
+            <Label fx:id="lblSellerInfo" style="-fx-font-weight: bold; -fx-text-fill: #1f2933;" text="—" />
         </HBox>
 
         <Separator prefWidth="200.0" />
 
         <VBox spacing="5.0">
             <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Starting Price:" minWidth="120.0"
-                       style="-fx-font-size: 13px; -fx-text-fill: #555;" />
-                <Label fx:id="lblStartingPrice" text="0 $"
-                       style="-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 14px;" />
+                <Label minWidth="120.0" style="-fx-font-size: 13px; -fx-text-fill: #555;" text="Starting Price:" />
+                <Label fx:id="lblStartingPrice" style="-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 14px;" text="0 $" />
             </HBox>
             <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Current Price:" minWidth="120.0"
-                       style="-fx-font-size: 13px; -fx-text-fill: #555;" />
-                <Label fx:id="lblCurrentPrice" text="0 $"
-                       style="-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 14px;" />
+                <Label minWidth="120.0" style="-fx-font-size: 13px; -fx-text-fill: #555;" text="Current Price:" />
+                <Label fx:id="lblCurrentPrice" style="-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 14px;" text="0 $" />
             </HBox>
         </VBox>
     </VBox>
 
-    <VBox alignment="TOP_RIGHT" spacing="15.0" minWidth="180.0">
+    <VBox alignment="TOP_RIGHT" minWidth="180.0" spacing="15.0">
         <VBox alignment="TOP_RIGHT" spacing="5">
-            <Label text="Time left:" style="-fx-font-size: 10px; -fx-text-fill: #999;" />
-            <Label fx:id="lblTimeLeft" text="00:00:00"
-                   style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #444;" />
+            <Label fx:id="lblTimeHeader" style="-fx-font-size: 10px; -fx-text-fill: #999;" text="Time left:" />
+            <Label fx:id="lblTimeLeft" style="-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #444;" text="00:00:00" />
         </VBox>
 
         <Region VBox.vgrow="ALWAYS" />
 
-        <Button fx:id="btnViewDetail" mnemonicParsing="false"
-                prefHeight="35.0" prefWidth="140.0"
-                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;"
-                text="VIEW DETAIL" />
+        <Button fx:id="btnViewDetail" mnemonicParsing="false" prefHeight="35.0" prefWidth="140.0" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5;" text="VIEW DETAIL" />
 
-        <Label fx:id="lblStatusTag" text="OPEN"
-               style="-fx-font-size: 11px; -fx-padding: 4 12; -fx-background-color: #e1f5fe; -fx-text-fill: #01579b; -fx-background-radius: 20; -fx-font-weight: bold;" />
+        <Label fx:id="lblStatusTag" style="-fx-font-size: 11px; -fx-padding: 4 12; -fx-background-color: #e1f5fe; -fx-text-fill: #01579b; -fx-background-radius: 20; -fx-font-weight: bold;" text="OPEN" />
     </VBox>
 </HBox>

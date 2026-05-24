@@ -23,6 +23,7 @@ public class AuctionItemCellController {
     @FXML private Label lblSellerInfo;
     @FXML private Label lblStartingPrice;
     @FXML private Label lblCurrentPrice;
+    @FXML private Label lblTimeHeader;
     @FXML private Label lblTimeLeft;
     @FXML private Label lblStatusTag;
     @FXML private ImageView imgProduct;
@@ -45,7 +46,7 @@ public class AuctionItemCellController {
         lblCurrentPrice.setText(String.format("%.2f $", displayPrice));
         lblStatusTag.setText(safe(item.getSessionStatus()));
         updateStatusStyle(item.getSessionStatus());
-        startCountdown(item.getEndTimeMillis());
+        startCountdown(item.getStartTimeMillis(), item.getEndTimeMillis());
         loadProductImage(item.getImagePath());
 
         btnViewDetail.setOnAction(e -> {
@@ -61,14 +62,14 @@ public class AuctionItemCellController {
         if (countdownTimeline != null) countdownTimeline.stop();
     }
 
-    private void startCountdown(long endTimeMillis) {
+    private void startCountdown(long startTimeMillis, long endTimeMillis) {
         if (countdownTimeline != null) countdownTimeline.stop();
 
         // Hiển thị ngay lập tức, không chờ 1 giây
-        updateCountdownLabel(endTimeMillis);
+        updateCountdownLabel(startTimeMillis, endTimeMillis);
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            updateCountdownLabel(endTimeMillis);
+            updateCountdownLabel(startTimeMillis, endTimeMillis);
         }));
         countdownTimeline.setCycleCount(Animation.INDEFINITE);
         countdownTimeline.play();
@@ -93,27 +94,30 @@ public class AuctionItemCellController {
 //        countdownTimeline.play();
     }
 
-    private void updateCountdownLabel(long startTimeMillis, long endTimeMillis, String status) {
+    private void updateCountdownLabel(long startTimeMillis, long endTimeMillis) {
         long now = System.currentTimeMillis();
 
         // Trường hợp phiên OPEN -> đếm ngược startTime
-        if ("OPEN".equalsIgnoreCase(status) && startTimeMillis > now) {
+        if (startTimeMillis > now) {
             long remaining = startTimeMillis - now;
             long h = remaining / 3_600_000;
             long m = (remaining % 3_600_000) / 60_000;
             long s = (remaining % 60_000) / 1_000;
-            lblTimeLeft.setText("Starts in: " + String.format("%02d:%02d:%02d", h, m, s));
+            lblTimeHeader.setText("Starts in: ");
+            lblTimeLeft.setText(String.format("%02d:%02d:%02d", h, m, s));
             return;
         }
 
-        // Trường hợp phiên OPEN → đếm ngược endTime
+        // Trường hợp phiên RUNNING → đếm ngược endTime
         long remaining = endTimeMillis - now;
         if (remaining > 0) {
             long h = remaining / 3_600_000;
             long m = (remaining % 3_600_000) / 60_000;
             long s = (remaining % 60_000) / 1_000;
+            lblTimeHeader.setText("Time left: ");
             lblTimeLeft.setText(String.format("%02d:%02d:%02d", h, m, s));
         } else {
+            lblTimeHeader.setText("Status:");
             lblTimeLeft.setText("EXPIRED");
             if ("OPEN".equalsIgnoreCase(lblStatusTag.getText()) || "RUNNING".equalsIgnoreCase(lblStatusTag.getText())) {
                 lblStatusTag.setText("FINISHED");
