@@ -271,9 +271,10 @@ public class ClientSocket {
     // ===== DASHBOARD UPDATE LISTENER =====
     public void setDashboardUpdateListener(DashboardUpdateListener listener) {
         this.dashboardUpdateListener = listener;
-        if (listener != null) {
-            this.dashboardWatching = true;
-        }
+    }
+
+    public void setDashboardWatching(boolean dashboardWatching) {
+        this.dashboardWatching = dashboardWatching;
     }
 
     // ===== CLOSE =====

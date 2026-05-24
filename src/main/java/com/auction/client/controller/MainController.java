@@ -92,12 +92,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         setupFilterButtons();
 
         clientSocket.setDashboardUpdateListener(this);
-
-        if (!clientSocket.isDashboardWatching()) {
-            sendWatchThenLoad();
-        } else {
-            loadProductsAsync();
-        }
+        sendWatchThenLoad();
         startAutoRefresh();
     }
 
@@ -114,9 +109,13 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                     DashboardWatchResponse watchResp = clientSocket.sendRequestAndWait(
                             new WatchDashboardRequest(), DashboardWatchResponse.class);
 
-                    System.out.println("[MainController] Watch response: " + watchResp.isSuccess());
+                    boolean watched = watchResp != null && watchResp.isSuccess();
+                    clientSocket.setDashboardWatching(watched);
+
+                    System.out.println("[MainController] Watch response: " + watched);
 
                 } catch (Exception e) {
+                    clientSocket.setDashboardWatching(false);
                     System.err.println("[MainController] Watch dashboard failed: " + e.getMessage());
                     // Không throw vì vẫn load product
                 }
