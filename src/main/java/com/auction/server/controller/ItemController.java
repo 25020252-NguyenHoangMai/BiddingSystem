@@ -10,10 +10,7 @@ import com.auction.response.*;
 import com.auction.server.factory.ItemFromDTOFactory;
 import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
-import com.auction.server.service.ImageStorageService;
-import com.auction.server.service.ItemService;
-import com.auction.server.service.SessionService;
-import com.auction.server.service.UserService;
+import com.auction.server.service.*;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -28,16 +25,16 @@ public class ItemController {
 
     private final ItemService itemService;
     private final SessionService sessionService;
-    private final DashboardWatchRegistry dashboardWatchRegistry;
+    private final DashboardRealtimeService dashboardRealtimeService;
     private final SessionWatchRegistry sessionWatchRegistry;
     private final ImageStorageService imageStorageService;
 
     public ItemController(ItemService itemService, SessionService sessionService,
-                          DashboardWatchRegistry dashboardWatchRegistry, SessionWatchRegistry sessionWatchRegistry,
+                          DashboardRealtimeService dashboardRealtimeService, SessionWatchRegistry sessionWatchRegistry,
                           ImageStorageService imageStorageService) {
         this.itemService = itemService;
         this.sessionService = sessionService;
-        this.dashboardWatchRegistry = dashboardWatchRegistry;
+        this.dashboardRealtimeService = dashboardRealtimeService;
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.imageStorageService = imageStorageService;
     }
@@ -97,14 +94,7 @@ public class ItemController {
                     endTime
             );
 
-            dashboardWatchRegistry.broadcastDashboardUpdate(
-                    new DashboardUpdateResponse(
-                            true,
-                            "Item added",
-                            DashboardUpdateType.ITEM_ADDED,
-                            fullDTO
-                    )
-            );
+            dashboardRealtimeService.broadcastItemAdded(fullDTO, "Item added");
             return new AddItemResponse(true, "Add item successfully", fullDTO);
 
         } catch (Exception e) {
@@ -139,14 +129,7 @@ public class ItemController {
 
             ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
 
-            dashboardWatchRegistry.broadcastDashboardUpdate(
-                    new DashboardUpdateResponse(
-                            true,
-                            "Auction canceled by admin",
-                            DashboardUpdateType.ITEM_REMOVED,
-                            dto
-                    )
-            );
+            dashboardRealtimeService.broadcastItemRemoved(dto, "Auction canceled by admin");
 
             broadcastAuctionCanceledToSessionWatchers(session, EVENT_AUCTION_CANCELED_BY_ADMIN);
 
@@ -200,14 +183,7 @@ public class ItemController {
 
             ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
 
-            dashboardWatchRegistry.broadcastDashboardUpdate(
-                    new DashboardUpdateResponse(
-                            true,
-                            "Auction canceled by seller",
-                            DashboardUpdateType.ITEM_REMOVED,
-                            dto
-                    )
-            );
+            dashboardRealtimeService.broadcastItemRemoved(dto, "Auction canceled by seller");
 
             broadcastAuctionCanceledToSessionWatchers(session, EVENT_AUCTION_CANCELED_BY_SELLER);
 
@@ -219,7 +195,9 @@ public class ItemController {
         }
     }
 
-//method dùng khi session open
+//Seller updates auction details for OPEN sessions, or RUNNING sessions without bids.
+
+    // RUNNING updates keep the original start time.
     public SellerUpdateItemResponse sellerUpdateItem(SellerUpdateItemRequest request) {
         try {
             if (request == null) {
@@ -269,14 +247,7 @@ public class ItemController {
                     itemDTO
             );
 
-            dashboardWatchRegistry.broadcastDashboardUpdate(
-                    new DashboardUpdateResponse(
-                            true,
-                            "Item updated by seller",
-                            DashboardUpdateType.ITEM_UPDATED,
-                            updatedItem
-                    )
-            );
+            dashboardRealtimeService.broadcastItemUpdated(updatedItem, "Item updated by seller");
 
             broadcastAuctionUpdatedToSessionWatchers(updatedItem, EVENT_ITEM_UPDATED_BY_SELLER);
 
@@ -318,14 +289,7 @@ public class ItemController {
 
             ItemDTO dto = itemService.getAuctionDetailDTO(session.getId());
 
-            dashboardWatchRegistry.broadcastDashboardUpdate(
-                    new DashboardUpdateResponse(
-                            true,
-                            "Auction end time updated by seller",
-                            DashboardUpdateType.ITEM_UPDATED,
-                            dto
-                    )
-            );
+            dashboardRealtimeService.broadcastItemUpdated(dto, "Auction details updated by seller");
 
             broadcastAuctionUpdatedToSessionWatchers(dto, EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER);
 

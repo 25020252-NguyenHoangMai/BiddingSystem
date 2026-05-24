@@ -26,6 +26,8 @@ public class    MainServer {
         UserService userService = new UserService(userDAO, sessionDAO);
         ItemService itemService = new ItemService(itemDAO, userService, sessionDAO, bidDAO);
 
+        DashboardRealtimeService dashboardRealtimeService = new DashboardRealtimeService(dashboardWatchRegistry,
+                                                                itemService);
         BidHistoryService bidHistoryService = new BidHistoryService(bidDAO, userService);
         BidIncrementService bidIncrementService = new BidIncrementService();
         BidReservationCalculator bidReservationCalculator = new BidReservationCalculator();
@@ -42,20 +44,19 @@ public class    MainServer {
                                             bidValidationService, bidTransactionExecutor);
 
         AuthController authController = new AuthController(userService);
-        ItemController itemController = new ItemController(itemService, sessionService,dashboardWatchRegistry,
+        ItemController itemController = new ItemController(itemService, sessionService,dashboardRealtimeService,
                                             sessionWatchRegistry, imageStorageService);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
-                                                userService, bidHistoryService);
+                                                userService, bidHistoryService, dashboardRealtimeService);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
                                                 sessionService, userService, bidIncrementService);
 
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
                                                 realTimeController);
 
-        AuctionSessionScheduler sessionScheduler = new AuctionSessionScheduler(sessionService,
-                                                                sessionWatchRegistry, dashboardWatchRegistry,
-                                                                itemService, userService);
+        AuctionSessionScheduler sessionScheduler = new AuctionSessionScheduler(sessionService, sessionWatchRegistry,
+                                                        dashboardRealtimeService, userService);
         sessionScheduler.start();
 
         SocketServer server = new SocketServer(5000, auctionController, sessionWatchRegistry,

@@ -16,8 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class AuctionSessionScheduler {
     private final SessionService sessionService;
     private final SessionWatchRegistry  sessionWatchRegistry;
-    private final DashboardWatchRegistry dashboardWatchRegistry;
-    private final ItemService itemService;
+    private final DashboardRealtimeService dashboardRealtimeService;
     private final UserService userService;
 
     private final ScheduledExecutorService executor =
@@ -28,12 +27,10 @@ public class AuctionSessionScheduler {
             });
 
     public AuctionSessionScheduler(SessionService sessionService, SessionWatchRegistry sessionWatchRegistry,
-                                        DashboardWatchRegistry dashboardWatchRegistry, ItemService itemService,
-                                        UserService userService) {
+                                   DashboardRealtimeService dashboardRealtimeService, UserService userService) {
         this.sessionService = sessionService;
         this.sessionWatchRegistry = sessionWatchRegistry;
-        this.dashboardWatchRegistry = dashboardWatchRegistry;
-        this.itemService = itemService;
+        this.dashboardRealtimeService = dashboardRealtimeService;
         this.userService = userService;
     }
 
@@ -53,7 +50,10 @@ public class AuctionSessionScheduler {
                 for (AuctionSession session : startedSessions) {
                     try {
                         broadcastSessionStarted(session);
-                        broadcastDashboardUpdated(session);
+                        dashboardRealtimeService.broadcastItemUpdatedBySessionId(
+                                session.getId(),
+                                "Auction started"
+                        );
 
                     } catch (Exception e) {
                         System.err.println("[AuctionSessionScheduler] Failed to broadcast started session: "
@@ -72,7 +72,10 @@ public class AuctionSessionScheduler {
             for (AuctionSession auctionSession : finalizedSessions) {
                 try {
                     broadcastSessionFinalized(auctionSession);
-                    broadcastDashboardUpdated(auctionSession);
+                    dashboardRealtimeService.broadcastItemUpdatedBySessionId(
+                            auctionSession.getId(),
+                            "Auction finalized"
+                    );
                 } catch (Exception e) {
                     System.err.println("[AuctionSessionScheduler] Failed to broadcast finalized session: "
                                     + auctionSession.getId());
@@ -151,16 +154,4 @@ public class AuctionSessionScheduler {
         sessionWatchRegistry.broadcastBidUpdate(auctionSession.getId(), update);
     }
 
-    private void broadcastDashboardUpdated(AuctionSession auctionSession) {
-        ItemDTO item = itemService.getAuctionDetailDTO(auctionSession.getId());
-
-        DashboardUpdateResponse update = new DashboardUpdateResponse(
-                true,
-                "Auction finalized",
-                DashboardUpdateType.ITEM_UPDATED,
-                item
-        );
-
-        dashboardWatchRegistry.broadcastDashboardUpdate(update);
-    }
 }

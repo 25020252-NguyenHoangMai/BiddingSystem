@@ -26,11 +26,12 @@ public class BiddingController {
     private final BidIncrementService bidIncrementService;
     private final UserService userService;
     private final BidHistoryService bidHistoryService;
+    private final DashboardRealtimeService dashboardRealtimeService;
 
     public BiddingController(BiddingService biddingService, SessionService sessionService,
                              SessionWatchRegistry sessionWatchRegistry, AutoBiddingService autoBiddingService,
                              BidIncrementService bidIncrementService, UserService userService,
-                             BidHistoryService bidHistoryService) {
+                             BidHistoryService bidHistoryService, DashboardRealtimeService dashboardRealtimeService) {
         this.biddingService = biddingService;
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.sessionService = sessionService;
@@ -38,6 +39,7 @@ public class BiddingController {
         this.bidIncrementService = bidIncrementService;
         this.userService = userService;
         this.bidHistoryService = bidHistoryService;
+        this.dashboardRealtimeService = dashboardRealtimeService;
     }
 
     public PlaceBidResponse placeBid(PlaceBidRequest request) {
@@ -79,6 +81,11 @@ public class BiddingController {
                         finalResult = autoBidResult;
                     }
                 }
+
+                dashboardRealtimeService.broadcastItemUpdatedBySessionId(
+                        finalResult.getSessionId(),
+                        "Auction updated after bid"
+                );
             }
 
             UserSessionDTO updatedUser = null;
@@ -200,6 +207,11 @@ public class BiddingController {
                         finalResult = autoBidResult;
                     }
                 }
+
+                dashboardRealtimeService.broadcastItemUpdatedBySessionId(
+                        finalResult.getSessionId(),
+                        "Auction updated after auto bid"
+                );
             }
 
             return new SetAutoBidResponse(result.isSuccess(), result.getMessage(), finalResult.getSessionId(),
