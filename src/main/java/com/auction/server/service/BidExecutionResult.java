@@ -7,15 +7,22 @@ public class BidExecutionResult {
     private final double currentPrice;
     private final String winnerId;
     private final String status;
+    private final Long bidTimeMillis;
 
     public BidExecutionResult(boolean success, String message, String sessionId, double currentPrice, String winnerId,
-                            String status) {
+                              String status) {
+        this(success, message, sessionId, currentPrice, winnerId, status, null);
+    }
+
+    public BidExecutionResult(boolean success, String message, String sessionId, double currentPrice, String winnerId,
+                            String status, Long bidTimeMillis) {
         this.success = success;
         this.message = message;
         this.sessionId = sessionId;
         this.currentPrice = currentPrice;
         this.winnerId = winnerId;
         this.status = status;
+        this.bidTimeMillis = bidTimeMillis;
     }
 
     public boolean isSuccess() {
@@ -40,5 +47,9 @@ public class BidExecutionResult {
 
     public String getStatus() {
         return status;
+    }
+
+    public Long getBidTimeMillis() {
+        return bidTimeMillis;
     }
 }

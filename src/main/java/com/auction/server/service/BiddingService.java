@@ -73,7 +73,8 @@ public class BiddingService { // Xử lí đặt giá
 
         if (updatedSession == null) {
             return new BidResult(true,"Bid placed successfully but failed to reload updated session",
-                            sessionId, bidAmount, bidderId, bidderUsername,null, bidderUsername, bidAmount);
+                            sessionId, bidAmount, bidderId, bidderUsername, null, bidderUsername, bidAmount,
+                            executionResult.getBidTimeMillis());
         }
 
         //antisniping check
@@ -98,7 +99,8 @@ public class BiddingService { // Xử lí đặt giá
                 resolveWinnerUsername(updatedSession.getCurrentWinnerId()),
                 updatedSession.getStatus(),
                 bidderUsername,
-                bidAmount
+                bidAmount,
+                executionResult.getBidTimeMillis()
         );
     }
 

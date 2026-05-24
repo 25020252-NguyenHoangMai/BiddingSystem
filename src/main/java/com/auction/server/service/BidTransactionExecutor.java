@@ -12,6 +12,7 @@ import com.auction.server.dao.UserDAO;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.ZoneId;
 import java.util.UUID;
 
 public class BidTransactionExecutor {
@@ -168,13 +169,20 @@ public class BidTransactionExecutor {
 
         bidDAO.insertBid(conn, bidTransaction);
 
+        long bidTimeMillis = bidTransaction.getBidTime()
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+
         return new BidExecutionResult(
                 true,
                 "Bid placed successfully",
                 sessionId,
                 bidAmount,
                 bidderId,
-                session.getStatus()
+                session.getStatus(),
+                bidTimeMillis
         );
     }
 

@@ -198,7 +198,8 @@ public class AutoBiddingService {
 
         if (updatedSession == null) {
             return new BidResult(true, "Auto bid placed but failed to reload session",
-                    sessionId, autoBidAmount, bidderId, bidderUsername, null, bidderUsername, autoBidAmount);
+                    sessionId, autoBidAmount, bidderId, bidderUsername, null, bidderUsername, autoBidAmount,
+                    executionResult.getBidTimeMillis());
         }
 
         boolean extended = false;
@@ -226,7 +227,8 @@ public class AutoBiddingService {
                 resolveWinnerUsername(updatedSession.getCurrentWinnerId()),
                 updatedSession.getStatus(),
                 bidderUsername,
-                autoBidAmount
+                autoBidAmount,
+                executionResult.getBidTimeMillis()
         );
     }
 
