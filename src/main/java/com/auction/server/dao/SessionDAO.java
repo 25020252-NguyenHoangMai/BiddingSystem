@@ -185,7 +185,7 @@ public class SessionDAO {
         String sql = """
             UPDATE AuctionSession
             SET currentPrice = ?
-            WHERE id = ? AND status = 'OPEN'
+            WHERE id = ? AND currentWinnerId IS NULL
             """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
