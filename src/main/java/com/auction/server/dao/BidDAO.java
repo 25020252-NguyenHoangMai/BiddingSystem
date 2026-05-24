@@ -207,5 +207,26 @@ public class BidDAO {
         }
     }
 
-    
+    public List<String> getVisibleSessionIdsByBidderId(Connection conn, String bidderId) {
+        List<String> sessionIds = new ArrayList<>();
+        String sql = """
+        SELECT DISTINCT bt.sessionId
+        FROM BidTransaction bt
+        JOIN AuctionSession s ON s.id = bt.sessionId
+        WHERE bt.bidderId = ?
+        AND s.status NOT IN ('CANCELLED')
+        """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, bidderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sessionIds.add(rs.getString("sessionId"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting bidder sessions: " + e.getMessage());
+        }
+        return sessionIds;
+    }
 }

@@ -447,7 +447,7 @@ public class SessionDAO {
         FROM AuctionSession s
         JOIN Item i ON i.id = s.itemId
         WHERE i.sellerId = ?
-        AND s.status NOT IN ('CANCELED', 'CANCELLED')
+        AND s.status NOT IN ('CANCELLED')
         """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -458,7 +458,7 @@ public class SessionDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new AuctionException("Failed to get seller sessions: " + e.getMessage());
+            throw new AuctionException("An error occurred while getting seller sessions: " + e.getMessage());
         }
         return sessionIds;
     }
