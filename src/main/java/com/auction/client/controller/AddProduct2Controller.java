@@ -408,6 +408,8 @@ public class AddProduct2Controller {
             txtDescription.setDisable(false);
             txtPrice.setDisable(false);
             cbCategory.setDisable(false);
+            // dynamic fields cũng cần enable lại
+            fields.values().forEach(tf -> tf.setDisable(false));
 
             dpStartDate.setDisable(false);
             spinStartHour.setDisable(false);
@@ -433,7 +435,6 @@ public class AddProduct2Controller {
             spinStartMin.setDisable(true);
             spinStartSec.setDisable(true);
 
-            // Mở cho phép sửa endTime
             dpEndDate.setDisable(false);
             spinEndHour.setDisable(false);
             spinEndMin.setDisable(false);
