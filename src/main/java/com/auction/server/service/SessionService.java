@@ -493,7 +493,7 @@ public class SessionService { // Quản lí phiên đấu giá
                 try {
                     AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn,sessionSnapShot.getId());
 
-                    if (session != null) {
+                    if (session == null) {
                         conn.commit();
                         continue;
                     }
