@@ -629,6 +629,15 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
             String status = item.getSessionStatus();
 
+            // OPEN -> RUNNING khi đã đến startTime
+            if ("OPEN".equalsIgnoreCase(status)
+                    && item.getStartTimeMillis() > 0
+                    && item.getStartTimeMillis() <= now
+                    && item.getEndTimeMillis() > now) {
+                item.setSessionStatus("RUNNING");
+                changed = true;
+            }
+
             if (("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status)) && item.getEndTimeMillis() <= now) {
                 item.setSessionStatus("FINISHED");
                 changed = true;

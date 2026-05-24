@@ -112,7 +112,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         checkSellerPrivileges(item);
 
         // Đếm ngược (Sử dụng thời gian thực từ Server)
-        startCountdown(item.getEndTimeMillis());
+        startCountdown(item.getStartTimeMillis(), item.getEndTimeMillis());
 
         startHistoryLoading(item, () -> {startRealtimeWatching(item);});
     }
@@ -288,7 +288,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                         updateBidHint(watchResponse.getMinimumNextBid());
 
                         if (watchResponse.getEndTimeMillis() != null) {
-                            startCountdown(watchResponse.getEndTimeMillis());
+                            startCountdown(currentItem.getStartTimeMillis(), watchResponse.getEndTimeMillis());
                         }
                     });
 
@@ -351,7 +351,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             if (update.getEndTimeMillis() != null) {
                 currentItem.setEndTimeMillis(update.getEndTimeMillis());
                 if (!isClosed) {
-                    startCountdown(update.getEndTimeMillis());
+                    startCountdown(currentItem.getStartTimeMillis(), update.getEndTimeMillis());
                 }
             }
 
@@ -465,28 +465,41 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         lblAvailableBalance.setText(String.format("Available Balance: %,.0f", available));
     }
 
-    private void startCountdown(long endTimeMillis) {
+    private void startCountdown(long startTimeMillis, long endTimeMillis) {
         if (countdownTimeline != null) {
             countdownTimeline.stop();
             countdownTimeline = null;
         }
         // Hiển thị ngay lập tức, không chờ 1 giây
-        updateCountdownLabel(endTimeMillis);
+        updateCountdownLabel(startTimeMillis, endTimeMillis);
 
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            updateCountdownLabel(endTimeMillis);
+            updateCountdownLabel(startTimeMillis, endTimeMillis);
         }));
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
     }
 
-    private void updateCountdownLabel(long endTimeMillis) {
-        long remaining = endTimeMillis - System.currentTimeMillis();
-        if (remaining > 0) {
-            long hours = remaining / 3_600_000;
+    private void updateCountdownLabel(long startTimeMillis, long endTimeMillis) {
+        long now = System.currentTimeMillis();
+
+        // OPEN — đếm ngược đến startTime
+        if (startTimeMillis > 0 && startTimeMillis > now) {
+            long remaining = startTimeMillis - now;
+            long hours   = remaining / 3_600_000;
             long minutes = (remaining % 3_600_000) / 60_000;
             long seconds = (remaining % 60_000) / 1_000;
-            lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            lblTimer.setText("Starts in: " + String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            return;
+        }
+
+        // RUNNING — đếm ngược đến endTime
+        long remaining = endTimeMillis - now;
+        if (remaining > 0) {
+            long hours   = remaining / 3_600_000;
+            long minutes = (remaining % 3_600_000) / 60_000;
+            long seconds = (remaining % 60_000) / 1_000;
+            lblTimer.setText("Time left: " + String.format("%02d:%02d:%02d", hours, minutes, seconds));
         } else {
             handleAuctionExpired();
         }
@@ -841,7 +854,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             setupDynamicSpecs(updated);
 
             if (updated.getEndTimeMillis() > 0) {
-                startCountdown(updated.getEndTimeMillis());
+                startCountdown(updated.getStartTimeMillis(), updated.getEndTimeMillis());
             }
 
             updateBidHint(updated.getMinimumNextBid());
@@ -933,7 +946,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     }
                     populateBasicInfo(updatedItem);
                     setupDynamicSpecs(updatedItem);
-                    startCountdown(updatedItem.getEndTimeMillis());
+                    startCountdown(updatedItem.getStartTimeMillis(), updatedItem.getEndTimeMillis());
                 });
             });
 
@@ -994,7 +1007,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 populateBasicInfo(updatedItem);
                 setupDynamicSpecs(updatedItem);
                 if (updatedItem.getEndTimeMillis() > 0) {
-                    startCountdown(updatedItem.getEndTimeMillis());
+                    startCountdown(updatedItem.getStartTimeMillis(), updatedItem.getEndTimeMillis());
                 }
                 updateBidHint(updatedItem.getMinimumNextBid());
             } else if (currentItem != null) {

@@ -258,6 +258,10 @@ public class ItemDAO {
                 dto.setSessionStatus(rs.getString("sessionStatus"));
                 dto.setCurrentWinnerUsername(rs.getString("currentWinnerUsername"));
 
+                Timestamp startTime = rs.getTimestamp("startTime");
+                if (startTime != null) {
+                    dto.setStartTimeMillis(startTime.getTime());
+                }
                 Timestamp endTime = rs.getTimestamp("endTime");
                 if (endTime != null) {
                     dto.setEndTimeMillis(endTime.getTime());

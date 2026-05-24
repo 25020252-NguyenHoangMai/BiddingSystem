@@ -98,7 +98,7 @@ public class AuctionItemCellController {
         long now = System.currentTimeMillis();
 
         // Trường hợp phiên OPEN -> đếm ngược startTime
-        if (startTimeMillis > now) {
+        if (startTimeMillis > 0 && startTimeMillis > now) {
             long remaining = startTimeMillis - now;
             long h = remaining / 3_600_000;
             long m = (remaining % 3_600_000) / 60_000;
