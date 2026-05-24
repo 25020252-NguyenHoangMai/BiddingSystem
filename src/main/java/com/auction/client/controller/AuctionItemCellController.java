@@ -31,6 +31,7 @@ public class AuctionItemCellController {
 
     private Timeline countdownTimeline;
     private Runnable onViewDetail;
+    private String currentImagePath;
 
     public void setData(ItemDTO item) {
         lblProductName.setText(safe(item.getName()));
@@ -47,7 +48,8 @@ public class AuctionItemCellController {
         lblStatusTag.setText(safe(item.getSessionStatus()));
         updateStatusStyle(item.getSessionStatus());
         startCountdown(item.getStartTimeMillis(), item.getEndTimeMillis());
-        loadProductImage(item.getImagePath());
+        currentImagePath = item.getImagePath();
+        loadProductImage(currentImagePath);
 
         btnViewDetail.setOnAction(e -> {
             if (onViewDetail != null) onViewDetail.run();
@@ -142,19 +144,32 @@ public class AuctionItemCellController {
     }
 
     private void loadProductImage(String imagePath) {
+        imgProduct.setImage(null);
+
         if (imagePath == null || imagePath.isBlank()) return;
+
+        String requestedImagePath = imagePath;
 
         Task<byte[]> task = new Task<>() {
             @Override
             protected byte[] call() throws Exception {
-                return ProductService.getInstance().getItemImage(imagePath);
+                return ProductService.getInstance().getItemImage(requestedImagePath);
             }
         };
 
         task.setOnSucceeded(e -> {
+            if (!requestedImagePath.equals(currentImagePath)) {
+                return;
+            }
             byte[] bytes = task.getValue();
             if (bytes != null && bytes.length > 0) {
                 imgProduct.setImage(new Image(new ByteArrayInputStream(bytes), 150, 150, false, true));
+            }
+        });
+
+        task.setOnFailed(e -> {
+            if (requestedImagePath.equals(currentImagePath)) {
+                imgProduct.setImage(null);
             }
         });
 
