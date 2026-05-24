@@ -60,6 +60,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
+    private static final String EVENT_USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
 
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
@@ -330,8 +331,13 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         // Lọc đúng session đang xem
         if (!Objects.equals(update.getSessionId(), currentItem.getSessionId())) return;
 
-        if (EVENT_ITEM_UPDATED_BY_SELLER.equals(update.getMessage())) {
+        if (EVENT_ITEM_UPDATED_BY_SELLER.equals(update.getMessage())
+                || EVENT_USER_PROFILE_UPDATED.equals(update.getMessage())) {
             reloadAuctionDetail(update.getSessionId());
+
+            if (EVENT_USER_PROFILE_UPDATED.equals(update.getMessage())) {
+                reloadBidHistory();
+            }
             return;
         }
 
@@ -410,6 +416,12 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             sellerActionsBox.setManaged(true);
             updateSellerActionButtons();
         }
+    }
+
+    private void reloadBidHistory() {
+        if (currentItem == null || currentItem.getSessionId() == null) { return; }
+        historyLoaded = false;
+        startHistoryLoading(currentItem, null);
     }
 
     private void refreshBidState(double currentPrice, String winnerUsername, String status) {
