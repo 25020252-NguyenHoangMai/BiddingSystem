@@ -60,9 +60,6 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private volatile boolean historyLoaded = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
-    private static final String EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER = "AUCTION_END_TIME_UPDATED_BY_SELLER";
-    private static final String EVENT_AUCTION_CANCELED_BY_SELLER = "AUCTION_CANCELED_BY_SELLER";
-    private static final String EVENT_AUCTION_CANCELED_BY_ADMIN = "AUCTION_CANCELED_BY_ADMIN";
 
     private final ClientSessionService sessionManager = new ClientSessionService();
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
@@ -365,51 +362,32 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             updateBidHint(update.getMinimumNextBid());
 
             if (isBidEvent(update)) {
-                addBidHistoryEntry(update);
-                updateRealtimeChart(update);
+                appendBidToUI(update.getBidderUsername(), update.getCurrentPrice());
             }
             updateBalanceLabel();
         });
     }
 
+    private void appendBidToUI(String bidderUsername, double price) {
+        if (bidderUsername == null || bidderUsername.isBlank()) return;
 
-    private void addBidHistoryEntry(BidUpdateResponse update) {
-        if (update.getBidderUsername() == null || update.getBidderUsername().isBlank()) {
-            return;
-        }
+        String me = ClientSession.getCurrentUser() != null ? ClientSession.getCurrentUser().getUsername() : "";
+        String entry = BidHistoryFormatter.formatRealtime(bidderUsername, price, me);
 
-        String me = ClientSession.getCurrentUser() != null
-                ? ClientSession.getCurrentUser().getUsername()
-                : "";
-
-        String entry = BidHistoryFormatter.formatRealtime(
-                update.getBidderUsername(),
-                update.getCurrentPrice(),
-                me
-        );
-
+        // Cập nhật ListView
         if (!lvBidHistory.getItems().contains(entry)) {
             lvBidHistory.getItems().add(0, entry);
             if (lvBidHistory.getItems().size() > 20) {
                 lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
             }
         }
-    }
 
-    private void updateRealtimeChart(BidUpdateResponse update) {
+        // Cập nhật Biểu đồ
         String timeLabel = LocalTime.now().format(TIME_FMT);
-
-        boolean exists = priceSeries.getData().stream()
-                .anyMatch(d ->
-                        Objects.equals(d.getYValue(), update.getCurrentPrice())
-                );
-
+        boolean exists = priceSeries.getData().stream().anyMatch(d -> Objects.equals(d.getYValue(), price));
         if (!exists) {
-            priceSeries.getData().add(
-                    new XYChart.Data<>(timeLabel, update.getCurrentPrice())
-            );
+            priceSeries.getData().add(new XYChart.Data<>(timeLabel, price));
         }
-
         if (priceSeries.getData().size() > 12) {
             priceSeries.getData().remove(0);
         }
@@ -430,6 +408,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
             sellerActionsBox.setVisible(true);
             sellerActionsBox.setManaged(true);
+            updateSellerActionButtons();
         }
     }
 
@@ -449,10 +428,9 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         if (isClosed) {
             lblTimer.setText("CLOSED");
 
-            if (countdownTimeline != null) {
-                countdownTimeline.stop();
-            }
+            if (countdownTimeline != null) { countdownTimeline.stop(); }
         }
+        updateSellerActionButtons();
     }
 
     private boolean isClosedStatus(String status) {
@@ -492,25 +470,19 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             countdownTimeline.stop();
             countdownTimeline = null;
         }
-
         countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             long remaining = endTimeMillis - System.currentTimeMillis();
             if (remaining > 0) {
-                updateCountdownLabel(remaining);
+                long hours = remaining / 3_600_000;
+                long minutes = (remaining % 3_600_000) / 60_000;
+                long seconds = (remaining % 60_000) / 1_000;
+                lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
             } else {
                 handleAuctionExpired();
             }
         }));
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
-    }
-
-    private void updateCountdownLabel(long remainingMillis) {
-        long hours = remainingMillis / 3_600_000;
-        long minutes = (remainingMillis % 3_600_000) / 60_000;
-        long seconds = (remainingMillis % 60_000) / 1_000;
-
-        lblTimer.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
     }
 
     private void handleAuctionExpired() {
@@ -1037,6 +1009,22 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void updateSellerActionButtons() {
+        if (currentItem == null) return;
+        String status = currentItem.getSessionStatus();
+
+        boolean hasBid = currentItem.getCurrentWinnerUsername() != null && !currentItem.getCurrentWinnerUsername().isBlank();
+        boolean isLive = "OPEN".equals(status) || "RUNNING".equals(status);
+
+        if (isLive) {
+            btnUpdateProduct.setDisable(hasBid);
+            btnCancelAuction.setDisable(false);
+        } else {
+            btnUpdateProduct.setDisable(true);
+            btnCancelAuction.setDisable(true);
+        }
     }
 
     // Handle nút show more show less

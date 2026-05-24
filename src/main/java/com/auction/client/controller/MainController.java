@@ -49,6 +49,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     // ===== FILTER BUTTONS - Status =====
     @FXML private ToggleButton btnStatusAll;
+    @FXML private ToggleButton btnStatusUpcoming;
     @FXML private ToggleButton btnStatusRunning;
     @FXML private ToggleButton btnStatusClosed;
 
@@ -411,6 +412,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     private void setupFilterButtons() {
         activeStatusFilter = null;
         setButtonActive(btnStatusAll,true);
+        setButtonActive(btnStatusUpcoming,false);
         setButtonActive(btnStatusRunning,false);
         setButtonActive(btnStatusClosed, false);
         setButtonActive(btnCatAll,true);
@@ -421,10 +423,12 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     private void handleStatusFilter(javafx.event.ActionEvent event) {
         ToggleButton clicked = (ToggleButton) event.getSource();
         if      (clicked == btnStatusAll)      activeStatusFilter = null;
+        else if (clicked == btnStatusUpcoming) activeStatusFilter = "UPCOMING";
         else if (clicked == btnStatusRunning)  activeStatusFilter = "RUNNING";
         else if (clicked == btnStatusClosed)   activeStatusFilter = "CLOSED";
 
         setButtonActive(btnStatusAll,      activeStatusFilter == null);
+        setButtonActive(btnStatusUpcoming, "UPCOMING".equals(activeStatusFilter));
         setButtonActive(btnStatusRunning,  "RUNNING".equals(activeStatusFilter));
         setButtonActive(btnStatusClosed,   "CLOSED".equals(activeStatusFilter));
         applyFilters();
@@ -472,6 +476,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
             // Status filter
             if (activeStatusFilter != null) {
                 if (status == null) return false;
+                if ("UPCOMING".equalsIgnoreCase(activeStatusFilter)) {
+                    if (!"OPEN".equalsIgnoreCase(status)) return false;
+                }
                 if ("RUNNING".equalsIgnoreCase(activeStatusFilter)) {
                     boolean running = "OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
                     if (!running) {

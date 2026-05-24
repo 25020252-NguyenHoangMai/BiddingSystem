@@ -54,6 +54,8 @@
                 <Label text="Status:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
                 <ToggleButton fx:id="btnStatusAll"     text="All"        onAction="#handleStatusFilter"
                               style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
+                <ToggleButton fx:id="btnStatusUpcoming" text="🟡 Upcoming"   onAction="#handleStatusFilter"
+                              style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
                 <ToggleButton fx:id="btnStatusRunning" text="🟢 Running" onAction="#handleStatusFilter"
                               style="-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-background-radius: 20; -fx-cursor: hand; -fx-font-size: 12px; -fx-padding: 4 14;" />
                 <ToggleButton fx:id="btnStatusClosed"  text="🔵 Closed"  onAction="#handleStatusFilter"
