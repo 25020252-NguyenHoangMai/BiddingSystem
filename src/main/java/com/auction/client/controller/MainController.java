@@ -24,6 +24,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -230,19 +231,37 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                     return;
                 }
 
-                try {
-                    FXMLLoader loader = new FXMLLoader(
-                            getClass().getResource("/views/auction_item_cell.fxml")
-                    );
-                    javafx.scene.layout.HBox root = loader.load();
-                    cellController = loader.getController();
-                    cellController.setData(item);
-                    cellController.setOnViewDetail(() -> openAuctionDetail(item));
-                    setGraphic(root);
-                } catch (java.io.IOException e) {
-                    e.printStackTrace();
-                    setGraphic(new Label("Cannot load item."));
+//                try {
+//                    FXMLLoader loader = new FXMLLoader(
+//                            getClass().getResource("/views/auction_item_cell.fxml")
+//                    );
+//                    javafx.scene.layout.HBox root = loader.load();
+//                    cellController = loader.getController();
+//                    cellController.setData(item);
+//                    cellController.setOnViewDetail(() -> openAuctionDetail(item));
+//                    setGraphic(root);
+//                } catch (java.io.IOException e) {
+//                    e.printStackTrace();
+//                    setGraphic(new Label("Cannot load item."));
+//                }
+
+                // Tái sử dụng controller nếu đã có, chỉ tạo mới khi chưa có
+                if (cellController == null) {
+                    try {
+                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/auction_item_cell.fxml"));
+                        HBox root = loader.load();
+                        cellController = loader.getController();
+                        cellController.setOnViewDetail(() -> openAuctionDetail(item));
+                        setGraphic(root);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        setGraphic(new Label("Cannot load item."));
+                    }
                 }
+                // Truyền đối tượng dữ liệu ItemDTO mới vào controller để cập nhật thông tin hiển thị lên UI
+                cellController.setData(item);
+                // Cập nhật lại callback "Xem chi tiết" với đối tượng item hiện tại để đảm bảo khi nhấn nút sẽ mở đúng item mới nhất
+                cellController.setOnViewDetail(() -> openAuctionDetail(item));
             }
         });
     }
