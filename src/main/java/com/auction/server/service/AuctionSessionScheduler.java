@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class AuctionFinalizationScheduler {
+public class AuctionSessionScheduler {
     private final SessionService sessionService;
     private final SessionWatchRegistry  sessionWatchRegistry;
     private final DashboardWatchRegistry dashboardWatchRegistry;
@@ -22,12 +22,12 @@ public class AuctionFinalizationScheduler {
 
     private final ScheduledExecutorService executor =
             Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread thread = new Thread(r, "AuctionFinalizationScheduler");
+                Thread thread = new Thread(r, "AuctionSessionScheduler");
                 thread.setDaemon(true);
                 return thread;
             });
 
-    public AuctionFinalizationScheduler(SessionService sessionService, SessionWatchRegistry sessionWatchRegistry,
+    public AuctionSessionScheduler(SessionService sessionService, SessionWatchRegistry sessionWatchRegistry,
                                         DashboardWatchRegistry dashboardWatchRegistry, ItemService itemService,
                                         UserService userService) {
         this.sessionService = sessionService;
@@ -48,6 +48,22 @@ public class AuctionFinalizationScheduler {
 
     private void runOnce() {
         try {
+            List<AuctionSession> startedSessions = sessionService.startDueSessions();
+            if (startedSessions != null && !startedSessions.isEmpty()) {
+                for (AuctionSession session : startedSessions) {
+                    try {
+                        broadcastSessionStarted(session);
+                        broadcastDashboardUpdated(session);
+
+                    } catch (Exception e) {
+                        System.err.println("[AuctionSessionScheduler] Failed to broadcast started session: "
+                                + session.getId());
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+
             List<AuctionSession> finalizedSessions = sessionService.finalizeExpiredSessions();
 
             if (finalizedSessions == null || finalizedSessions.isEmpty()) {
@@ -58,19 +74,46 @@ public class AuctionFinalizationScheduler {
                     broadcastSessionFinalized(auctionSession);
                     broadcastDashboardUpdated(auctionSession);
                 } catch (Exception e) {
-                    System.err.println("[AuctionFinalizationScheduler] Failed to broadcast finalized session: "
+                    System.err.println("[AuctionSessionScheduler] Failed to broadcast finalized session: "
                                     + auctionSession.getId());
                     e.printStackTrace();
                 }
             }
         } catch (Exception e) {
-            System.err.println("[AuctionFinalizationScheduler] Failed to finalize expired sessions");
+            System.err.println("[AuctionSessionScheduler] Failed to finalize expired sessions");
             e.printStackTrace();
         }
     }
 
     public void stop() {
         executor.shutdownNow();
+    }
+
+    private void broadcastSessionStarted(AuctionSession auctionSession) {
+        Long endTimeMillis = null;
+
+        if (auctionSession.getEndTime() != null) {
+            endTimeMillis = auctionSession.getEndTime()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli();
+        }
+        BidUpdateResponse update = new BidUpdateResponse(
+                true,
+                "Auction started",
+                auctionSession.getId(),
+                auctionSession.getCurrentPrice(),
+                auctionSession.getCurrentWinnerId(),
+                null,
+                auctionSession.getStatus(),
+                endTimeMillis,
+                null,
+                null,
+                null
+        );
+
+        sessionWatchRegistry.broadcastBidUpdate(auctionSession.getId(), update);
+
     }
 
     private void broadcastSessionFinalized(AuctionSession auctionSession) {

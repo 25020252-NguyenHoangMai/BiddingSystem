@@ -216,8 +216,11 @@ public class ItemService {
                     throw new AuctionException("You can only update your own item.");
                 }
 
-                List<AuctionSession> sessions =
-                        sessionDAO.getSessionsByItemIdForUpdate(conn, itemDTO.getId());
+                List<AuctionSession> sessions = sessionDAO.getSessionsByItemIdForUpdate(conn, itemDTO.getId());
+
+                for (AuctionSession auctionSession : sessions) {
+                    syncSessionStatusByTime(conn, auctionSession);
+                }
 
                 AuctionSession session = findEditableSession(sessions);
 
@@ -432,6 +435,20 @@ public class ItemService {
             }
         }
         return editableSession;
+    }
+
+    private void syncSessionStatusByTime(Connection conn, AuctionSession session) {
+        if (session == null || session.getStartTime() == null || session.getEndTime() == null) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (SessionService.STATUS_OPEN.equals(session.getStatus()) && !now.isBefore(session.getStartTime())
+                && now.isBefore(session.getEndTime())) {
+            sessionDAO.updateStatus(conn, session.getId(), SessionService.STATUS_RUNNING);
+            session.setStatus(SessionService.STATUS_RUNNING);
+        }
     }
 
     public List<Item> getAllItems() {

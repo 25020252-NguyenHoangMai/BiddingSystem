@@ -5,6 +5,7 @@ import com.auction.model.AuctionSession;
 import com.auction.model.Item;
 import com.auction.model.User;
 import com.auction.server.dao.BidDAO;
+import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
 
@@ -129,7 +130,7 @@ public class SessionService { // Quản lí phiên đấu giá
             return null;
         }
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             return sessionDAO.getSessionById(conn, sessionId);
         } catch (Exception e) {
             throw new AuctionException("Get auction session failed: " + e.getMessage());
@@ -140,14 +141,14 @@ public class SessionService { // Quản lí phiên đấu giá
         List<AuctionSession> runningSessions = new ArrayList<>();
         List<AuctionSession> sessions;
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             sessions = sessionDAO.getAllSessions(conn);
         } catch (Exception e) {
             throw new AuctionException("Get sessions failed: " + e.getMessage());
         }
 
         for (AuctionSession snapshot : sessions) {
-            try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            try (Connection conn = DatabaseManager.getInstance().getConnection()) {
                 conn.setAutoCommit(false);
 
                 try {
@@ -223,7 +224,7 @@ public class SessionService { // Quản lí phiên đấu giá
             return false;
         }
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             conn.setAutoCommit(false);
 
             try {
@@ -266,7 +267,7 @@ public class SessionService { // Quản lí phiên đấu giá
             throw new IllegalArgumentException("Extra time must be positive");
         }
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             conn.setAutoCommit(false);
 
             try {
@@ -308,7 +309,7 @@ public class SessionService { // Quản lí phiên đấu giá
             throw new AuctionException("Session id is required.");
         }
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             conn.setAutoCommit(false);
 
             try {
@@ -411,7 +412,7 @@ public class SessionService { // Quản lí phiên đấu giá
         }
 
         //return sessionDAO.updateCurrentBid(sessionId, newPrice, bidderId); quỳnh xóa cái này sửa thành bên duới
-        try (java.sql.Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (java.sql.Connection conn = DatabaseManager.getInstance().getConnection()) {
             return sessionDAO.updateCurrentBid(conn, sessionId, newPrice, bidderId);
         } catch (java.sql.SQLException e) {
             e.printStackTrace();
@@ -434,7 +435,7 @@ public class SessionService { // Quản lí phiên đấu giá
                 throw new IllegalStateException("Seller id is missing for auction item");
             }
 
-            try (java.sql.Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            try (java.sql.Connection conn = DatabaseManager.getInstance().getConnection()) {
                 conn.setAutoCommit(false);
 
                 try {
@@ -462,8 +463,7 @@ public class SessionService { // Quản lí phiên đấu giá
     }
 
     private void updateSessionStatus(AuctionSession session, String status) {
-        try (java.sql.Connection conn =
-                     com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (java.sql.Connection conn = DatabaseManager.getInstance().getConnection()) {
             sessionDAO.updateStatus(conn, session.getId(), status);
             session.setStatus(status);
         } catch (java.sql.SQLException e) {
@@ -476,19 +476,71 @@ public class SessionService { // Quản lí phiên đấu giá
         session.setStatus(status);
     }
 
+    public List<AuctionSession> startDueSessions() {
+        List<AuctionSession> startedSessions = new ArrayList<>();
+        List<AuctionSession> sessions;
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            sessions = sessionDAO.getAllSessions(conn);
+        } catch (Exception e) {
+            throw new AuctionException("Load sessions for start failed: " + e.getMessage());
+        }
+
+        for (AuctionSession sessionSnapShot : sessions) {
+            try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    AuctionSession session = sessionDAO.getSessionByIdForUpdate(conn,sessionSnapShot.getId());
+
+                    if (session != null) {
+                        conn.commit();
+                        continue;
+                    }
+
+                    LocalDateTime now = LocalDateTime.now();
+
+                    boolean shouldStart = STATUS_OPEN.equals(session.getStatus())
+                            && !now.isBefore(session.getStartTime())
+                            && now.isBefore(session.getEndTime());
+
+                    if (!shouldStart) {
+                        conn.commit();
+                        continue;
+                    }
+
+                    sessionDAO.updateStatus(conn, session.getId(), STATUS_RUNNING);
+                    session.setStatus(STATUS_RUNNING);
+
+                    conn.commit();
+                    startedSessions.add(session);
+                } catch (Exception e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+            } catch (Exception e) {
+                throw new AuctionException("Start due session failed: " + e.getMessage());
+            }
+        }
+
+        return startedSessions;
+    }
+
     public List<AuctionSession> finalizeExpiredSessions() {
         List<AuctionSession> finalizedSessions = new ArrayList<>();
 
         List<AuctionSession> sessions;
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             sessions = sessionDAO.getAllSessions(conn);
         } catch (Exception e) {
             throw new AuctionException("Load sessions for finalization failed: " + e.getMessage());
         }
 
         for (AuctionSession sessionSnapshot : sessions) {
-            try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+            try (Connection conn = DatabaseManager.getInstance().getConnection()) {
                 conn.setAutoCommit(false);
 
                 try {
@@ -641,7 +693,7 @@ public class SessionService { // Quản lí phiên đấu giá
             throw new AuctionException("Account is disabled.");
         }
 
-        try (Connection conn = com.auction.server.dao.DatabaseManager.getInstance().getConnection()) {
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
             conn.setAutoCommit(false);
 
             try {

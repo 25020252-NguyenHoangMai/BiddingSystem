@@ -53,10 +53,10 @@ public class    MainServer {
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
                                                 realTimeController);
 
-        AuctionFinalizationScheduler finalizationScheduler = new AuctionFinalizationScheduler(sessionService,
+        AuctionSessionScheduler sessionScheduler = new AuctionSessionScheduler(sessionService,
                                                                 sessionWatchRegistry, dashboardWatchRegistry,
                                                                 itemService, userService);
-        finalizationScheduler.start();
+        sessionScheduler.start();
 
         SocketServer server = new SocketServer(5000, auctionController, sessionWatchRegistry,
                                 dashboardWatchRegistry);
