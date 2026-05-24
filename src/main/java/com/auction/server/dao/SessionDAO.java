@@ -195,7 +195,7 @@ public class SessionDAO {
             int rows = ps.executeUpdate();
 
             if (rows == 0) {
-                throw new AuctionException("Session not found or is no longer OPEN.");
+                throw new AuctionException("Session not found or is or cannot be updated.");
             }
             
         } catch (SQLException e) {
