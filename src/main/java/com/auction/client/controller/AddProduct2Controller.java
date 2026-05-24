@@ -159,10 +159,9 @@ public class AddProduct2Controller {
                 }
 
                 if ("RUNNING".equals(status)) {
-                    return service.updateAuctionEndTimeBySeller(
-                            editingItem.getSessionId(),
-                            item.getEndTimeMillis()
-                    );
+                    item.setId(editingItem.getId());
+                    item.setSessionId(editingItem.getSessionId());
+                    return service.updateProductBySeller(item); //gọi method update full thay vì mỗi endTime
                 }
 
                 throw new IllegalStateException("This auction cannot be updated.");
