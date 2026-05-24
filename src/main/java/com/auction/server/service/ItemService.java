@@ -733,6 +733,18 @@ public class ItemService {
 
     }
 
+    public List<ItemDTO> getDashboardItemDTOSBySellerId(String sellerId) {
+        if (sellerId == null || sellerId.isBlank()) {
+            throw new AuctionException("Seller id is required.");
+        }
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            return itemDAO.getDashboardItemsBySellerId(conn, sellerId);
+        } catch (SQLException e) {
+            throw new AuctionException("An error occurred while getting seller dashboard items: " + e.getMessage());
+        }
+    }
+
     private String generateSessionId(Connection conn) {
         for (int attempt = 0; attempt < 10; attempt++) {
             String sessionId = SESSION_ID_PREFIX + randomCode(SESSION_ID_LENGTH);

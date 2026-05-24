@@ -7,16 +7,20 @@ import com.auction.model.User;
 import com.auction.dto.UserSessionDTO;
 import com.auction.request.*;
 import com.auction.response.*;
+import com.auction.server.service.DashboardRealtimeService;
 import com.auction.server.service.UserService;
 
 import java.util.List;
+import java.util.Objects;
 //import com.auction.server.factory.UserRegistrationFactory;
 
 public class AuthController {
     private final UserService userService;
+    private final DashboardRealtimeService dashboardRealtimeService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, DashboardRealtimeService dashboardRealtimeService) {
         this.userService = userService;
+        this.dashboardRealtimeService = dashboardRealtimeService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -218,6 +222,9 @@ public class AuthController {
 
     public EditProfileResponse editProfile(EditProfileRequest request) {
         try {
+            User before = userService.getUserById(request.getUserId());
+            String oldUsername = before != null ? before.getUsername() : null;
+
             User updated = userService.updateProfile(
                     request.getUserId(),
                     request.getFullName(),
@@ -226,6 +233,13 @@ public class AuthController {
             );
 
             UserSessionDTO dto = toUserSessionDTO(updated);
+
+            if (!Objects.equals(oldUsername, updated.getUsername())) {
+                dashboardRealtimeService.broadcastSellerItemsUpdated(
+                        updated.getId(),
+                        "Seller username updated"
+                );
+            }
 
             return new EditProfileResponse(true, "Profile updated successfully!", dto);
 

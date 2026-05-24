@@ -29,6 +29,16 @@ public class DashboardRealtimeService {
         broadcastItemUpdated(item, message);
     }
 
+    public void broadcastSellerItemsUpdated(String sellerId, String message) {
+        if (sellerId == null || sellerId.isBlank()) {
+            return;
+        }
+
+        for (ItemDTO item : itemService.getDashboardItemDTOSBySellerId(sellerId)) {
+            broadcastItemUpdated(item, message);
+        }
+    }
+
     public void broadcastItemRemoved(ItemDTO item, String message) {
         broadcast(DashboardUpdateType.ITEM_REMOVED, item, message);
     }

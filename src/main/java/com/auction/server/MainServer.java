@@ -43,7 +43,7 @@ public class    MainServer {
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
                                             bidValidationService, bidTransactionExecutor);
 
-        AuthController authController = new AuthController(userService);
+        AuthController authController = new AuthController(userService, dashboardRealtimeService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardRealtimeService,
                                             sessionWatchRegistry, imageStorageService);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
