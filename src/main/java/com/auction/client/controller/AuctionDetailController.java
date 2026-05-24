@@ -623,6 +623,26 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         thread.start();
     }
 
+    private void handleEnableAutoBid() {
+        Double maxBid = requestAutoBidAmount();
+        if (maxBid == null) return;
+
+        UserSessionDTO currentUser = ClientSession.getCurrentUser();
+        if (currentUser == null) {
+            showAlert(Alert.AlertType.ERROR, "AutoBid", "User session not found.");
+            return;
+        }
+
+        prepareAutoBidButton();
+
+        Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
+        configureAutoBidHandlers(task);
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
 
     private Double requestAutoBidAmount() {
         TextInputDialog dialog = new TextInputDialog();
