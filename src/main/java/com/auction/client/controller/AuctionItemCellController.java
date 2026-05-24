@@ -93,8 +93,21 @@ public class AuctionItemCellController {
 //        countdownTimeline.play();
     }
 
-    private void updateCountdownLabel(long endTimeMillis) {
-        long remaining = endTimeMillis - System.currentTimeMillis();
+    private void updateCountdownLabel(long startTimeMillis, long endTimeMillis, String status) {
+        long now = System.currentTimeMillis();
+
+        // Trường hợp phiên OPEN -> đếm ngược startTime
+        if ("OPEN".equalsIgnoreCase(status) && startTimeMillis > now) {
+            long remaining = startTimeMillis - now;
+            long h = remaining / 3_600_000;
+            long m = (remaining % 3_600_000) / 60_000;
+            long s = (remaining % 60_000) / 1_000;
+            lblTimeLeft.setText("Starts in: " + String.format("%02d:%02d:%02d", h, m, s));
+            return;
+        }
+
+        // Trường hợp phiên OPEN → đếm ngược endTime
+        long remaining = endTimeMillis - now;
         if (remaining > 0) {
             long h = remaining / 3_600_000;
             long m = (remaining % 3_600_000) / 60_000;
