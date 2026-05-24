@@ -1,13 +1,16 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientSocket;
 import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.SellerHistoryItemDTO;
 import com.auction.dto.SessionHistoryItemDTO;
 import com.auction.dto.UserSessionDTO;
+import com.auction.response.BidUpdateResponse;
 import com.auction.response.GetAuctionDetailResponse;
 import com.auction.response.GetSellerHistoryResponse;
 import com.auction.response.GetSessionHistoryResponse;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -67,7 +70,10 @@ public class SellerHistoryController {
         btnSearch.setOnAction(event -> applyFilters());
         txtSearch.setOnAction(event -> applyFilters());
 
-        btnBack.setOnAction(event -> navigateTo(PROFILE_FXML));
+        btnBack.setOnAction(event -> {
+            stopWatchingAllSessions();
+            navigateTo(PROFILE_FXML);
+        });
 
     }
 
@@ -286,6 +292,7 @@ public class SellerHistoryController {
 
             List<SellerHistoryItemDTO> sessions = response.getSessions();
             masterData.setAll(sessions != null ? sessions : List.of());
+            startWatchingAllSessions();
             applyFilters();
         });
 
@@ -301,6 +308,120 @@ public class SellerHistoryController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void startWatchingAllSessions() {
+        // Gọi hàm hủy toàn bộ các listener đã đăng ký từ trước
+        stopWatchingAllSessions();
+
+        // Duyệt qua từng đối tượng nằm trong danh sách 'masterData'
+        for (SellerHistoryItemDTO session : masterData) {
+            // Lấy mã id của phiên đấu giá hiện tại
+            String sessionId = session.getSessionId();
+            /* Nếu id null hoặc chỉ chứa khoảng trắng
+            -> Bỏ qua (continue) và nhảy sang phiên kế tiếp trong danh sách
+             */
+            if (sessionId == null || sessionId.isBlank()) continue;
+
+            // Chỉ watch các session đang RUNNING — UPCOMING và CANCELED không cần
+            String status = safe(session.getStatus());
+            if (!"RUNNING".equalsIgnoreCase(status) && !"UPCOMING".equalsIgnoreCase(status)) continue;
+
+            /* Lấy instance duy nhất của CLientSocket (Singleton Pattern)
+               Gọi hàm setBidUpdateListener() để đăng ký nghe sự kiện thay đổi cho phiên có id này
+             */
+            ClientSocket.getInstance().setBidUpdateListener(sessionId, update -> {
+                /* Bất cứ khi nào Server bắn một gói tin cập nhật giá (update) của sessionId này về qua Socket
+                   ClientSocket sẽ tự động kích hoạt đoạn code này và chuyển gói update vào hàm xử lý giao diện handleSellerRealtimeUpdate()
+                 */
+                handleSellerRealtimeUpdate(update);
+            });
+        }
+    }
+
+    private void refreshListItem(SellerHistoryItemDTO session) {
+        // Tìm kiếm vị trí của session đang muốn cập nhật bên trong danh sách 'masterData'
+        int idx = masterData.indexOf(session);
+        if (idx >= 0) {
+            // set lại chính phiên đó vào lại đúng idx cũ của nó -> kích hoạt một sự kiện thay đổi (cập nhật những thay đổi mới của sesison)
+            masterData.set(idx, session);
+        }
+    }
+
+    private void stopWatchingAllSessions() {
+        for (SellerHistoryItemDTO session : masterData) {
+            String sessionId = session.getSessionId();
+            if (sessionId != null && !sessionId.isBlank()) {
+                // Gọi hàm để cắt đứt kết nối real-time của phiên, giải phóng bộ nhớ
+                ClientSocket.getInstance().clearBidUpdateListener(sessionId);
+            }
+        }
+    }
+
+    private void handleSellerRealtimeUpdate(BidUpdateResponse update) {
+        // Thoát hàm nếu gói tin update null hoặc không có sessionId
+        if (update == null || update.getSessionId() == null) return;
+
+        Platform.runLater(() -> {
+            String updatedSessionId = update.getSessionId();
+
+            // Biến masterData thành một dòng chảy dữ liệu để tìm kiếm
+            masterData.stream()
+                    // Chỉ dữ lại phần tử có sessionId trùng với id vừa nhận từ server
+                    .filter(s -> updatedSessionId.equals(s.getSessionId()))
+                    // Lấy phần tử đầu tiên tìm thấy (vì sessionId là duy nhất)
+                    .findFirst()
+                    // Khi đã tìm thấy -> Tiến hành khối lệnh bên dưới
+                    .ifPresent(session -> {
+                        // Cập nhật currentPrice
+                        if (update.getCurrentPrice() != null) {
+                            session.setCurrentPrice(update.getCurrentPrice());
+                        }
+
+                        // Cập nhật receivedBidAmount
+                        if (isBidEvent(update)) {
+                            /* Dùng isBidEvent() để kiểm tra gói tin này có phải là sự kiện đặt bid hay không
+                               Nếu đúng -> +1
+                             */
+                            session.setTotalBidsReceived(session.getTotalBidsReceived() + 1);
+                        }
+
+                        boolean statusChanged = false;
+                        // cập nhật status
+                        if (update.getStatus() != null && !update.getStatus().equals(session.getStatus())) {
+                            session.setStatus(update.getStatus());
+                            // Báo hiệu status đã thay đổi
+                            statusChanged = true;
+
+                            // Nếu session đã đóng, không cần watch nữa (không còn biến động)
+                            if (isClosedStatus(update.getStatus())) {
+                                ClientSocket.getInstance().clearBidUpdateListener(updatedSessionId);
+                            }
+                        }
+
+                        // Ép ListView phải vẽ lại dòng này với giá, total bids received và trạng thái mới
+                        refreshListItem(session);
+
+                        // Hệ thống chạy lại bộ lọc
+                        if (statusChanged) {
+                            applyFilters();
+                        }
+
+                    });
+        });
+    }
+
+    private boolean isBidEvent(BidUpdateResponse update) {
+        return update.getBidAmount() != null
+                && update.getBidAmount() > 0
+                && update.getBidderUsername() != null
+                && !update.getBidderUsername().isBlank();
+    }
+
+    private boolean isClosedStatus(String status) {
+        return "FINISHED".equals(status)
+                || "CANCELED".equals(status)
+                || "PAID".equals(status);
     }
 
     public void refresh() {
