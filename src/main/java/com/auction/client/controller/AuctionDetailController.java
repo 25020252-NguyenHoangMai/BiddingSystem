@@ -1015,10 +1015,15 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 populateBasicInfo(currentItem);
             }
 
-            showAlert(Alert.AlertType.INFORMATION, "Cancel Auction", "Auction canceled successfully.");
             // Disable nút sau khi cancel
             btnCancelAuction.setDisable(true);
             btnUpdateProduct.setDisable(true);
+
+            showAlert(Alert.AlertType.INFORMATION, "Cancel Auction", "Auction canceled successfully.");
+
+            // Cancel thành công navigate về màn main
+            Stage currentStage = (Stage) btnCancelAuction.getScene().getWindow();
+            currentStage.close();
         });
 
         task.setOnFailed(event -> {
