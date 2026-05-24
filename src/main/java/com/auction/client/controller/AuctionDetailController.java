@@ -66,6 +66,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private final AuctionRealtimeService realtimeManager = new AuctionRealtimeService(auctionService);
     private final ProductService productService = ProductService.getInstance();
 
+    private boolean autoBidActive = false;
+
     // State show more/less
     private static final int DESC_MAX_CHARS = 150;
     private String fullDescription = "";
@@ -74,6 +76,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     // ===== INIT =====
     @FXML
     public void initialize() {
+        autoBidActive = false;
+        updateAutoBidButtonAppearance();
         lvBidHistory.setPlaceholder(new Label("No bids yet. Be the first!"));
         updateBalanceLabel();
         realtimeManager.setListener(this);
@@ -599,28 +603,11 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     @FXML
     private void handleAutoBid(ActionEvent event) {
-        Double maxBid = requestAutoBidAmount();
-
-        if (maxBid == null) {
-            return;
+        if (autoBidActive) {
+            handleDisableAutoBid();
+        } else {
+            handleEnableAutoBid();
         }
-
-        UserSessionDTO currentUser = ClientSession.getCurrentUser();
-
-        if (currentUser == null) {
-            showAlert(Alert.AlertType.ERROR, "AutoBid", "User session not found.");
-            return;
-        }
-
-        prepareAutoBidButton();
-
-        Task<SetAutoBidResponse> task = createAutoBidTask(currentUser, maxBid);
-
-        configureAutoBidHandlers(task);
-
-        Thread thread = new Thread(task);
-        thread.setDaemon(true);
-        thread.start();
     }
 
     private void handleEnableAutoBid() {
@@ -641,6 +628,83 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void handleDisableAutoBid() {
+        UserSessionDTO currentUser = ClientSession.getCurrentUser();
+        if (currentUser == null) {
+            showAlert(Alert.AlertType.ERROR, "AutoBid", "User session not found.");
+            return;
+        }
+
+        // Hiển thị xác nhận trước khi tắt
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Are you sure you want to turn off Auto Bid?",
+                ButtonType.YES, ButtonType.NO);
+        confirm.setTitle("Disable Auto Bid");
+        confirm.setHeaderText(null);
+        Optional<ButtonType> result = confirm.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.YES) return;
+
+        btnAutoBid.setDisable(true);
+        btnAutoBid.setText("Processing...");
+
+        /*
+        Khởi tạo tiến trình ngầm : Tạo một đối tượng Task của JavaFX để xử lý tác vụ gửi request lên Server ngầm
+        (Việc gọi API/Network là tác vụ tốn thời gian, nếu chạy trên UI Thread sẽ làm đơ giao diện
+         */
+        Task<DisableAutoBidResponse> task = new Task<>() {
+            @Override
+            /*
+            Gọi API Service : Chạy ngầm hàm disableAutoBid() từ tầng service để gửi request lên Server
+            Truyền vào request đó mã phiên hiện tại và id người dùng
+             */
+            protected DisableAutoBidResponse call() throws Exception {
+                return auctionService.disableAutoBid(
+                        currentItem.getSessionId(),
+                        currentUser.getId()
+                );
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            // Lấy dữ liệu từ gói phản hồi trả về
+            DisableAutoBidResponse res = task.getValue();
+            // Nếu server xử lý tắt Auto Bid thành công
+            if (res.isSuccess()) {
+                autoBidActive = false;
+                updateAutoBidButtonAppearance();
+                if (res.getCurrentPrice() != null && res.getCurrentWinnerUsername() != null) {
+                    refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
+                }
+                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid has been disabled.");
+            } else {
+                showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
+            }
+            updateBidButtonsState();
+        });
+
+        task.setOnFailed(e -> {
+            showAlert(Alert.AlertType.ERROR, "AutoBid", task.getException().getMessage());
+            updateBidButtonsState();
+        });
+
+        // Tạo một thread mới bọc lấy task vừa viết
+        Thread thread = new Thread(task);
+        // Ý nghĩa : khih người dùng tắt app, thread này sẽ khai tử theo (để không chạy ngầm vô tận)
+        thread.setDaemon(true);
+        // Giờ mới bắt đầu chạy hàm call() ngầm
+        thread.start();
+    }
+
+    private void updateAutoBidButtonAppearance() {
+        if (autoBidActive) {
+            btnAutoBid.setText("Turn Off Auto Bid");
+            btnAutoBid.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
+        } else {
+            btnAutoBid.setText("Auto Bid");
+            btnAutoBid.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold;");
+        }
     }
 
 
@@ -679,7 +743,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     private void resetAutoBidButton() {
         updateBidButtonsState();
-        btnAutoBid.setText("Auto Bid");
+        updateAutoBidButtonAppearance();
     }
 
     private Task<SetAutoBidResponse> createAutoBidTask(UserSessionDTO currentUser, double maxBid) {
@@ -702,6 +766,8 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             SetAutoBidResponse res = task.getValue();
 
             if (res.isSuccess()) {
+                autoBidActive = true;
+                updateAutoBidButtonAppearance();
                 // Nếu autobid kích hoạt và giá thay đổi (autobid đặt luôn 1 bid), cập nhật history + chart
                 if (res.getCurrentPrice() != null && res.getCurrentPrice() > 0
                         && res.getCurrentWinnerUsername() != null) {

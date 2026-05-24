@@ -58,6 +58,10 @@ public class AuctionService {
         return socket.sendRequestAndWait(
                 new SetAutoBidRequest(sessionId, bidderId, maxAmount), SetAutoBidResponse.class);
     }
+    public DisableAutoBidResponse disableAutoBid(String sessionId, String bidderId) throws Exception {
+        return socket.sendRequestAndWait(
+                new DisableAutoBidRequest(sessionId, bidderId), DisableAutoBidResponse.class);
+    }
 
     public void closeAllSockets() {
         try {
