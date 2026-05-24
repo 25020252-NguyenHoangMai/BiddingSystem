@@ -28,6 +28,9 @@ public class    MainServer {
 
         DashboardRealtimeService dashboardRealtimeService = new DashboardRealtimeService(dashboardWatchRegistry,
                                                                 itemService);
+        AuctionDetailRealtimeService auctionDetailRealtimeService = new AuctionDetailRealtimeService(
+                                                    sessionWatchRegistry, sessionDAO, bidDAO, itemService);
+
         BidHistoryService bidHistoryService = new BidHistoryService(bidDAO, userService);
         BidIncrementService bidIncrementService = new BidIncrementService();
         BidReservationCalculator bidReservationCalculator = new BidReservationCalculator();
@@ -43,9 +46,10 @@ public class    MainServer {
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
                                             bidValidationService, bidTransactionExecutor);
 
-        AuthController authController = new AuthController(userService, dashboardRealtimeService);
+        AuthController authController = new AuthController(userService, dashboardRealtimeService,
+                                            auctionDetailRealtimeService);
         ItemController itemController = new ItemController(itemService, sessionService,dashboardRealtimeService,
-                                            sessionWatchRegistry, imageStorageService);
+                                            auctionDetailRealtimeService, imageStorageService);
         BiddingController biddingController = new BiddingController(biddingService, sessionService,
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
                                                 userService, bidHistoryService, dashboardRealtimeService);

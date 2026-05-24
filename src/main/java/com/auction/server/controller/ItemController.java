@@ -26,16 +26,17 @@ public class ItemController {
     private final ItemService itemService;
     private final SessionService sessionService;
     private final DashboardRealtimeService dashboardRealtimeService;
-    private final SessionWatchRegistry sessionWatchRegistry;
+    private final AuctionDetailRealtimeService auctionDetailRealtimeService;
     private final ImageStorageService imageStorageService;
 
     public ItemController(ItemService itemService, SessionService sessionService,
-                          DashboardRealtimeService dashboardRealtimeService, SessionWatchRegistry sessionWatchRegistry,
+                          DashboardRealtimeService dashboardRealtimeService,
+                          AuctionDetailRealtimeService auctionDetailRealtimeService,
                           ImageStorageService imageStorageService) {
         this.itemService = itemService;
         this.sessionService = sessionService;
         this.dashboardRealtimeService = dashboardRealtimeService;
-        this.sessionWatchRegistry = sessionWatchRegistry;
+        this.auctionDetailRealtimeService = auctionDetailRealtimeService;
         this.imageStorageService = imageStorageService;
     }
 
@@ -131,7 +132,8 @@ public class ItemController {
 
             dashboardRealtimeService.broadcastItemRemoved(dto, "Auction canceled by admin");
 
-            broadcastAuctionCanceledToSessionWatchers(session, EVENT_AUCTION_CANCELED_BY_ADMIN);
+            auctionDetailRealtimeService.broadcastAuctionCanceled(session,
+                    AuctionDetailRealtimeService.EVENT_AUCTION_CANCELED_BY_ADMIN);
 
             return new AdminCancelAuctionResponse(true, "Auction canceled successfully", dto);
 
@@ -141,35 +143,6 @@ public class ItemController {
         }
     }
 
-    private void broadcastAuctionCanceledToSessionWatchers(AuctionSession session, String message) {
-        if (session == null) {
-            return;
-        }
-
-        Long endTimeMillis = null;
-        if (session.getEndTime() != null) {
-            endTimeMillis = session.getEndTime()
-                    .atZone(ZoneId.systemDefault())
-                    .toInstant()
-                    .toEpochMilli();
-        }
-
-        BidUpdateResponse update = new BidUpdateResponse(
-                true,
-                message,
-                session.getId(),
-                session.getCurrentPrice(),
-                session.getCurrentWinnerId(),
-                null,
-                SessionService.STATUS_CANCELED,
-                endTimeMillis,
-                null,
-                null,
-                null
-        );
-
-        sessionWatchRegistry.broadcastBidUpdate(session.getId(), update);
-    }
 
     public SellerCancelAuctionResponse sellerCancelAuction(SellerCancelAuctionRequest request) {
         try {
@@ -185,7 +158,8 @@ public class ItemController {
 
             dashboardRealtimeService.broadcastItemRemoved(dto, "Auction canceled by seller");
 
-            broadcastAuctionCanceledToSessionWatchers(session, EVENT_AUCTION_CANCELED_BY_SELLER);
+            auctionDetailRealtimeService.broadcastAuctionCanceled(session,
+                    AuctionDetailRealtimeService.EVENT_AUCTION_CANCELED_BY_SELLER);
 
             return new SellerCancelAuctionResponse(true, "Auction canceled successfully", dto);
 
@@ -249,7 +223,8 @@ public class ItemController {
 
             dashboardRealtimeService.broadcastItemUpdated(updatedItem, "Item updated by seller");
 
-            broadcastAuctionUpdatedToSessionWatchers(updatedItem, EVENT_ITEM_UPDATED_BY_SELLER);
+            auctionDetailRealtimeService.broadcastItemUpdated(updatedItem,
+                    AuctionDetailRealtimeService.EVENT_ITEM_UPDATED_BY_SELLER);
 
             return new SellerUpdateItemResponse(true, "Item updated successfully", updatedItem);
 
@@ -291,7 +266,8 @@ public class ItemController {
 
             dashboardRealtimeService.broadcastItemUpdated(dto, "Auction details updated by seller");
 
-            broadcastAuctionUpdatedToSessionWatchers(dto, EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER);
+            auctionDetailRealtimeService.broadcastItemUpdated(dto,
+                    AuctionDetailRealtimeService.EVENT_AUCTION_END_TIME_UPDATED_BY_SELLER);
 
             return new SellerUpdateAuctionTimeResponse(
                     true,
@@ -307,32 +283,6 @@ public class ItemController {
                     null
             );
         }
-    }
-
-    private void broadcastAuctionUpdatedToSessionWatchers(ItemDTO item, String message) {
-        if (item == null || item.getSessionId() == null || item.getSessionId().isBlank()) {
-            return;
-        }
-
-        Long endTimeMillis = item.getEndTimeMillis() > 0
-                ? item.getEndTimeMillis()
-                : null;
-
-        BidUpdateResponse update = new BidUpdateResponse(
-                true,
-                message,
-                item.getSessionId(),
-                item.getCurrentPrice(),
-                null,
-                item.getCurrentWinnerUsername(),
-                item.getSessionStatus(),
-                endTimeMillis,
-                item.getMinimumNextBid(),
-                null,
-                null
-        );
-
-        sessionWatchRegistry.broadcastBidUpdate(item.getSessionId(), update);
     }
 
     public GetItemImageResponse getItemImage(GetItemImageRequest request) {

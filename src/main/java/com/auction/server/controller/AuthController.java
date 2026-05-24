@@ -7,6 +7,7 @@ import com.auction.model.User;
 import com.auction.dto.UserSessionDTO;
 import com.auction.request.*;
 import com.auction.response.*;
+import com.auction.server.service.AuctionDetailRealtimeService;
 import com.auction.server.service.DashboardRealtimeService;
 import com.auction.server.service.UserService;
 
@@ -17,10 +18,13 @@ import java.util.Objects;
 public class AuthController {
     private final UserService userService;
     private final DashboardRealtimeService dashboardRealtimeService;
+    private final AuctionDetailRealtimeService auctionDetailRealtimeService;
 
-    public AuthController(UserService userService, DashboardRealtimeService dashboardRealtimeService) {
+    public AuthController(UserService userService, DashboardRealtimeService dashboardRealtimeService,
+                          AuctionDetailRealtimeService auctionDetailRealtimeService) {
         this.userService = userService;
         this.dashboardRealtimeService = dashboardRealtimeService;
+        this.auctionDetailRealtimeService = auctionDetailRealtimeService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -239,6 +243,8 @@ public class AuthController {
                         updated.getId(),
                         "Seller username updated"
                 );
+
+                auctionDetailRealtimeService.broadcastUsernameChanged(updated.getId());
             }
 
             return new EditProfileResponse(true, "Profile updated successfully!", dto);
