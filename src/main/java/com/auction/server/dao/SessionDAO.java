@@ -439,4 +439,28 @@ public class SessionDAO {
             throw new AuctionException("An error occurred while getting seller session history: " + e.getMessage());
         }
     }
+
+    public List<String> getVisibleSessionIdsBySellerId (Connection conn, String sellerId) {
+        List<String> sessionIds = new ArrayList<>();
+        String sql = """
+        SELECT s.id
+        FROM AuctionSession s
+        JOIN Item i ON i.id = s.itemId
+        WHERE i.sellerId = ?
+        AND s.status NOT IN ('CANCELED', 'CANCELLED')
+        """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sellerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sessionIds.add(rs.getString("id"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to get seller sessions: " + e.getMessage());
+        }
+        return sessionIds;
+    }
+
 }
