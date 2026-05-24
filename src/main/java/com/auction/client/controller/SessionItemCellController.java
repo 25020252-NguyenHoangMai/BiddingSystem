@@ -27,6 +27,7 @@ public class SessionItemCellController {
     @FXML private Button btnGoDetail;
 
     private Runnable onViewDetail;
+    private String currentImagePath;
 
     public void setData(SessionHistoryItemDTO session) {
         lblProductName.setText(safe(session.getProductName()));
@@ -48,7 +49,8 @@ public class SessionItemCellController {
 
         lblStatusTag.setText(safe(session.getStatus()));
         updateStatusStyle(session.getStatus());
-        loadProductImage(session.getImagePath());
+        currentImagePath = session.getImagePath();
+        loadProductImage(currentImagePath);
 
         btnGoDetail.setOnAction(event -> {
             if (onViewDetail != null) {
@@ -74,18 +76,22 @@ public class SessionItemCellController {
     }
 
     private void loadProductImage(String imagePath) {
+        imgProduct.setImage(null);
         if (imagePath == null || imagePath.isBlank()) {
             return;
         }
-
+        String requestedImagePath = imagePath;
         Task<byte[]> task = new Task<>() {
             @Override
             protected byte[] call() throws Exception {
-                return ProductService.getInstance().getItemImage(imagePath);
+                return ProductService.getInstance().getItemImage(requestedImagePath);
             }
         };
 
         task.setOnSucceeded(event -> {
+            if (!requestedImagePath.equals(currentImagePath)) {
+                return;
+            }
             byte[] imageBytes = task.getValue();
 
             if (imageBytes == null || imageBytes.length == 0) {
@@ -97,10 +103,15 @@ public class SessionItemCellController {
             );
         });
 
-        task.setOnFailed(event -> {
-            Throwable ex = task.getException();
-            if (ex != null) {
-                ex.printStackTrace();
+//        task.setOnFailed(event -> {
+//            Throwable ex = task.getException();
+//            if (ex != null) {
+//                ex.printStackTrace();
+//            }
+//        });
+        task.setOnFailed(e -> {
+            if (requestedImagePath.equals(currentImagePath)) {
+                imgProduct.setImage(null);
             }
         });
 

@@ -30,6 +30,7 @@ public class SellerProductController {
     private volatile boolean watching = false;
 
     private Runnable onViewDetail;
+    private String currentImagePath;
 
     public void setData(SellerHistoryItemDTO session) {
         lblProductName.setText(safe(session.getProductName()));
@@ -45,7 +46,8 @@ public class SellerProductController {
 
         startCountdown(session.getEndTimeMillis());
         updateStatusStyle(session.getStatus());
-        loadProductImage(session.getImagePath());
+        currentImagePath = session.getImagePath();
+        loadProductImage(currentImagePath);
 
         btnGoDetail.setOnAction(event -> {
             if (onViewDetail != null) {
@@ -71,18 +73,22 @@ public class SellerProductController {
     }
 
     private void loadProductImage(String imagePath) {
+        imgProduct.setImage(null);
         if (imagePath == null || imagePath.isBlank()) {
             return;
         }
-
+        String requestedImagePath = imagePath;
         Task<byte[]> task = new Task<>() {
             @Override
             protected byte[] call() throws Exception {
-                return ProductService.getInstance().getItemImage(imagePath);
+                return ProductService.getInstance().getItemImage(requestedImagePath);
             }
         };
 
         task.setOnSucceeded(event -> {
+            if (!requestedImagePath.equals(currentImagePath)) {
+                return;
+            }
             byte[] imageBytes = task.getValue();
 
             if (imageBytes == null || imageBytes.length == 0) {
@@ -94,10 +100,16 @@ public class SellerProductController {
             );
         });
 
-        task.setOnFailed(event -> {
-            Throwable ex = task.getException();
-            if (ex != null) {
-                ex.printStackTrace();
+//        task.setOnFailed(event -> {
+//            Throwable ex = task.getException();
+//            if (ex != null) {
+//                ex.printStackTrace();
+//            }
+//        });
+
+        task.setOnFailed(e -> {
+            if (requestedImagePath.equals(currentImagePath)) {
+                imgProduct.setImage(null);
             }
         });
 
