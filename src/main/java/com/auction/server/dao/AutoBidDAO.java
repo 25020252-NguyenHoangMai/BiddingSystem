@@ -107,4 +107,30 @@ public class AutoBidDAO {
             throw new AuctionException("An error occurred while deactivating active auto-bids by session: " + e.getMessage());
         }
     }
+
+    public List<AutoBid> getActiveAutoBidsBySessionSorted(Connection conn, String sessionId) {
+        List<AutoBid> list = new ArrayList<>();
+
+        String sql = """
+        SELECT *
+        FROM AutoBid
+        WHERE sessionId = ? AND isActive = 1
+        ORDER BY maxBidAmount DESC, createdAt ASC, id ASC
+    """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, sessionId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapToAutoBid(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to load sorted auto bids: " + e.getMessage());
+        }
+
+        return list;
+    }
+
 }
