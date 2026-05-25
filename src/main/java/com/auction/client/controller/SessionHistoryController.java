@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.event.ProfileUpdateBus;
 import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.SessionHistoryItemDTO;
@@ -79,7 +80,6 @@ public class SessionHistoryController {
         txtSearch.setOnAction(event -> applyFilters());
 
         btnBack.setOnAction(event -> navigateTo(PROFILE_FXML));
-
     }
 
     private void setupStatusMenu() {
@@ -346,7 +346,12 @@ public class SessionHistoryController {
                                         dto.setStatus(updated.getStatus());
 
                                         SessionItemCellController cell = cellControllers.get(sessionId);
-                                        if (cell != null) cell.updateRealtime(dto);
+
+                                        if (cell != null) {
+                                            cell.updateRealtime(dto);
+                                        }
+
+                                        listSessions.refresh();
                                     });
                         }
                     });

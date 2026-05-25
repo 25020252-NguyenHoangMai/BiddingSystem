@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.event.ProfileUpdateBus;
 import com.auction.client.network.ClientSocket;
 import com.auction.client.service.AuctionService;
 import com.auction.client.service.ProductService;
@@ -94,6 +95,24 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
         clientSocket.setDashboardUpdateListener(this);
         sendWatchThenLoad();
         startAutoRefresh();
+
+        ProfileUpdateBus.subscribe(payload -> {
+            String[] parts = payload.split("\\|");
+
+            String userId = parts[0];
+            String newUsername = parts[1];
+
+            javafx.application.Platform.runLater(() -> {
+                for (ItemDTO item : auctionList) {
+
+                    if (userId.equals(item.getSellerId())) {
+                        item.setSellerUsername(newUsername);
+                    }
+                }
+
+                listAuctions.refresh();
+            });
+        });
     }
 
     // ===== Gửi WatchDashboardRequest, chờ xác nhận, rồi mới tải sản phẩm =====

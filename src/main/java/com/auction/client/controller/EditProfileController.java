@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.ClientSession;
+import com.auction.client.event.ProfileUpdateBus;
 import com.auction.client.util.ImageUtil;
 import com.auction.dto.UserSessionDTO;
 import com.auction.request.EditProfileRequest;
@@ -150,7 +151,16 @@ public class EditProfileController {
 
     private void finishUpdate(UserSessionDTO updatedUser) {
         if (updatedUser != null) {
+            String oldUsername = ClientSession.getCurrentUser().getUsername();
+
             ClientSession.setCurrentUser(updatedUser);
+
+            if (!oldUsername.equals(updatedUser.getUsername())) {
+                ProfileUpdateBus.publishUsernameChanged(
+                        updatedUser.getId(),
+                        updatedUser.getUsername()
+                );
+            }
         }
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION, "Profile updated successfully!");

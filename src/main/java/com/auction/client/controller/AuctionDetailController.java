@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.ClientSession;
+import com.auction.client.event.ProfileUpdateBus;
 import com.auction.client.service.*;
 import com.auction.client.util.BidHistoryFormatter;
 import com.auction.dto.BidHistoryEntryDTO;
@@ -120,6 +121,25 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         startCountdown(item.getStartTimeMillis(), item.getEndTimeMillis());
 
         startHistoryLoading(item, () -> {startRealtimeWatching(item);});
+
+        ProfileUpdateBus.subscribe(payload -> {
+
+            String[] parts = payload.split("\\|");
+
+            String userId = parts[0];
+            String newUsername = parts[1];
+
+            javafx.application.Platform.runLater(() -> {
+
+                if (currentItem != null &&
+                        userId.equals(currentItem.getSellerId())) {
+
+                    currentItem.setSellerUsername(newUsername);
+
+                    lblSeller.setText(newUsername);
+                }
+            });
+        });
     }
 
     private void populateBasicInfo(ItemDTO item) {
