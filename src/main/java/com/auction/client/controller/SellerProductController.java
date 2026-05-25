@@ -38,10 +38,6 @@ public class SellerProductController {
         lblSessionID.setText(safe(session.getSessionId()));
         lblProductType.setText(safe(session.getProductType()));
         lblStatusTag.setText(safe(session.getStatus()));
-
-        int totalBids = session.getTotalBidsReceived();
-        lblTotalBids.setText(String.format("%,d %s", totalBids, totalBids == 1 ? "bid" : "bids"));
-
         lblStartingPrice.setText(String.format("%.2f $", session.getStartingPrice()));
         lblCurrentPrice.setText(String.format("%.2f $", session.getCurrentPrice()));
 

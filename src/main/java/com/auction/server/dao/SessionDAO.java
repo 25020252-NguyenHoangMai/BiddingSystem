@@ -62,7 +62,6 @@ public class SessionDAO {
         dto.setSessionId(rs.getString("sessionId"));
         dto.setProductName(rs.getString("productName"));
         dto.setProductType(rs.getString("productType"));
-        dto.setTotalBidsReceived(rs.getInt("totalBidsReceived"));
         dto.setStartingPrice(rs.getDouble("startingPrice"));
         dto.setCurrentPrice(rs.getDouble("currentPrice"));
         Timestamp startTime = rs.getTimestamp("startTime");
@@ -414,7 +413,6 @@ public class SessionDAO {
             s.currentPrice AS currentPrice,
             s.startTime AS startTime,
             s.endTime AS endTime,
-            (SELECT COUNT(*) FROM BidTransaction bt WHERE bt.sessionId = s.id) AS totalBidsReceived,
             s.status AS status,
             i.imagePath AS imagePath
         FROM AuctionSession s

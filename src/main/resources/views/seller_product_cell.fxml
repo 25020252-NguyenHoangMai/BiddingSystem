@@ -28,11 +28,6 @@
             </HBox>
         </VBox>
 
-        <HBox spacing="5">
-            <Label style="-fx-text-fill: #777;" text="Total Bids Received:" />
-            <Label fx:id="lblTotalBids" style="-fx-font-weight: bold; -fx-text-fill: #2980b9;" text="0 bids" />
-        </HBox>
-
         <Separator prefWidth="200.0" />
 
         <!-- ===== PRICES AND VALUATIONS ===== -->

@@ -6,12 +6,11 @@ public class SellerHistoryItemDTO implements Serializable {
     private String sessionId;
     private String productName;
     private String productType;
-    private int totalBidsReceived;
     private double startingPrice;
     private double currentPrice;
     private long startTimeMillis;
     private long endTimeMillis;
-    private String status; // RUNNING, FUNISHED, CANCELED
+    private String status; // RUNNING, FINISHED, CANCELED
     private String imagePath;
 
     public String getSessionId() {
@@ -36,14 +35,6 @@ public class SellerHistoryItemDTO implements Serializable {
 
     public void setProductType(String productType) {
         this.productType = productType;
-    }
-
-    public int getTotalBidsReceived() {
-        return totalBidsReceived;
-    }
-
-    public void setTotalBidsReceived(int totalBidsReceived) {
-        this.totalBidsReceived = totalBidsReceived;
     }
 
     public double getStartingPrice() {
