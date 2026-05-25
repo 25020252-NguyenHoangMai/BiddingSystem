@@ -340,9 +340,18 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         if (EVENT_ITEM_UPDATED_BY_SELLER.equals(update.getMessage())
                 || EVENT_USER_PROFILE_UPDATED.equals(update.getMessage())) {
+
             reloadAuctionDetail(update.getSessionId());
 
             if (EVENT_USER_PROFILE_UPDATED.equals(update.getMessage())) {
+                Platform.runLater(() -> {
+                    if (currentItem != null) {
+                        lblSeller.setText(currentItem.getSellerUsername() != null
+                                        ? currentItem.getSellerUsername()
+                                        : "Unknown");
+                    }
+                });
+
                 reloadBidHistory();
             }
             return;
@@ -949,6 +958,11 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             ItemDTO updated = response.getItem();
 
             currentItem = updated;
+
+            lblSeller.setText(
+                    updated.getSellerUsername() != null
+                            ? updated.getSellerUsername()
+                            : "Unknown");
 
             populateBasicInfo(updated);
 

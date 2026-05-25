@@ -60,7 +60,8 @@ public class SellerHistoryController {
     private final List<Stage> childStages = new ArrayList<>();
     private Timeline autoRefreshTimeline;
 
-
+    private static final String EVENT_USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
+    private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
 
     @FXML
     public void initialize() {
@@ -371,13 +372,21 @@ public class SellerHistoryController {
         Platform.runLater(() -> {
             String updatedSessionId = update.getSessionId();
 
+            // Nếu seller tự đổi tên hoặc item được update → reload full DTO từ server
+            if (EVENT_USER_PROFILE_UPDATED.equals(update.getMessage())
+                    || EVENT_ITEM_UPDATED_BY_SELLER.equals(update.getMessage())) {
+                if (currentUser != null) {
+                    loadSellerHistoryFromServer(currentUser);
+                }
+                return;
+            }
+
             // Biến masterData thành một dòng chảy dữ liệu để tìm kiếm
             masterData.stream()
                     // Chỉ dữ lại phần tử có sessionId trùng với id vừa nhận từ server
                     .filter(s -> updatedSessionId.equals(s.getSessionId()))
                     // Lấy phần tử đầu tiên tìm thấy (vì sessionId là duy nhất)
                     .findFirst()
-                    // Khi đã tìm thấy -> Tiến hành khối lệnh bên dưới
                     .ifPresent(session -> {
                         // Cập nhật currentPrice
                         if (update.getCurrentPrice() != null) {

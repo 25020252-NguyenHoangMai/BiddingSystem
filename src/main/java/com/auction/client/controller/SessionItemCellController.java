@@ -78,7 +78,10 @@ public class SessionItemCellController {
     // Cập nhật realtime các thay đổi
     public void updateRealtime(SessionHistoryItemDTO session) {
         // Seller username (đổi tên)
-        lblSellerInfo.setText(safe(session.getSellerUsername()));
+        lblSellerInfo.setText(
+                session.getSellerUsername() != null
+                        ? session.getSellerUsername()
+                        : "Unknown");
 
         // Your latest bid
         lblUserLastBid.setText(String.format("%.2f $", session.getUserLastBid()));
