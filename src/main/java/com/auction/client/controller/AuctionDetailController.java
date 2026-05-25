@@ -14,6 +14,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -50,6 +51,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     @FXML private HBox sellerActionsBox;
     @FXML private LineChart<String, Number> bidPriceChart;
     @FXML private ImageView productImageView;
+    @FXML private GridPane rootPane;
 
     // ===== STATE =====
     private ItemDTO currentItem;
@@ -59,6 +61,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private volatile boolean watching = false;
     private XYChart.Series<String, Number> priceSeries;
     private volatile boolean historyLoaded = false;
+    private boolean adminView = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
     private static final String EVENT_USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
@@ -100,6 +103,10 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         Platform.runLater(() -> {
             Stage stage = (Stage) btnBack.getScene().getWindow();
             stage.setOnCloseRequest(event -> cleanupWatching());
+        });
+
+        Platform.runLater(() -> {
+            if (adminView) { disableAllButtons(rootPane); }
         });
     }
 
@@ -1201,7 +1208,21 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
         }
     }
 
+    private void disableAllButtons(Parent parent) {
+        for (Node node : parent.getChildrenUnmodifiable()) {
+            if (node instanceof Button) {
+                node.setDisable(true);
+            }
+
+            if (node instanceof Parent childParent) {
+                disableAllButtons(childParent);
+            }
+        }
+    }
+
     public ItemDTO getCurrentItem() {
         return currentItem;
     }
+
+    public void setAdminView(boolean adminView) { this.adminView = adminView; }
 }
