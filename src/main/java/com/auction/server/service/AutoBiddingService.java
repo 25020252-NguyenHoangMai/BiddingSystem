@@ -404,4 +404,17 @@ public class AutoBiddingService {
 
         return buildCurrentStateResult(true, message, latestSession);
     }
+
+    public boolean isAutoBidActive(String sessionId, String bidderId) {
+        if (sessionId == null || sessionId.isBlank()
+                || bidderId == null || bidderId.isBlank()) {
+            return false;
+        }
+
+        try (Connection conn = DatabaseManager.getInstance().getConnection()) {
+            return autoBidDAO.getActiveAutoBid(conn, sessionId, bidderId) != null;
+        } catch (SQLException e) {
+            throw new AuctionException("Failed to check auto bid status: " + e.getMessage());
+        }
+    }
 }

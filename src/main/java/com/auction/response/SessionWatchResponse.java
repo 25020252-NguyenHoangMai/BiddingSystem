@@ -9,14 +9,17 @@ public class SessionWatchResponse extends Response {
     private Long endTimeMillis;
     private Double minimumNextBid;
     private Double availableBalance;
+    private Boolean autoBidActive;
 
     public SessionWatchResponse(boolean success, String message) {
-        this(success, message, null, null, null, null, null, null, null, null);
+        this(success, message, null, null, null, null, null,
+                null, null, null, null);
     }
 
     public SessionWatchResponse(boolean success, String message, String sessionId, Double currentPrice,
                                 String currentWinnerId, String currentWinnerUsername, String status,
-                                Long endTimeMillis, Double minimumNextBid, Double availableBalance) {
+                                Long endTimeMillis, Double minimumNextBid, Double availableBalance,
+                                Boolean autoBidActive) {
         super(success, message);
         this.sessionId = sessionId;
         this.currentPrice = currentPrice;
@@ -26,6 +29,7 @@ public class SessionWatchResponse extends Response {
         this.endTimeMillis = endTimeMillis;
         this.minimumNextBid = minimumNextBid;
         this.availableBalance = availableBalance;
+        this.autoBidActive = autoBidActive;
     }
 
     public String getSessionId() {
@@ -58,5 +62,13 @@ public class SessionWatchResponse extends Response {
 
     public Double getAvailableBalance() {
         return availableBalance;
+    }
+
+    public Boolean getAutoBidActive() {
+        return autoBidActive;
+    }
+
+    public boolean isAutoBidActive() {
+        return Boolean.TRUE.equals(autoBidActive);
     }
 }

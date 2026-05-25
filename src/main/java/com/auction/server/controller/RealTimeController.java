@@ -12,6 +12,7 @@ import com.auction.server.realtime.AuctionSessionObserver;
 import com.auction.server.realtime.DashboardObserver;
 import com.auction.server.realtime.DashboardWatchRegistry;
 import com.auction.server.realtime.SessionWatchRegistry;
+import com.auction.server.service.AutoBiddingService;
 import com.auction.server.service.BidIncrementService;
 import com.auction.server.service.SessionService;
 import com.auction.server.service.UserService;
@@ -24,15 +25,17 @@ public class RealTimeController {
     private final SessionService sessionService;
     private final UserService userService;
     private final BidIncrementService bidIncrementService;
+    private final AutoBiddingService autoBiddingService;
 
     public RealTimeController(SessionWatchRegistry sessionWatchRegistry,DashboardWatchRegistry dashboardWatchRegistry,
                               SessionService sessionService, UserService userService,
-                              BidIncrementService bidIncrementService) {
+                              BidIncrementService bidIncrementService, AutoBiddingService autoBiddingService) {
         this.sessionWatchRegistry = sessionWatchRegistry;
         this.dashboardWatchRegistry = dashboardWatchRegistry;
         this.sessionService = sessionService;
         this.userService = userService;
         this.bidIncrementService = bidIncrementService;
+        this.autoBiddingService = autoBiddingService;
     }
 
     public Response watchSession(WatchSessionRequest request, AuctionSessionObserver observer) {
