@@ -950,6 +950,12 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
             return;
         }
 
+        if (adminView) {
+            btnPlaceBid.setDisable(true);
+            btnAutoBid.setDisable(true);
+            return;
+        }
+
         boolean isClosed = isClosedStatus(currentItem.getSessionStatus());
 
         UserSessionDTO currentUser = ClientSession.getCurrentUser();
@@ -1210,8 +1216,14 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
     private void disableAllButtons(Parent parent) {
         for (Node node : parent.getChildrenUnmodifiable()) {
-            if (node instanceof Button) {
-                node.setDisable(true);
+            if (node instanceof Button button) {
+                if (button == btnBack) {
+                    button.setDisable(false);
+                    button.setVisible(true);
+                    button.setManaged(true);
+                } else {
+                    button.setDisable(true);
+                }
             }
 
             if (node instanceof Parent childParent) {

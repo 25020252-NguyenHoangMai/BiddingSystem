@@ -190,6 +190,8 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
     }
 
     private void updateAuctionItem(ItemDTO item) {
+        if (item == null) { return;}
+
         for (int i = 0; i < auctionList.size(); i++) {
 
             ItemDTO current = auctionList.get(i);
@@ -198,6 +200,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                 current.setName(item.getName());
                 current.setDescription(item.getDescription());
                 current.setItemType(item.getItemType());
+                current.setStartingPrice(item.getStartingPrice());
                 current.setCurrentPrice(item.getCurrentPrice());
                 current.setCurrentWinnerUsername(item.getCurrentWinnerUsername());
                 current.setSellerUsername(item.getSellerUsername());
@@ -207,6 +210,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                 current.setStartTimeMillis(item.getStartTimeMillis());
                 current.setMinimumNextBid(item.getMinimumNextBid());
 
+                auctionList.set(i, current);
                 applyFilters();
                 listAuctions.refresh();
                 return;
