@@ -37,7 +37,10 @@ public class AuctionItemCellController {
         lblProductName.setText(safe(item.getName()));
         lblSessionID.setText(safe(item.getSessionId()));
         lblProductType.setText(safe(item.getItemType()));
-        lblSellerInfo.setText(safe(item.getSellerUsername()));
+        lblSellerInfo.setText(
+                item.getSellerUsername() != null
+                        ? item.getSellerUsername()
+                        : "Unknown");
         lblStartingPrice.setText(String.format("%.2f $", item.getStartingPrice()));
         double displayPrice =
                 (item.getCurrentWinnerUsername() == null

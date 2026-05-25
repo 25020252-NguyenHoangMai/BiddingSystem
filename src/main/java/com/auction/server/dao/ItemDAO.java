@@ -239,7 +239,7 @@ public class ItemDAO {
             SELECT TOP 1 *
             FROM AuctionSession s
             WHERE s.itemId = i.id
-                  AND s.status NOT IN ('CANCELLED', 'CANCELED')
+                  AND s.status NOT IN ('CANCELED')
             ORDER BY s.startTime DESC
         ) s
         LEFT JOIN Users winner ON s.currentWinnerId = winner.id
@@ -296,7 +296,7 @@ public class ItemDAO {
             SELECT TOP 1 *
             FROM AuctionSession s
             WHERE s.itemId = i.id
-                  AND s.status NOT IN 'CANCELED'
+                  AND s.status <> 'CANCELED'
             ORDER BY s.startTime DESC
         ) s
         LEFT JOIN Users winner ON s.currentWinnerId = winner.id

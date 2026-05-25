@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientSocket;
 import com.auction.client.service.ProductService;
 import com.auction.client.service.UserClientService;
 import com.auction.dto.ItemDTO;
@@ -17,6 +18,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.List;
+import java.util.Objects;
 
 public class AdminController {
     // --- PHẦN QUẢN LÝ SẢN PHẨM ---
@@ -82,6 +84,20 @@ public class AdminController {
                     }
                 });
             }
+        });
+
+        // Check dashboard update để tự reload khi seller đổi tên
+        ClientSocket.getInstance().setDashboardUpdateListener(update -> {
+            if (update == null || update.getItem() == null) return;
+            Platform.runLater(() -> {
+                ItemDTO updated = update.getItem();
+                for (int i = 0; i < masterDataItems.size(); i++) {
+                    if (Objects.equals(masterDataItems.get(i).getId(), updated.getId())) {
+                        masterDataItems.set(i, updated);
+                        break;
+                    }
+                }
+            });
         });
     }
 

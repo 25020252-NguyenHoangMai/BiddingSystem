@@ -239,12 +239,15 @@ public class AuthController {
             UserSessionDTO dto = toUserSessionDTO(updated);
 
             if (!Objects.equals(oldUsername, updated.getUsername())) {
-                dashboardRealtimeService.broadcastSellerItemsUpdated(
-                        updated.getId(),
-                        "Seller username updated"
-                );
-
-                auctionDetailRealtimeService.broadcastUsernameChanged(updated.getId());
+                try {
+                    dashboardRealtimeService.broadcastSellerItemsUpdated(
+                            updated.getId(),
+                            "Seller username updated"
+                    );
+                    auctionDetailRealtimeService.broadcastUsernameChanged(updated.getId());
+                } catch (Exception broadcastEx) {
+                    System.err.println("[AuthController] Broadcast failed after profile update: " + broadcastEx.getMessage());
+                }
             }
 
             return new EditProfileResponse(true, "Profile updated successfully!", dto);

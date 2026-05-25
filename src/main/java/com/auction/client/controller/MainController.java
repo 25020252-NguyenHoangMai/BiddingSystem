@@ -172,13 +172,26 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
     private void updateAuctionItem(ItemDTO item) {
         for (int i = 0; i < auctionList.size(); i++) {
-            if (Objects.equals(auctionList.get(i).getId(), item.getId())) {
-                auctionList.set(i, item);
+
+            ItemDTO current = auctionList.get(i);
+
+            if (Objects.equals(current.getId(), item.getId())) {
+                current.setName(item.getName());
+                current.setDescription(item.getDescription());
+                current.setItemType(item.getItemType());
+                current.setCurrentPrice(item.getCurrentPrice());
+                current.setCurrentWinnerUsername(item.getCurrentWinnerUsername());
+                current.setSellerUsername(item.getSellerUsername());
+                current.setImagePath(item.getImagePath());
+                current.setSessionStatus(item.getSessionStatus());
+                current.setEndTimeMillis(item.getEndTimeMillis());
+                current.setStartTimeMillis(item.getStartTimeMillis());
+                current.setMinimumNextBid(item.getMinimumNextBid());
+
                 applyFilters();
                 listAuctions.refresh();
                 return;
             }
-
         }
     }
 
@@ -244,7 +257,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 //                    setGraphic(new Label("Cannot load item."));
 //                }
 
-                // Tái sử dụng controller nếu đã có, chỉ tạo mới khi chưa có
+                final ItemDTO currentItem = item;
                 if (cellController == null) {
                     try {
                         FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/auction_item_cell.fxml"));
@@ -258,9 +271,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                     }
                 }
                 // Truyền đối tượng dữ liệu ItemDTO mới vào controller để cập nhật thông tin hiển thị lên UI
-                cellController.setData(item);
+                cellController.setData(currentItem);
                 // Cập nhật lại callback "Xem chi tiết" với đối tượng item hiện tại để đảm bảo khi nhấn nút sẽ mở đúng item mới nhất
-                cellController.setOnViewDetail(() -> openAuctionDetail(item));
+                cellController.setOnViewDetail(() -> openAuctionDetail(currentItem));
             }
         });
     }
