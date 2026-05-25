@@ -75,6 +75,36 @@ public class SessionItemCellController {
         }
     }
 
+    // Cập nhật realtime các thay đổi
+    public void updateRealtime(SessionHistoryItemDTO session) {
+        // Seller username (đổi tên)
+        lblSellerInfo.setText(safe(session.getSellerUsername()));
+
+        // Your latest bid
+        lblUserLastBid.setText(String.format("%.2f $", session.getUserLastBid()));
+
+        // Current price
+        lblCurrentPrice.setText(String.format("%.2f $", session.getCurrentPrice()));
+
+        // Last bid time
+        lblLastBidTime.setText(
+                session.getLastBidTime() != null
+                        ? session.getLastBidTime().format(DATE_TIME_FORMATTER)
+                        : "N/A"
+        );
+
+        // Status
+        lblStatusTag.setText(safe(session.getStatus()));
+        updateStatusStyle(session.getStatus());
+
+        // Product image — chỉ reload nếu path thay đổi
+        String newImagePath = session.getImagePath();
+        if (!java.util.Objects.equals(newImagePath, currentImagePath)) {
+            currentImagePath = newImagePath;
+            loadProductImage(currentImagePath);
+        }
+    }
+
     private void loadProductImage(String imagePath) {
         imgProduct.setImage(null);
         if (imagePath == null || imagePath.isBlank()) {

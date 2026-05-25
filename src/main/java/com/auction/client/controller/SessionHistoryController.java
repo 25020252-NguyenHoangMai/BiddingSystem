@@ -18,6 +18,12 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import com.auction.client.ClientSession;
+import com.auction.client.service.AuctionRealtimeService;
+import com.auction.response.BidUpdateResponse;
+import javafx.application.Platform;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,6 +56,14 @@ public class SessionHistoryController {
     private FilteredList<SessionHistoryItemDTO> filteredData;
 
     private final List<Stage> childStages = new ArrayList<>();
+
+    // Realtime
+    private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
+    private static final String EVENT_USER_PROFILE_UPDATED   = "USER_PROFILE_UPDATED";
+
+    private final Map<String, AuctionRealtimeService> watchingServices = new ConcurrentHashMap<>();
+
+    private final Map<String, SessionItemCellController> cellControllers = new ConcurrentHashMap<>();
 
     @FXML
     public void initialize() {
@@ -125,6 +139,8 @@ public class SessionHistoryController {
                     controller.setData(item);
                     controller.setOnViewDetail(() -> handleViewDetail(item));
 
+                    cellControllers.put(item.getSessionId(), controller);
+
                     setGraphic(root);
 
                 } catch (IOException e) {
@@ -141,6 +157,8 @@ public class SessionHistoryController {
             showAlert(Alert.AlertType.ERROR, "Session History", "User session not found.");
             return;
         }
+
+        final String userId = currentUser.getId();
 
         Task<GetSessionHistoryResponse> task = new Task<>() {
             @Override
@@ -161,6 +179,14 @@ public class SessionHistoryController {
             List<SessionHistoryItemDTO> sessions = response.getSessions();
             masterData.setAll(sessions != null ? sessions : List.of());
             applyFilters();
+
+            if (sessions != null) {
+                for (SessionHistoryItemDTO s : sessions) {
+                    if ("RUNNING".equalsIgnoreCase(s.getStatus())) {
+                        startWatchingSession(s.getSessionId(), userId);
+                    }
+                }
+            }
         });
 
         task.setOnFailed(event -> {
@@ -175,6 +201,169 @@ public class SessionHistoryController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    // ===== REALTIME METHODS =====
+
+    // Bắt đầu watch một session (gọi từ background thread)
+    private void startWatchingSession(String sessionId, String userId) {
+        if (watchingServices.containsKey(sessionId)) return;
+
+        AuctionRealtimeService svc = new AuctionRealtimeService(auctionService);
+        svc.setListener(update -> onSessionUpdated(update, userId));
+        watchingServices.put(sessionId, svc);
+
+        Thread t = new Thread(() -> {
+            try {
+                svc.watch(sessionId, userId);
+            } catch (Exception e) {
+                watchingServices.remove(sessionId);
+                System.err.println("[SessionHistory] watch failed for " + sessionId + ": " + e.getMessage());
+            }
+        });
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // Callback từ AuctionRealtimeService khi có bid update
+    private void onSessionUpdated(BidUpdateResponse update, String currentUserId) {
+        if (update == null) return;
+        String sessionId = update.getSessionId();
+
+        Platform.runLater(() -> {
+            // Tìm DTO trong masterData
+            SessionHistoryItemDTO dto = masterData.stream()
+                    .filter(s -> sessionId.equals(s.getSessionId()))
+                    .findFirst()
+                    .orElse(null);
+
+            // Nếu đây là bid của chính user hiện tại mà chưa có trong list → reload từ server
+            if (dto == null) {
+                String uid = currentUserId != null ? currentUserId
+                        : (ClientSession.getCurrentUser() != null ? ClientSession.getCurrentUser().getId() : null);
+                if (uid != null) reloadSingleSession(sessionId, uid);
+                return;
+            }
+
+            boolean changed = false;
+
+            // Cập nhật currentPrice
+            if (update.getCurrentPrice() != null
+                    && Double.compare(update.getCurrentPrice(), dto.getCurrentPrice()) != 0) {
+                dto.setCurrentPrice(update.getCurrentPrice());
+                changed = true;
+            }
+
+            // Cập nhật userLastBid — chỉ khi chính user đặt bid
+            if (update.getBidAmount() != null
+                    && update.getCurrentWinnerId() != null
+                    && update.getCurrentWinnerId().equals(currentUserId)) {
+                dto.setUserLastBid(update.getBidAmount());
+                changed = true;
+            }
+
+            // Cập nhật lastBidTime
+            if (update.getBidTimeMillis() != null) {
+                dto.setLastBidTime(
+                        java.time.LocalDateTime.ofInstant(
+                                java.time.Instant.ofEpochMilli(update.getBidTimeMillis()),
+                                java.time.ZoneId.systemDefault()
+                        )
+                );
+                changed = true;
+            }
+
+            // Cập nhật status
+            if (update.getStatus() != null
+                    && !update.getStatus().equals(dto.getStatus())) {
+                dto.setStatus(update.getStatus());
+                changed = true;
+
+                // Nếu session kết thúc → unwatch
+                if (!"RUNNING".equalsIgnoreCase(update.getStatus())) {
+                    AuctionRealtimeService svc = watchingServices.remove(sessionId);
+                    if (svc != null) svc.unwatch(sessionId);
+                }
+            }
+
+            // Nếu seller đổi tên hoặc product được update → reload full DTO từ server
+            if (EVENT_USER_PROFILE_UPDATED.equals(update.getMessage())
+                    || EVENT_ITEM_UPDATED_BY_SELLER.equals(update.getMessage())) {
+                String uid = currentUserId != null ? currentUserId
+                        : (ClientSession.getCurrentUser() != null ? ClientSession.getCurrentUser().getId() : null);
+                if (uid != null) reloadSingleSession(sessionId, uid);
+                return;
+            }
+
+            // Refresh cell UI nếu có thay đổi
+            if (changed) {
+                SessionItemCellController cell = cellControllers.get(sessionId);
+                if (cell != null) {
+                    cell.updateRealtime(dto);
+                }
+            }
+        });
+    }
+
+    // Reload một session cụ thể từ server (dùng cho seller rename / item update / bid mới)
+    private void reloadSingleSession(String sessionId, String userId) {
+        Task<GetSessionHistoryResponse> task = new Task<>() {
+            @Override
+            protected GetSessionHistoryResponse call() throws Exception {
+                return auctionService.getSessionHistory(userId);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            GetSessionHistoryResponse response = task.getValue();
+            if (response == null || !response.isSuccess() || response.getSessions() == null) return;
+
+            response.getSessions().stream()
+                    .filter(s -> sessionId.equals(s.getSessionId()))
+                    .findFirst()
+                    .ifPresent(updated -> {
+                        // Thêm vào masterData nếu chưa có (trường hợp bid lần đầu)
+                        boolean exists = masterData.stream()
+                                .anyMatch(s -> sessionId.equals(s.getSessionId()));
+                        if (!exists) {
+                            masterData.add(0, updated);
+                            applyFilters();
+                            if ("RUNNING".equalsIgnoreCase(updated.getStatus())) {
+                                startWatchingSession(sessionId, userId);
+                            }
+                        } else {
+                            // Cập nhật DTO tại chỗ
+                            masterData.stream()
+                                    .filter(s -> sessionId.equals(s.getSessionId()))
+                                    .findFirst()
+                                    .ifPresent(dto -> {
+                                        dto.setProductName(updated.getProductName());
+                                        dto.setSellerUsername(updated.getSellerUsername());
+                                        dto.setImagePath(updated.getImagePath());
+                                        dto.setCurrentPrice(updated.getCurrentPrice());
+                                        dto.setUserLastBid(updated.getUserLastBid());
+                                        dto.setLastBidTime(updated.getLastBidTime());
+                                        dto.setStatus(updated.getStatus());
+
+                                        SessionItemCellController cell = cellControllers.get(sessionId);
+                                        if (cell != null) cell.updateRealtime(dto);
+                                    });
+                        }
+                    });
+        });
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // Dừng watch khi rời màn hình
+    public void stopAllWatching() {
+        for (Map.Entry<String, AuctionRealtimeService> entry : watchingServices.entrySet()) {
+            entry.getValue().unwatch(entry.getKey());
+        }
+        watchingServices.clear();
+        cellControllers.clear();
     }
 
     private void applyFilters() {
@@ -318,6 +507,7 @@ public class SessionHistoryController {
 
     private void navigateTo(String fxmlPath) {
         try {
+            stopAllWatching();
             Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
 
             Stage stage = (Stage) btnBack.getScene().getWindow();
