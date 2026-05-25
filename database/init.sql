@@ -1,10 +1,10 @@
 USE [master]
 GO
-/****** Object:  Database [BiddingSystem]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Database [BiddingSystem]    Script Date: 5/25/2026 5:10:38 PM ******/
 CREATE DATABASE [BiddingSystem]
  CONTAINMENT = NONE
  ON  PRIMARY
-( NAME = N'BiddingSystem', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\BiddingSystem.mdf' , SIZE = 8192KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
+( NAME = N'BiddingSystem', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\BiddingSystem.mdf' , SIZE = 73728KB , MAXSIZE = UNLIMITED, FILEGROWTH = 65536KB )
  LOG ON
 ( NAME = N'BiddingSystem_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\BiddingSystem_log.ldf' , SIZE = 8192KB , MAXSIZE = 2048GB , FILEGROWTH = 65536KB )
  WITH CATALOG_COLLATION = DATABASE_DEFAULT, LEDGER = OFF
@@ -82,7 +82,7 @@ ALTER DATABASE [BiddingSystem] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLE
 GO
 USE [BiddingSystem]
 GO
-/****** Object:  Table [dbo].[AuctionSession]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Table [dbo].[AuctionSession]    Script Date: 5/25/2026 5:10:39 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -90,7 +90,7 @@ GO
 CREATE TABLE [dbo].[AuctionSession](
     [id] [nvarchar](50) NOT NULL,
     [itemId] [nvarchar](50) NOT NULL,
-    [currentPrice] [float] NOT NULL,
+    [currentPrice] [decimal](18, 2) NOT NULL,
     [currentWinnerId] [nvarchar](50) NULL,
     [startTime] [datetime2](7) NOT NULL,
     [endTime] [datetime2](7) NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE [dbo].[AuctionSession](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[AutoBid]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Table [dbo].[AutoBid]    Script Date: 5/25/2026 5:10:39 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -120,7 +120,7 @@ CREATE TABLE [dbo].[AutoBid](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[BidTransaction]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Table [dbo].[BidTransaction]    Script Date: 5/25/2026 5:10:39 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -129,7 +129,7 @@ CREATE TABLE [dbo].[BidTransaction](
     [id] [nvarchar](50) NOT NULL,
     [sessionId] [nvarchar](50) NOT NULL,
     [bidderId] [nvarchar](50) NOT NULL,
-    [bidAmount] [decimal](18, 0) NOT NULL,
+    [bidAmount] [decimal](18, 2) NOT NULL,
     [bidTime] [datetime2](7) NOT NULL,
     CONSTRAINT [PK_BidTransaction] PRIMARY KEY CLUSTERED
 (
@@ -137,7 +137,7 @@ CREATE TABLE [dbo].[BidTransaction](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[Item]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Table [dbo].[Item]    Script Date: 5/25/2026 5:10:39 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -161,7 +161,7 @@ CREATE TABLE [dbo].[Item](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
     ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
     GO
-/****** Object:  Table [dbo].[Users]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Table [dbo].[Users]    Script Date: 5/25/2026 5:10:39 PM ******/
     SET ANSI_NULLS ON
     GO
     SET QUOTED_IDENTIFIER ON
@@ -189,7 +189,7 @@ CREATE TABLE [dbo].[Users](
     GO
     SET ANSI_PADDING ON
     GO
-/****** Object:  Index [IX_AutoBid]    Script Date: 5/21/2026 2:03:19 PM ******/
+/****** Object:  Index [IX_AutoBid]    Script Date: 5/25/2026 5:10:39 PM ******/
 CREATE UNIQUE NONCLUSTERED INDEX [IX_AutoBid] ON [dbo].[AutoBid]
 (
 	[bidderId] ASC,
@@ -255,9 +255,13 @@ ALTER TABLE [dbo].[AuctionSession]  WITH CHECK ADD  CONSTRAINT [CK_AuctionSessio
     GO
 ALTER TABLE [dbo].[AuctionSession] CHECK CONSTRAINT [CK_AuctionSession_TimeLogic]
     GO
-ALTER TABLE [dbo].[Item]  WITH CHECK ADD  CONSTRAINT [CK_Item_Type] CHECK  (([itemType]='VEHICLE' OR [itemType]='ELECTRONICS' OR [itemType]='ART'))
+ALTER TABLE [dbo].[Item]  WITH CHECK ADD  CONSTRAINT [CK_Item_Type] CHECK  (([itemType]='VEHICLE' OR [itemType]='ELECTRONICS' OR [itemType]='ART' OR [itemType]='OTHER'))
     GO
 ALTER TABLE [dbo].[Item] CHECK CONSTRAINT [CK_Item_Type]
+    GO
+ALTER TABLE [dbo].[Users]  WITH CHECK ADD  CONSTRAINT [CK_Users_status] CHECK  (([status]='ACTIVE' OR [status]='DISABLED'))
+    GO
+ALTER TABLE [dbo].[Users] CHECK CONSTRAINT [CK_Users_status]
     GO
     USE [master]
     GO
