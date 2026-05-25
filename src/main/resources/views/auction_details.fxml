@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<GridPane prefHeight="800.0" prefWidth="1300.0" style="-fx-background-color: #f4f7f6;"
+<GridPane fx:id="rootPane" prefHeight="800.0" prefWidth="1300.0" style="-fx-background-color: #f4f7f6;"
           xmlns="http://javafx.com/javafx/17.0.12"
           xmlns:fx="http://javafx.com/fxml/1"
           fx:controller="com.auction.client.controller.AuctionDetailController">

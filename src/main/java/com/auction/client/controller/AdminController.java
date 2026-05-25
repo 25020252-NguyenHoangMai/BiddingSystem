@@ -12,9 +12,12 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.util.List;
@@ -22,16 +25,15 @@ import java.util.Objects;
 
 public class AdminController {
     // --- PHẦN QUẢN LÝ SẢN PHẨM ---
-    @FXML
-    private TableView<ItemDTO> itemTable;
+    @FXML private TableView<ItemDTO> itemTable;
     @FXML private TableColumn<ItemDTO, Boolean> colItemSelect;
     @FXML private TableColumn<ItemDTO, String> colItemId;
     @FXML private TableColumn<ItemDTO, String> colItemName;
     @FXML private TableColumn<ItemDTO, String> colItemSeller;
+    @FXML private TableColumn<ItemDTO, Void> colItemView;
     private final ProductService productService = ProductService.getInstance();
 
     @FXML private TextField txtSearchItem;
-    @FXML private VBox itemDetailContainer;
     @FXML private Button btnDeleteItem;
 
     // --- PHẦN QUẢN LÝ NGƯỜI DÙNG ---
@@ -39,10 +41,10 @@ public class AdminController {
     @FXML private TableColumn<UserSessionDTO, Boolean> colUserSelect;
     @FXML private TableColumn<UserSessionDTO, String> colUserId;
     @FXML private TableColumn<UserSessionDTO, String> colUsername;
+    @FXML private TableColumn<UserSessionDTO, String> colFullName;
     private final UserClientService userService = UserClientService.getInstance();
 
     @FXML private TextField txtSearchUser;
-    @FXML private VBox userDetailContainer;
     @FXML private Button btnDeleteUser;
 
     private final ObservableList<ItemDTO> masterDataItems = FXCollections.observableArrayList();
@@ -55,6 +57,29 @@ public class AdminController {
         colItemId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId()));
         colItemName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
         colItemSeller.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSellerUsername()));
+        colItemView.setCellFactory(param -> new TableCell<>() {
+            private final Button btn = new Button("View Detail");
+            {
+                btn.setStyle(
+                        "-fx-background-color: #39b54a;" +
+                                "-fx-text-fill: white;" +
+                                "-fx-font-weight: bold;" +
+                                "-fx-background-radius: 6;" +
+                                "-fx-cursor: hand;"
+                );
+
+                btn.setOnAction(event -> {
+                    ItemDTO item = getTableView().getItems().get(getIndex());
+                    openAuctionDetail(item);
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : btn);
+            }
+        });
         colItemSelect.setCellValueFactory(cellData -> cellData.getValue().selectedProperty());
         colItemSelect.setCellFactory(CheckBoxTableCell.forTableColumn(colItemSelect));
         itemTable.setEditable(true);
@@ -63,6 +88,7 @@ public class AdminController {
         // Dùng Lambda để báo lỗi viết sai tên hàm
         colUserId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId()));
         colUsername.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getUsername()));
+        colFullName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFullName()));
         colUserSelect.setCellValueFactory(cellData -> cellData.getValue().selectedProperty());
         colUserSelect.setCellFactory(CheckBoxTableCell.forTableColumn(colUserSelect));
         userTable.setEditable(true);
@@ -160,10 +186,15 @@ public class AdminController {
         txtSearchUser.textProperty().addListener((observable, oldValue, newValue) -> {
             filteredUsers.setPredicate(user -> {
                 if (newValue == null || newValue.isEmpty()) return true;
-                String lowerCaseFilter = newValue.toLowerCase();
+                String keyword = newValue.toLowerCase();
 
-                return user.getUsername() != null
-                        && user.getUsername().toLowerCase().contains(lowerCaseFilter);
+                if (user.getUsername() != null
+                        && user.getUsername().toLowerCase().contains(keyword)) {
+                    return true;
+                }
+
+                return user.getFullName() != null
+                        && user.getFullName().toLowerCase().contains(keyword);
             });
         });
         userTable.setItems(filteredUsers);
@@ -354,6 +385,34 @@ public class AdminController {
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void openAuctionDetail(ItemDTO item) {
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/views/auction_details.fxml")
+            );
+
+            Parent root = loader.load();
+
+            AuctionDetailController controller = loader.getController();
+            controller.setAdminView(true);
+            controller.setItemData(item);
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setTitle("Auction Detail");
+            stage.setScene(new Scene(root));
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setHeaderText(null);
+            alert.setContentText("Không thể mở auction detail");
+            alert.showAndWait();
+        }
     }
 }
 

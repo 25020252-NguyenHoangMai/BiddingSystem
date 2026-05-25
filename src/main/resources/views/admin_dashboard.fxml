@@ -27,9 +27,10 @@
             <tabs>
                 <Tab text="Quản lý Sản phẩm">
                     <content>
-                        <SplitPane dividerPositions="0.7">
-                            <items>
-                                <VBox spacing="15" style="-fx-padding: 15;">
+                        <VBox VBox.vgrow="ALWAYS">
+                            <VBox spacing="15"
+                                  style="-fx-padding: 15;"
+                                  VBox.vgrow="ALWAYS">
                                     <children>
                                         <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 8;">
                                             <children>
@@ -41,41 +42,26 @@
                                         </HBox>
                                         <TableView fx:id="itemTable" editable="true" VBox.vgrow="ALWAYS">
                                             <columns>
-                                                <TableColumn fx:id="colItemSelect" maxWidth="35.0" minWidth="35.0" prefWidth="35.0" resizable="false" text="✔" />
-                                                <TableColumn fx:id="colItemId" prefWidth="60.0" text="ID" />
-                                                <TableColumn fx:id="colItemName" prefWidth="250.0" text="Tên sản phẩm" />
-                                                <TableColumn fx:id="colItemSeller" prefWidth="150.0" text="Người bán" />
+                                                <TableColumn fx:id="colItemSelect" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" resizable="false" text="✔" />
+                                                <TableColumn fx:id="colItemId" prefWidth="250.0" text="ID" />
+                                                <TableColumn fx:id="colItemName" prefWidth="600.0" text="Tên sản phẩm" />
+                                                <TableColumn fx:id="colItemSeller" prefWidth="250.0" text="Người bán" />
+                                                <TableColumn fx:id="colItemView" prefWidth="220.0" minWidth="220.0" style="-fx-alignment: CENTER;" text="Chi tiết" />
                                             </columns>
                                             <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
                                         </TableView>
                                     </children>
                                 </VBox>
-
-                                <VBox spacing="20" style="-fx-padding: 20; -fx-background-color: white;">
-                                    <children>
-                                        <Label style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #34495e;" text="Chi tiết sản phẩm" />
-                                        <Separator />
-                                        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;" VBox.vgrow="ALWAYS">
-                                            <content>
-                                                <VBox fx:id="itemDetailContainer" spacing="12">
-                                                    <children>
-                                                        <Label text="Chọn sản phẩm để xem thông tin..." textFill="#95a5a6" wrapText="true" />
-                                                    </children>
-                                                </VBox>
-                                            </content>
-                                        </ScrollPane>
-                                    </children>
-                                </VBox>
-                            </items>
-                        </SplitPane>
+                        </VBox>
                     </content>
                 </Tab>
 
                 <Tab text="Quản lý Người dùng">
                     <content>
-                        <SplitPane dividerPositions="0.7">
-                            <items>
-                                <VBox spacing="15" style="-fx-padding: 15;">
+                        <VBox VBox.vgrow="ALWAYS">
+                            <VBox spacing="15"
+                                  style="-fx-padding: 15;"
+                                  VBox.vgrow="ALWAYS">
                                     <children>
                                         <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 8;">
                                             <children>
@@ -87,32 +73,17 @@
                                         </HBox>
                                         <TableView fx:id="userTable" editable="true" VBox.vgrow="ALWAYS">
                                             <columns>
-                                                <TableColumn fx:id="colUserSelect" maxWidth="35.0" minWidth="35.0" prefWidth="35.0" resizable="false" text="✔" />
-                                                <TableColumn fx:id="colUserId" prefWidth="100.0" text="ID User" />
-                                                <TableColumn fx:id="colUsername" prefWidth="400.0" text="Tên đăng nhập" />
+                                                <TableColumn fx:id="colUserSelect" maxWidth="40.0" minWidth="40.0" prefWidth="40.0" resizable="false" text="✔" />
+                                                <TableColumn fx:id="colUserId" prefWidth="350.0" text="ID User" />
+                                                <TableColumn fx:id="colUsername" prefWidth="300.0" style="-fx-alignment: CENTER;" text="Tên đăng nhập" />
+                                                <TableColumn fx:id="colFullName" prefWidth="500.0" style="-fx-alignment: CENTER;" text="Tên người dùng" />
+
                                             </columns>
                                             <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
                                         </TableView>
                                     </children>
                                 </VBox>
-
-                                <VBox spacing="20" style="-fx-padding: 20; -fx-background-color: white;">
-                                    <children>
-                                        <Label style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #34495e;" text="Hồ sơ người dùng" />
-                                        <Separator />
-                                        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-background: transparent;" VBox.vgrow="ALWAYS">
-                                            <content>
-                                                <VBox fx:id="userDetailContainer" spacing="12">
-                                                    <children>
-                                                        <Label text="Chọn người dùng để xem hồ sơ..." textFill="#95a5a6" wrapText="true" />
-                                                    </children>
-                                                </VBox>
-                                            </content>
-                                        </ScrollPane>
-                                    </children>
-                                </VBox>
-                            </items>
-                        </SplitPane>
+                        </VBox>
                     </content>
                 </Tab>
             </tabs>
