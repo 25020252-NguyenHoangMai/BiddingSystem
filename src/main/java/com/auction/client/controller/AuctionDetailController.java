@@ -63,6 +63,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     private volatile boolean historyLoaded = false;
     private boolean adminView = false;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter CHART_TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
     private static final String EVENT_USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
 
@@ -425,20 +426,43 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         // Cập nhật ListView
         if (!lvBidHistory.getItems().contains(entry)) {
-            lvBidHistory.getItems().add(0, entry);
+            lvBidHistory.getItems().add(entry);
+            // sort lại theo giá bid giảm dần
+            lvBidHistory.getItems().sort((a, b) -> {
+                double priceA = extractPrice(a);
+                double priceB = extractPrice(b);
+
+                return Double.compare(priceB, priceA);
+            });
+
             if (lvBidHistory.getItems().size() > 20) {
                 lvBidHistory.getItems().remove(lvBidHistory.getItems().size() - 1);
             }
         }
-
         // Cập nhật Biểu đồ
-        String timeLabel = LocalTime.now().format(TIME_FMT);
+        String timeLabel = LocalTime.now().format(CHART_TIME_FMT);
         boolean exists = priceSeries.getData().stream().anyMatch(d -> Objects.equals(d.getYValue(), price));
         if (!exists) {
             priceSeries.getData().add(new XYChart.Data<>(timeLabel, price));
         }
         if (priceSeries.getData().size() > 12) {
             priceSeries.getData().remove(0);
+        }
+    }
+
+    private double extractPrice(String text) {
+        try {
+            int dollarIndex = text.lastIndexOf("$");
+
+            if (dollarIndex < 0) { return 0; }
+
+            String value = text.substring(dollarIndex + 1)
+                    .replace(",", "")
+                    .trim();
+
+            return Double.parseDouble(value);
+        } catch (Exception e) {
+            return 0;
         }
     }
 
