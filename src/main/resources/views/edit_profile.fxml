@@ -84,7 +84,7 @@
             </VBox>
 
             <!-- Nhãn thông báo lỗi phẳng -->
-            <Label fx:id="errorLabel" managed="false" style="-fx-font-size: 12px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;" visible="false">
+            <Label fx:id="errorLabel" managed="${errorLabel.visible}" style="-fx-font-size: 12px; -fx-text-fill: #e74c3c; -fx-font-weight: bold;" visible="false">
                 <VBox.margin>
                     <Insets top="2.0" />
                 </VBox.margin>
