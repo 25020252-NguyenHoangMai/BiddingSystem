@@ -284,6 +284,9 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                         currentItem.setCurrentWinnerUsername(watchResponse.getCurrentWinnerUsername());
                         currentItem.setSessionStatus(watchResponse.getStatus());
 
+                        autoBidActive = watchResponse.isAutoBidActive();
+                        updateAutoBidButtonAppearance();
+
                         refreshBidState(
                                 watchResponse.getCurrentPrice(),
                                 watchResponse.getCurrentWinnerUsername(),
@@ -797,7 +800,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
                     // Cập nhật UI giá hiện tại
                     refreshBidState(res.getCurrentPrice(), res.getCurrentWinnerUsername(), res.getStatus());
-                    updateBidHint(null);
+                    updateBidHint(currentItem.getMinimumNextBid());
                 }
 
                 showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
