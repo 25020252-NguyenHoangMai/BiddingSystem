@@ -182,7 +182,7 @@ public class SessionHistoryController {
 
             if (sessions != null) {
                 for (SessionHistoryItemDTO s : sessions) {
-                    if ("RUNNING".equalsIgnoreCase(s.getStatus())) {
+                    if ("RUNNING".equalsIgnoreCase(s.getStatus()) || "OPEN".equalsIgnoreCase(s.getStatus())) {
                         startWatchingSession(s.getSessionId(), userId);
                     }
                 }

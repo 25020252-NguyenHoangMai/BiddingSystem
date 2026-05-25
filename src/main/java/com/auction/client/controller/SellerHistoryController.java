@@ -10,6 +10,9 @@ import com.auction.response.BidUpdateResponse;
 import com.auction.response.GetAuctionDetailResponse;
 import com.auction.response.GetSellerHistoryResponse;
 import com.auction.response.GetSessionHistoryResponse;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,6 +26,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,6 +58,7 @@ public class SellerHistoryController {
     private FilteredList<SellerHistoryItemDTO> filteredData;
     private final AuctionService auctionService = new AuctionService();
     private final List<Stage> childStages = new ArrayList<>();
+    private Timeline autoRefreshTimeline;
 
 
 
@@ -66,6 +71,7 @@ public class SellerHistoryController {
         listProducts.setItems(filteredData);
 
         setupListView();
+        startAutoRefresh();
 
         btnSearch.setOnAction(event -> applyFilters());
         txtSearch.setOnAction(event -> applyFilters());
@@ -424,9 +430,43 @@ public class SellerHistoryController {
                 || "PAID".equals(status);
     }
 
-    public void refresh() {
-        if (currentUser != null) {
-            loadSellerHistoryFromServer(currentUser);
+    private void startAutoRefresh() {
+
+        autoRefreshTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(5), e -> refreshAuctions())
+        );
+
+        autoRefreshTimeline.setCycleCount(Animation.INDEFINITE);
+        autoRefreshTimeline.play();
+    }
+
+    private void refreshAuctions() {
+        long now = System.currentTimeMillis();
+        boolean changed = false;
+
+        for (SellerHistoryItemDTO session : masterData) {
+            if (session == null) continue;
+            String status = safe(session.getStatus());
+
+            if ("OPEN".equalsIgnoreCase(status)
+                    && session.getStartTimeMillis() > 0
+                    && session.getStartTimeMillis() <= now
+                    && session.getEndTimeMillis() > now) {
+                session.setStatus("RUNNING");
+                changed = true;
+            }
+
+            if (("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status))
+                    && session.getEndTimeMillis() > 0
+                    && session.getEndTimeMillis() <= now) {
+                session.setStatus("FINISHED");
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            listProducts.refresh();
+            applyFilters();
         }
     }
 
