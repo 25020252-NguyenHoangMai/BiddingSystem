@@ -70,10 +70,12 @@ public class RealTimeController {
                 endTimeMillis = session.getEndTime().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             }
 
+            boolean autoBidActive = autoBiddingService.isAutoBidActive(sessionId, request.getUserId());
+
             return new SessionWatchResponse(true, "Watching session", session.getId(),
                                         session.getCurrentPrice(), session.getCurrentWinnerId(), currentWinnerUsername,
                                         session.getStatus(), endTimeMillis, getMinimumNextBid(session),
-                                        availableBalance);
+                                        availableBalance, autoBidActive);
         } catch (Exception e) {
             e.printStackTrace();
             return new SessionWatchResponse(false, "Watch session failed: unexpected server error");

@@ -54,7 +54,7 @@ public class    MainServer {
                                                 sessionWatchRegistry, autoBiddingService, bidIncrementService,
                                                 userService, bidHistoryService, dashboardRealtimeService);
         RealTimeController realTimeController = new RealTimeController(sessionWatchRegistry, dashboardWatchRegistry,
-                                                sessionService, userService, bidIncrementService);
+                                                sessionService, userService, bidIncrementService, autoBiddingService);
 
         AuctionController auctionController = new AuctionController(authController, itemController, biddingController,
                                                 realTimeController);
