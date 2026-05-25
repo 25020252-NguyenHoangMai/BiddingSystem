@@ -28,7 +28,7 @@ public class ClientSocket {
 
     private ClientSocket() {}
 
-    private final ConcurrentHashMap<String, BidUpdateListener> bidUpdateListeners = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CopyOnWriteArrayList<BidUpdateListener>> bidUpdateListeners = new ConcurrentHashMap<>();
 
     // Callback nhận DashboardUpdateResponse — set bởi MainController
     private volatile DashboardUpdateListener dashboardUpdateListener;
@@ -261,11 +261,32 @@ public class ClientSocket {
 
     // ===== BID UPDATE LISTENER =====
     public void setBidUpdateListener(String sessionId, BidUpdateListener listener) {
-        bidUpdateListeners.put(sessionId, listener);
+        if (sessionId == null || listener == null) {
+            return;
+        }
+
+        bidUpdateListeners
+                .computeIfAbsent(sessionId, k -> new CopyOnWriteArrayList<>())
+                .addIfAbsent(listener);
     }
+
     // Huỷ listener — gọi khi đóng AuctionDetail
-    public void clearBidUpdateListener(String sessionId) {
-        bidUpdateListeners.remove(sessionId);
+    public void clearBidUpdateListener(String sessionId, BidUpdateListener listener) {
+        if (sessionId == null || listener == null) {
+            return;
+        }
+
+        CopyOnWriteArrayList<BidUpdateListener> listeners = bidUpdateListeners.get(sessionId);
+
+        if (listeners == null) {
+            return;
+        }
+
+        listeners.remove(listener);
+
+        if (listeners.isEmpty()) {
+            bidUpdateListeners.remove(sessionId);
+        }
     }
 
     // ===== DASHBOARD UPDATE LISTENER =====
@@ -356,22 +377,21 @@ public class ClientSocket {
     }
 
     private void dispatchBidUpdate(BidUpdateResponse update) {
-        BidUpdateListener listener = bidUpdateListeners.get(update.getSessionId());
+        CopyOnWriteArrayList<BidUpdateListener> listeners = bidUpdateListeners.get(update.getSessionId());
 
-        if (listener == null) {
+        if (listeners == null) {
             return;
         }
 
-        callbackExecutor.execute(() -> {
-            try {
-                listener.onBidUpdate(update);
-            } catch (Exception e) {
-                System.err.println(
-                        "[ClientSocket] BidUpdate listener error: "
-                                + e.getMessage()
-                );
-            }
-        });
+        for (BidUpdateListener listener : listeners) {
+            callbackExecutor.execute(() -> {
+                try {
+                    listener.onBidUpdate(update);
+                } catch (Exception e) {
+                    System.err.println("[ClientSocket] BidUpdate listener error: " + e.getMessage());
+                }
+            });
+        }
     }
 
     private void dispatchDashboardUpdate(DashboardUpdateResponse update) {

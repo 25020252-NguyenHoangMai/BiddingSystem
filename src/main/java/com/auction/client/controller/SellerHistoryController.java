@@ -83,6 +83,11 @@ public class SellerHistoryController {
 
         btnBack.setOnAction(event -> {
             stopWatchingAllSessions();
+
+            if (autoRefreshTimeline != null) {
+                autoRefreshTimeline.stop();
+            }
+
             navigateTo(PROFILE_FXML);
         });
 
@@ -338,6 +343,8 @@ public class SellerHistoryController {
              */
             if (sessionId == null || sessionId.isBlank()) continue;
 
+            if (watchingServices.containsKey(sessionId)) continue;
+
             // Chỉ watch các session đang RUNNING — UPCOMING và CANCELED không cần
             String status = safe(session.getStatus());
             if (!"RUNNING".equalsIgnoreCase(status) && !"OPEN".equalsIgnoreCase(status)) continue;
@@ -407,9 +414,11 @@ public class SellerHistoryController {
 
                         // Cập nhật receivedBidAmount
                         if (isBidEvent(update)) {
-                            if (currentUser != null) {
-                                loadSellerHistoryFromServer(currentUser);
+                            if (update.getCurrentPrice() != null) {
+                                session.setCurrentPrice(update.getCurrentPrice());
                             }
+
+                            refreshListItem(session);
                             return;
                         }
 
@@ -422,7 +431,11 @@ public class SellerHistoryController {
 
                             // Nếu session đã đóng, không cần watch nữa (không còn biến động)
                             if (isClosedStatus(update.getStatus())) {
-                                ClientSocket.getInstance().clearBidUpdateListener(updatedSessionId);
+                                AuctionRealtimeService service = watchingServices.remove(updatedSessionId);
+
+                                if (service != null) {
+                                    service.unwatch(updatedSessionId);
+                                }
                             }
                         }
 
