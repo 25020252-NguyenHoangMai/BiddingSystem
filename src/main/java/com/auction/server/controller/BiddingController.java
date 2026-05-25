@@ -70,16 +70,15 @@ public class BiddingController {
             if (result.isSuccess()) {
                 broadcastBidUpdate(result);
 
-                List<BidResult> autoBidResults = autoBiddingService.processAutoBidsAfterBid(
+                BidResult autoBidResult = autoBiddingService.resolveAutoBidsOnce(
                         result.getSessionId(),
-                        request.getBidderId()
+                        "Auto bid resolved after manual bid"
                 );
 
-                for (BidResult autoBidResult : autoBidResults) {
-                    if (autoBidResult.isSuccess()) {
-                        broadcastBidUpdate(autoBidResult);
-                        finalResult = autoBidResult;
-                    }
+                if (autoBidResult.isSuccess()
+                        && autoBidResult.getCurrentPrice() > result.getCurrentPrice()) {
+                    broadcastBidUpdate(autoBidResult);
+                    finalResult = autoBidResult;
                 }
 
                 dashboardRealtimeService.broadcastItemUpdatedBySessionId(
@@ -196,18 +195,6 @@ public class BiddingController {
 
             if (result.isSuccess()) {
                 broadcastBidUpdate(result);
-
-                List<BidResult> autoBidResults = autoBiddingService.processAutoBidsAfterBid(
-                        result.getSessionId(),
-                        request.getBidderId()
-                );
-
-                for (BidResult autoBidResult : autoBidResults) {
-                    if (autoBidResult.isSuccess()) {
-                        broadcastBidUpdate(autoBidResult);
-                        finalResult = autoBidResult;
-                    }
-                }
 
                 dashboardRealtimeService.broadcastItemUpdatedBySessionId(
                         finalResult.getSessionId(),

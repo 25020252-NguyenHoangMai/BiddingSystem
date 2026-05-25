@@ -22,10 +22,12 @@ public class AutoBiddingService {
     private final BidTransactionExecutor bidTransactionExecutor;
     private final UserService userService;
     private final AntiSnipingService antiSnipingService;
+    private final ProxyAutoBidResolver proxyAutoBidResolver;
 
     public AutoBiddingService(BidValidationService bidValidationService, SessionService sessionService,
                               BidIncrementService bidIncrementService, BidTransactionExecutor bidTransactionExecutor,
-                              UserService userService, AutoBidDAO autoBidDAO, AntiSnipingService antiSnipingService) {
+                              UserService userService, AutoBidDAO autoBidDAO, AntiSnipingService antiSnipingService,
+                              ProxyAutoBidResolver proxyAutoBidResolver) {
         if (bidValidationService == null) {
             throw new IllegalArgumentException("BidValidationService must not be null");
         }
@@ -47,6 +49,9 @@ public class AutoBiddingService {
         if (antiSnipingService == null) {
             throw new IllegalArgumentException("AntiSnipingService must not be null");
         }
+        if (proxyAutoBidResolver == null) {
+            throw new IllegalArgumentException("ProxyAutoBidResolver must not be null");
+        }
 
         this.bidValidationService = bidValidationService;
         this.sessionService = sessionService;
@@ -55,6 +60,7 @@ public class AutoBiddingService {
         this.userService = userService;
         this.autoBidDAO = autoBidDAO;
         this.antiSnipingService = antiSnipingService;
+        this.proxyAutoBidResolver = proxyAutoBidResolver;
     }
 
     public BidResult setAutoBid(String sessionId, String bidderId, double maxAmount) {
@@ -89,25 +95,7 @@ public class AutoBiddingService {
             throw new AuctionException("Failed to save auto bid: " + e.getMessage());
         }
 
-        AuctionSession latestSession = sessionService.getSession(sessionId);
-        if (latestSession == null) {
-            removeAutoBid(sessionId, bidderId); //nếu session vừa đc gọi lại bị null thì remove autobid vừa lưu
-            return new BidResult(false, "Auction session not found: " + sessionId, sessionId,
-                    0.0, null, null, null);
-        }
-
-        minimumNextBid = bidIncrementService.getMinimumNextBid(latestSession.getCurrentPrice());
-        if (maxAmount < minimumNextBid) {
-            removeAutoBid(sessionId, bidderId);
-            return buildCurrentStateResult(false,
-                    "Auto bid max amount must be at least " + minimumNextBid, latestSession);
-        }
-
-        if (bidderId.equals(latestSession.getCurrentWinnerId())) {
-            return buildCurrentStateResult(true, "Auto bid enabled", latestSession);
-        }
-
-        return placeAutoBid(sessionId, bidderId);
+        return resolveAutoBidsOnce(sessionId, "Auto bid enabled");
     }
 
     private void validateAutoBidInput(String sessionId, String bidderId, double maxAmount) {
@@ -416,5 +404,62 @@ public class AutoBiddingService {
         } catch (SQLException e) {
             throw new AuctionException("Failed to check auto bid status: " + e.getMessage());
         }
+    }
+
+    public BidResult resolveAutoBidsOnce(String sessionId, String successMessage) {
+        BidExecutionResult executionResult = proxyAutoBidResolver.resolve(sessionId);
+
+        AuctionSession updatedSession = sessionService.getSession(sessionId);
+
+        if (!executionResult.isSuccess()) {
+            if (updatedSession == null) {
+                return new BidResult(false, executionResult.getMessage(),
+                        sessionId, 0.0, null, null, null);
+            }
+
+            return buildCurrentStateResult(true, successMessage, updatedSession);
+        }
+
+        if (updatedSession == null) {
+            return new BidResult(true,
+                    successMessage,
+                    executionResult.getSessionId(),
+                    executionResult.getCurrentPrice(),
+                    executionResult.getWinnerId(),
+                    resolveWinnerUsername(executionResult.getWinnerId()),
+                    executionResult.getStatus(),
+                    resolveWinnerUsername(executionResult.getWinnerId()),
+                    executionResult.getCurrentPrice(),
+                    executionResult.getBidTimeMillis());
+        }
+
+        boolean extended = false;
+
+        if (antiSnipingService.shouldExtend(updatedSession)) {
+            sessionService.extendSession(sessionId, antiSnipingService.getExtendTime());
+            extended = true;
+
+            AuctionSession extendedSession = sessionService.getSession(sessionId);
+            if (extendedSession != null) {
+                updatedSession = extendedSession;
+            }
+        }
+
+        String message = extended
+                ? successMessage + ". Auction time extended due to anti-sniping."
+                : successMessage;
+
+        return new BidResult(
+                true,
+                message,
+                updatedSession.getId(),
+                updatedSession.getCurrentPrice(),
+                updatedSession.getCurrentWinnerId(),
+                resolveWinnerUsername(updatedSession.getCurrentWinnerId()),
+                updatedSession.getStatus(),
+                resolveWinnerUsername(executionResult.getWinnerId()),
+                executionResult.getCurrentPrice(),
+                executionResult.getBidTimeMillis()
+        );
     }
 }

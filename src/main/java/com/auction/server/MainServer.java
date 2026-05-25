@@ -38,11 +38,15 @@ public class    MainServer {
         BidTransactionExecutor bidTransactionExecutor = new BidTransactionExecutor(bidDAO, sessionDAO, userDAO,
                                                     bidValidationService, bidReservationCalculator);
 
+        ProxyAutoBidResolver proxyAutoBidResolver = new ProxyAutoBidResolver(autoBidDAO, sessionDAO, userDAO, bidDAO,
+                                            bidIncrementService, bidValidationService, bidReservationCalculator
+        );
+
         AntiSnipingService antiSnipingService = new AntiSnipingService();
         SessionService sessionService = new SessionService(sessionDAO, userDAO, bidDAO);
         AutoBiddingService autoBiddingService = new AutoBiddingService(bidValidationService, sessionService,
                                                     bidIncrementService, bidTransactionExecutor, userService,
-                                                    autoBidDAO, antiSnipingService);
+                                                    autoBidDAO, antiSnipingService, proxyAutoBidResolver);
         BiddingService biddingService = new BiddingService(sessionService, antiSnipingService, userService,
                                             bidValidationService, bidTransactionExecutor);
 
