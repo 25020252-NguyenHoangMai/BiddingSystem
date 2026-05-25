@@ -691,7 +691,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
 
         // Tạo một thread mới bọc lấy task vừa viết
         Thread thread = new Thread(task);
-        // Ý nghĩa : khih người dùng tắt app, thread này sẽ khai tử theo (để không chạy ngầm vô tận)
+        // Ý nghĩa : khi người dùng tắt app, thread này sẽ khai tử theo (để không chạy ngầm vô tận)
         thread.setDaemon(true);
         // Giờ mới bắt đầu chạy hàm call() ngầm
         thread.start();
