@@ -182,7 +182,7 @@ public class SessionHistoryController {
 
             if (sessions != null) {
                 for (SessionHistoryItemDTO s : sessions) {
-                    if ("RUNNING".equalsIgnoreCase(s.getStatus()) || "OPEN".equalsIgnoreCase(s.getStatus())) {
+                    if (!"CANCELED".equalsIgnoreCase(s.getStatus())) {
                         startWatchingSession(s.getSessionId(), userId);
                     }
                 }
@@ -278,12 +278,6 @@ public class SessionHistoryController {
                     && !update.getStatus().equals(dto.getStatus())) {
                 dto.setStatus(update.getStatus());
                 changed = true;
-
-                // Nếu session kết thúc → unwatch
-                if (!"RUNNING".equalsIgnoreCase(update.getStatus())) {
-                    AuctionRealtimeService svc = watchingServices.remove(sessionId);
-                    if (svc != null) svc.unwatch(sessionId);
-                }
             }
 
             // Nếu seller đổi tên hoặc product được update → reload full DTO từ server

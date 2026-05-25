@@ -447,7 +447,7 @@ public class SessionDAO {
         FROM AuctionSession s
         JOIN Item i ON i.id = s.itemId
         WHERE i.sellerId = ?
-        AND s.status NOT IN ('CANCELLED')
+        AND s.status NOT IN ('CANCELED')
         """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

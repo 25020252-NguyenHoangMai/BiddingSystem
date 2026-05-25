@@ -214,7 +214,7 @@ public class BidDAO {
         FROM BidTransaction bt
         JOIN AuctionSession s ON s.id = bt.sessionId
         WHERE bt.bidderId = ?
-        AND s.status NOT IN ('CANCELLED')
+        AND s.status NOT IN ('CANCELED')
         """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

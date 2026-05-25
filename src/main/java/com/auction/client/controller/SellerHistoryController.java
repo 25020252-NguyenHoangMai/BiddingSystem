@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.network.ClientSocket;
+import com.auction.client.service.AuctionRealtimeService;
 import com.auction.client.service.AuctionService;
 import com.auction.dto.ItemDTO;
 import com.auction.dto.SellerHistoryItemDTO;
@@ -31,6 +32,8 @@ import javafx.util.Duration;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SellerHistoryController {
     private UserSessionDTO currentUser;
@@ -59,6 +62,7 @@ public class SellerHistoryController {
     private final AuctionService auctionService = new AuctionService();
     private final List<Stage> childStages = new ArrayList<>();
     private Timeline autoRefreshTimeline;
+    private final Map<String, AuctionRealtimeService> watchingServices = new ConcurrentHashMap<>();
 
     private static final String EVENT_USER_PROFILE_UPDATED = "USER_PROFILE_UPDATED";
     private static final String EVENT_ITEM_UPDATED_BY_SELLER = "ITEM_UPDATED_BY_SELLER";
@@ -321,6 +325,10 @@ public class SellerHistoryController {
         // Gọi hàm hủy toàn bộ các listener đã đăng ký từ trước
         stopWatchingAllSessions();
 
+        if (currentUser == null || currentUser.getId() == null || currentUser.getId().isBlank()) {
+            return;
+        }
+
         // Duyệt qua từng đối tượng nằm trong danh sách 'masterData'
         for (SellerHistoryItemDTO session : masterData) {
             // Lấy mã id của phiên đấu giá hiện tại
@@ -332,17 +340,23 @@ public class SellerHistoryController {
 
             // Chỉ watch các session đang RUNNING — UPCOMING và CANCELED không cần
             String status = safe(session.getStatus());
-            if (!"RUNNING".equalsIgnoreCase(status) && !"UPCOMING".equalsIgnoreCase(status)) continue;
+            if (!"RUNNING".equalsIgnoreCase(status) && !"OPEN".equalsIgnoreCase(status)) continue;
 
-            /* Lấy instance duy nhất của CLientSocket (Singleton Pattern)
-               Gọi hàm setBidUpdateListener() để đăng ký nghe sự kiện thay đổi cho phiên có id này
-             */
-            ClientSocket.getInstance().setBidUpdateListener(sessionId, update -> {
-                /* Bất cứ khi nào Server bắn một gói tin cập nhật giá (update) của sessionId này về qua Socket
-                   ClientSocket sẽ tự động kích hoạt đoạn code này và chuyển gói update vào hàm xử lý giao diện handleSellerRealtimeUpdate()
-                 */
-                handleSellerRealtimeUpdate(update);
+            AuctionRealtimeService service = new AuctionRealtimeService(auctionService);
+            service.setListener(this::handleSellerRealtimeUpdate);
+            watchingServices.put(sessionId, service);
+
+            Thread thread = new Thread(() -> {
+                try {
+                    service.watch(sessionId, currentUser.getId());
+                } catch (Exception e) {
+                    watchingServices.remove(sessionId);
+                    System.err.println("[SellerHistory] watch failed for " + sessionId + ": " + e.getMessage());
+                }
             });
+
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 
@@ -356,13 +370,11 @@ public class SellerHistoryController {
     }
 
     private void stopWatchingAllSessions() {
-        for (SellerHistoryItemDTO session : masterData) {
-            String sessionId = session.getSessionId();
-            if (sessionId != null && !sessionId.isBlank()) {
-                // Gọi hàm để cắt đứt kết nối real-time của phiên, giải phóng bộ nhớ
-                ClientSocket.getInstance().clearBidUpdateListener(sessionId);
-            }
+        for (Map.Entry<String, AuctionRealtimeService> entry : watchingServices.entrySet()) {
+            entry.getValue().unwatch(entry.getKey());
         }
+
+        watchingServices.clear();
     }
 
     private void handleSellerRealtimeUpdate(BidUpdateResponse update) {
@@ -395,10 +407,10 @@ public class SellerHistoryController {
 
                         // Cập nhật receivedBidAmount
                         if (isBidEvent(update)) {
-                            /* Dùng isBidEvent() để kiểm tra gói tin này có phải là sự kiện đặt bid hay không
-                               Nếu đúng -> +1
-                             */
-                            session.setTotalBidsReceived(session.getTotalBidsReceived() + 1);
+                            if (currentUser != null) {
+                                loadSellerHistoryFromServer(currentUser);
+                            }
+                            return;
                         }
 
                         boolean statusChanged = false;
