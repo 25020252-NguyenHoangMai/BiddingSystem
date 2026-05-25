@@ -417,6 +417,9 @@ public class SellerHistoryController {
                             if (update.getCurrentPrice() != null) {
                                 session.setCurrentPrice(update.getCurrentPrice());
                             }
+                            if (update.getTotalBidsReceived() > 0) {
+                                session.setTotalBidsReceived(update.getTotalBidsReceived());
+                            }
 
                             refreshListItem(session);
                             return;

@@ -274,10 +274,16 @@ public class SessionHistoryController {
             }
 
             // Cập nhật status
-            if (update.getStatus() != null
-                    && !update.getStatus().equals(dto.getStatus())) {
-                dto.setStatus(update.getStatus());
-                changed = true;
+            if (update.getStatus() != null) {
+                String resolved = resolveStatusForBidder(
+                        update.getStatus(),
+                        update.getCurrentWinnerId(),
+                        currentUserId
+                );
+                if (!resolved.equals(dto.getStatus())) {
+                    dto.setStatus(resolved);
+                    changed = true;
+                }
             }
 
             // Nếu seller đổi tên hoặc product được update → reload full DTO từ server
@@ -375,18 +381,19 @@ public class SessionHistoryController {
 
         filteredData.setPredicate(session -> {
             if (!ALL_SESSIONS.equals(statusFilter)) {
-                String expectedStatus = switch (statusFilter) {
-                    case RUNNING_SESSIONS -> "RUNNING";
-                    case WON_SESSIONS -> "WON";
-                    case LOST_SESSIONS -> "LOST";
-                    case CANCELED_SESSIONS -> "CANCELED";
-                    default -> "";
+                String sessionStatus = safe(session.getStatus());
+
+                boolean matches = switch (statusFilter) {
+                    case RUNNING_SESSIONS  -> "RUNNING".equalsIgnoreCase(sessionStatus);
+                    case WON_SESSIONS      -> "WON".equalsIgnoreCase(sessionStatus)
+                            || "PAID".equalsIgnoreCase(sessionStatus);   // ← thêm PAID
+                    case LOST_SESSIONS     -> "LOST".equalsIgnoreCase(sessionStatus)
+                            || "FINISHED".equalsIgnoreCase(sessionStatus); // ← thêm FINISHED
+                    case CANCELED_SESSIONS -> "CANCELED".equalsIgnoreCase(sessionStatus);
+                    default                -> true;
                 };
 
-                if (!expectedStatus.isBlank()
-                        && !expectedStatus.equalsIgnoreCase(safe(session.getStatus()))) {
-                    return false;
-                }
+                if (!matches) return false;
             }
 
             if (!"All Types".equals(typeFilter)
@@ -518,6 +525,18 @@ public class SessionHistoryController {
             e.printStackTrace();
             showAlert(Alert.AlertType.ERROR, "Navigation", "Cannot open screen.");
         }
+    }
+
+    private String resolveStatusForBidder(String rawStatus, String currentWinnerId, String currentUserId) {
+        if (rawStatus == null) return null;
+        if ("FINISHED".equalsIgnoreCase(rawStatus) || "PAID".equalsIgnoreCase(rawStatus)) {
+            if (currentUserId != null && currentUserId.equals(currentWinnerId)) {
+                return "WON";
+            } else {
+                return "LOST";
+            }
+        }
+        return rawStatus;
     }
 
     private String safe(String value) {

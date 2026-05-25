@@ -10,18 +10,19 @@ public class BidUpdateResponse extends Response {
     private Double minimumNextBid;
     private String bidderUsername;
     private Double bidAmount;
+    private int totalBidsReceived;
     private Long bidTimeMillis;
 
     public BidUpdateResponse(boolean success, String message, String sessionId, Double currentPrice,
                              String currentWinnerId, String currentWinnerUsername, String status, Long endTimeMillis,
-                             Double minimumNextBid, String bidderUsername, Double bidAmount) {
+                             Double minimumNextBid, String bidderUsername, Double bidAmount, int totalBidsReceived) {
         this(success, message, sessionId, currentPrice, currentWinnerId, currentWinnerUsername, status,
-                endTimeMillis, minimumNextBid, bidderUsername, bidAmount, null);
+                endTimeMillis, minimumNextBid, bidderUsername, bidAmount, totalBidsReceived,  null);
     }
 
     public BidUpdateResponse(boolean success, String message, String sessionId, Double currentPrice,
                              String currentWinnerId, String currentWinnerUsername, String status, Long endTimeMillis,
-                             Double minimumNextBid, String bidderUsername, Double bidAmount, Long bidTimeMillis) {
+                             Double minimumNextBid, String bidderUsername, Double bidAmount, int totalBidsReceived, Long bidTimeMillis) {
         super(success, message);
         this.sessionId = sessionId;
         this.currentPrice = currentPrice;
@@ -32,6 +33,7 @@ public class BidUpdateResponse extends Response {
         this.minimumNextBid = minimumNextBid;
         this.bidderUsername = bidderUsername;
         this.bidAmount = bidAmount;
+        this.totalBidsReceived = totalBidsReceived;
         this.bidTimeMillis = bidTimeMillis;
     }
 
@@ -69,6 +71,10 @@ public class BidUpdateResponse extends Response {
 
     public Double getBidAmount() {
         return bidAmount;
+    }
+
+    public int getTotalBidsReceived() {
+        return totalBidsReceived;
     }
 
     public Long getBidTimeMillis() {
