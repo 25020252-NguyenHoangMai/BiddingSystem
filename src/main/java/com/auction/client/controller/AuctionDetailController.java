@@ -233,19 +233,25 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                             : sortedAsc;
 
             for (BidHistoryEntryDTO entry : chartData) {
-                String timeLabel = LocalTime.ofInstant(
+                LocalTime bidTime = LocalTime.ofInstant(
                         Instant.ofEpochMilli(entry.getBidTimeMillis()),
-                        ZoneId.systemDefault()
-                ).format(TIME_FMT);
+                        ZoneId.systemDefault());
+
+                String chartKey = CHART_TIME_FMT.format(bidTime);
+                String displayLabel = TIME_FMT.format(bidTime);
 
                 boolean exists = priceSeries.getData().stream()
-                        .anyMatch(d ->
-                                Objects.equals(d.getXValue(), timeLabel)
-                                        && Objects.equals(d.getYValue(), entry.getBidAmount())
-                        );
+                        .anyMatch(d -> Objects.equals(d.getYValue(), entry.getBidAmount()));
 
                 if (!exists) {
-                    priceSeries.getData().add(new XYChart.Data<>(timeLabel, entry.getBidAmount()));
+                    XYChart.Data<String, Number> point = new XYChart.Data<>(chartKey, entry.getBidAmount());
+                    priceSeries.getData().add(point);
+                    // Gán lại label hiển thị sau khi node được render
+                    point.nodeProperty().addListener((obs, oldNode, newNode) -> {
+                        if (newNode != null) {
+                            newNode.setUserData(displayLabel);
+                        }
+                    });
                 }
             }
 
