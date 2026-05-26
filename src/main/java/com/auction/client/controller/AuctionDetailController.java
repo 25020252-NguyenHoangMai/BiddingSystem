@@ -870,7 +870,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                     updateBidHint(currentItem.getMinimumNextBid());
                 }
 
-                showAlert(Alert.AlertType.INFORMATION, "AutoBid", "Auto bid enabled successfully.");
+                showAlert(Alert.AlertType.INFORMATION, "AutoBid", res.getMessage());
             } else {
                 showAlert(Alert.AlertType.ERROR, "AutoBid", res.getMessage());
             }
@@ -946,7 +946,7 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
                 }
 
 
-                showAlert(Alert.AlertType.INFORMATION, "Success", "Bid successful!");
+                showAlert(Alert.AlertType.INFORMATION, "Success", res.getMessage());
             } else {
                 showAlert(Alert.AlertType.ERROR, "Fail", res.getMessage());
             }
