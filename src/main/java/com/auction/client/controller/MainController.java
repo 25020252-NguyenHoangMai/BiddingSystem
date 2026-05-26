@@ -664,6 +664,10 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
 
             String status = item.getSessionStatus();
 
+            if (!"OPEN".equalsIgnoreCase(status) && !"RUNNING".equalsIgnoreCase(status)) {
+                continue;
+            }
+
             // OPEN -> RUNNING khi đã đến startTime
             if ("OPEN".equalsIgnoreCase(status)
                     && item.getStartTimeMillis() > 0
@@ -673,7 +677,9 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                 changed = true;
             }
 
-            if (("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status)) && item.getEndTimeMillis() <= now) {
+            if (("OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status))
+                    && item.getEndTimeMillis() > 0
+                    && item.getEndTimeMillis() <= now) {
                 item.setSessionStatus("FINISHED");
                 changed = true;
             }

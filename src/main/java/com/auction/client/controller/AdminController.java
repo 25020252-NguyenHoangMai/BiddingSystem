@@ -30,6 +30,7 @@ public class AdminController {
     @FXML private TableColumn<ItemDTO, String> colItemId;
     @FXML private TableColumn<ItemDTO, String> colItemName;
     @FXML private TableColumn<ItemDTO, String> colItemSeller;
+    @FXML private TableColumn<ItemDTO, String> colItemStatus;
     @FXML private TableColumn<ItemDTO, Void> colItemView;
     private final ProductService productService = ProductService.getInstance();
 
@@ -57,6 +58,41 @@ public class AdminController {
         colItemId.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getId()));
         colItemName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
         colItemSeller.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSellerUsername()));
+        // THÊM sau dòng: colItemSeller.setCellValueFactory(...)
+        colItemStatus.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSessionStatus()));
+
+        colItemStatus.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null) {
+                    setText(null);
+                    setStyle("");
+                    return;
+                }
+                setText(status);
+                switch (status.toUpperCase()) {
+                    case "RUNNING" -> setStyle(
+                            "-fx-background-color: #e1f5fe; -fx-text-fill: #01579b; " +
+                                    "-fx-font-weight: bold; -fx-alignment: CENTER;");
+                    case "OPEN" -> setStyle(
+                            "-fx-background-color: #e8f5e9; -fx-text-fill: #2e7d32; " +
+                                    "-fx-font-weight: bold; -fx-alignment: CENTER;");
+                    case "FINISHED" -> setStyle(
+                            "-fx-background-color: #fff3e0; -fx-text-fill: #e65100; " +
+                                    "-fx-font-weight: bold; -fx-alignment: CENTER;");
+                    case "CANCELED" -> setStyle(
+                            "-fx-background-color: #ffebee; -fx-text-fill: #c62828; " +
+                                    "-fx-font-weight: bold; -fx-alignment: CENTER;");
+                    case "PAID" -> setStyle(
+                            "-fx-background-color: #f3e5f5; -fx-text-fill: #6a1b9a; " +
+                                    "-fx-font-weight: bold; -fx-alignment: CENTER;");
+                    default -> setStyle(
+                            "-fx-background-color: #eeeeee; -fx-text-fill: #424242; " +
+                                    "-fx-font-weight: bold; -fx-alignment: CENTER;");
+                }
+            }
+        });
         colItemView.setCellFactory(param -> new TableCell<>() {
             private final Button btn = new Button("View Detail");
             {

@@ -38,6 +38,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.auction.client.util.ImageCache;
 
 public class AuctionDetailController implements AuctionRealtimeService.AuctionUpdateListener {
 
@@ -1054,23 +1055,46 @@ public class AuctionDetailController implements AuctionRealtimeService.AuctionUp
     }
 
     private void loadProductImage(String imagePath) {
-        try {
-            if (imagePath == null || imagePath.isBlank()) {
+        if (imagePath == null || imagePath.isBlank()) return;
+
+        if (ImageCache.contains(imagePath)) {
+            byte[] cached = ImageCache.get(imagePath);
+            if (cached != null && cached.length > 0) {
+                Image image = new Image(new ByteArrayInputStream(cached), 380, 260, true, true);
+                productImageView.setImage(image);
                 return;
             }
-
-            ProductService productService = ProductService.getInstance();
-            byte[] imageBytes = productService.getItemImage(imagePath);
-
-            if (imageBytes == null || imageBytes.length == 0) {
-                return;
-            }
-
-            Image image = new Image(new ByteArrayInputStream(imageBytes), 380, 260, true, true);
-            productImageView.setImage(image);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+
+        // Không có cache → chạy trên thread riêng, KHÔNG block UI thread
+        final String requestedPath = imagePath;
+        Task<byte[]> task = new Task<>() {
+            @Override
+            protected byte[] call() throws Exception {
+                byte[] cached = ImageCache.get(requestedPath);
+                if (cached != null) return cached;
+
+                byte[] bytes = ProductService.getInstance().getItemImage(requestedPath);
+                if (bytes != null && bytes.length > 0) {
+                    ImageCache.put(requestedPath, bytes);
+                }
+                return bytes;
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            byte[] bytes = task.getValue();
+            if (bytes != null && bytes.length > 0) {
+                Image image = new Image(new ByteArrayInputStream(bytes), 380, 260, true, true);
+                productImageView.setImage(image);
+            }
+        });
+
+        task.setOnFailed(e -> e.getSource().getException().printStackTrace());
+
+        Thread t = new Thread(task);
+        t.setDaemon(true);
+        t.start();
     }
 
     private boolean isBidEvent(BidUpdateResponse update) {

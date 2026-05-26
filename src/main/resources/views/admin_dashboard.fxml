@@ -43,10 +43,11 @@
                                         <TableView fx:id="itemTable" editable="true" VBox.vgrow="ALWAYS">
                                             <columns>
                                                 <TableColumn fx:id="colItemSelect" maxWidth="50.0" minWidth="50.0" prefWidth="50.0" resizable="false" text="✔" />
-                                                <TableColumn fx:id="colItemId" prefWidth="250.0" text="ID" />
-                                                <TableColumn fx:id="colItemName" prefWidth="600.0" text="Tên sản phẩm" />
+                                                <TableColumn fx:id="colItemId" prefWidth="200.0" text="ID" />
+                                                <TableColumn fx:id="colItemName" prefWidth="550.0" text="Tên sản phẩm" />
                                                 <TableColumn fx:id="colItemSeller" prefWidth="250.0" text="Người bán" />
-                                                <TableColumn fx:id="colItemView" prefWidth="220.0" minWidth="220.0" style="-fx-alignment: CENTER;" text="Chi tiết" />
+                                                <TableColumn fx:id="colItemStatus" prefWidth="130.0" minWidth="130.0" style="-fx-alignment: CENTER;" text="Trạng thái" />
+                                                <TableColumn fx:id="colItemView" prefWidth="100.0" minWidth="100.0" style="-fx-alignment: CENTER;" text="Chi tiết" />
                                             </columns>
                                             <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
                                         </TableView>

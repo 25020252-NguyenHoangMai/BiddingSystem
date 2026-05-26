@@ -12,6 +12,9 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.util.Duration;
+import com.auction.client.util.ImageCache;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import java.io.ByteArrayInputStream;
 
@@ -32,6 +35,7 @@ public class AuctionItemCellController {
     private Timeline countdownTimeline;
     private Runnable onViewDetail;
     private String currentImagePath;
+    private static final ExecutorService IMAGE_EXECUTOR = Executors.newFixedThreadPool(3);
 
     public void setData(ItemDTO item) {
         lblProductName.setText(safe(item.getName()));
@@ -127,24 +131,39 @@ public class AuctionItemCellController {
         }
     }
 
+    // THAY THẾ method loadProductImage cũ bằng:
     private void loadProductImage(String imagePath) {
         imgProduct.setImage(null);
 
         if (imagePath == null || imagePath.isBlank()) return;
 
-        String requestedImagePath = imagePath;
+        if (ImageCache.contains(imagePath)) {
+            byte[] cached = ImageCache.get(imagePath);
+            if (cached != null && cached.length > 0) {
+                imgProduct.setImage(new Image(new ByteArrayInputStream(cached), 150, 150, false, true));
+                return;
+            }
+        }
+
+        final String requestedImagePath = imagePath;
 
         Task<byte[]> task = new Task<>() {
             @Override
             protected byte[] call() throws Exception {
-                return ProductService.getInstance().getItemImage(requestedImagePath);
+                // Kiểm tra lại cache trong background (tránh race condition)
+                byte[] cached = ImageCache.get(requestedImagePath);
+                if (cached != null) return cached;
+
+                byte[] bytes = ProductService.getInstance().getItemImage(requestedImagePath);
+                if (bytes != null && bytes.length > 0) {
+                    ImageCache.put(requestedImagePath, bytes);
+                }
+                return bytes;
             }
         };
 
         task.setOnSucceeded(e -> {
-            if (!requestedImagePath.equals(currentImagePath)) {
-                return;
-            }
+            if (!requestedImagePath.equals(currentImagePath)) return; // cell đã bị recycle
             byte[] bytes = task.getValue();
             if (bytes != null && bytes.length > 0) {
                 imgProduct.setImage(new Image(new ByteArrayInputStream(bytes), 150, 150, false, true));
@@ -157,9 +176,8 @@ public class AuctionItemCellController {
             }
         });
 
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
+        // Dùng pool cố định thay vì tạo thread mới mỗi lần
+        IMAGE_EXECUTOR.submit(task);
     }
 
     private String safe(String v) {
