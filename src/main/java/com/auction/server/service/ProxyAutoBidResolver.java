@@ -106,10 +106,14 @@ public class ProxyAutoBidResolver {
         String newWinnerId = highest.getBidderId();
 
         double secondAutoMax = second == null ? 0.0 : second.getMaxBidAmount();
-        double competitorAmount = secondAutoMax;
+        double competitorAmount;
 
-        if (oldWinnerId != null && !oldWinnerId.isBlank() && !oldWinnerId.equals(newWinnerId)) {
-            competitorAmount = Math.max(competitorAmount, oldPrice);
+        if (oldWinnerId == null || oldWinnerId.isBlank()) {
+            competitorAmount = Math.max(secondAutoMax, oldPrice);
+        } else if (oldWinnerId.equals(newWinnerId)) {
+            competitorAmount = secondAutoMax;
+        } else {
+            competitorAmount = Math.max(secondAutoMax, oldPrice);
         }
 
         double minimumWinningPrice = bidIncrementService.getMinimumNextBid(competitorAmount);

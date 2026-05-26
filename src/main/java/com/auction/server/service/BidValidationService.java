@@ -39,6 +39,7 @@ public class BidValidationService {
         }
     }
 
+    //đk bắt buộc là bidder
     public Bidder requireBidder(String bidderId) {
         try {
             User user = userService.requireActiveUserById(bidderId);
