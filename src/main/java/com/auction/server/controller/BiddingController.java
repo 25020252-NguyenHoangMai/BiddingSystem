@@ -66,6 +66,7 @@ public class BiddingController {
                                                 request.getAmount());
 
             BidResult finalResult = result;
+            String responseMessage = result.getMessage();
 
             if (result.isSuccess()) {
                 broadcastBidUpdate(result);
@@ -79,6 +80,10 @@ public class BiddingController {
                         && autoBidResult.getCurrentPrice() > result.getCurrentPrice()) {
                     broadcastBidUpdate(autoBidResult);
                     finalResult = autoBidResult;
+
+                    if (!request.getBidderId().equals(autoBidResult.getCurrentWinnerId())) {
+                        responseMessage = "Your bid was placed, but you were immediately outbid by an auto bid.";
+                    }
                 }
 
                 dashboardRealtimeService.broadcastItemUpdatedBySessionId(
@@ -100,7 +105,7 @@ public class BiddingController {
 
             return new PlaceBidResponse(
                             result.isSuccess(),
-                            result.getMessage(),
+                            responseMessage,
                             finalResult.getSessionId(),
                             finalResult.getCurrentPrice(),
                             finalResult.getCurrentWinnerId(),
@@ -192,9 +197,14 @@ public class BiddingController {
                                                         request.getMaxAmount());
 
             BidResult finalResult = result;
+            String responseMessage = result.getMessage();
 
             if (result.isSuccess()) {
                 broadcastBidUpdate(result);
+
+                if (!request.getBidderId().equals(finalResult.getCurrentWinnerId())) {
+                    responseMessage = "Auto bid enabled, but you were immediately outbid by another auto bid.";
+                }
 
                 dashboardRealtimeService.broadcastItemUpdatedBySessionId(
                         finalResult.getSessionId(),
@@ -202,7 +212,7 @@ public class BiddingController {
                 );
             }
 
-            return new SetAutoBidResponse(result.isSuccess(), result.getMessage(), finalResult.getSessionId(),
+            return new SetAutoBidResponse(result.isSuccess(), responseMessage, finalResult.getSessionId(),
                         request.getBidderId(), request.getMaxAmount(), finalResult.getCurrentPrice(),
                         finalResult.getCurrentWinnerId(), finalResult.getCurrentWinnerUsername(),
                         finalResult.getStatus());
