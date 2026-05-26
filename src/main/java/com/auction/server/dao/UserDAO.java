@@ -304,12 +304,16 @@ public class UserDAO {
     }
 
     public void updateReservedBalance(Connection conn, String userId, double amount) {
-        String sql = "UPDATE Users SET reservedBalance = reservedBalance + ? WHERE id = ? AND reservedBalance + ? >= 0";
+        String sql = amount < 0
+                ? "UPDATE Users SET reservedBalance = reservedBalance + ? WHERE id = ?"
+                : "UPDATE Users SET reservedBalance = reservedBalance + ? WHERE id = ? AND reservedBalance + ? >= 0";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, amount);
             ps.setString(2, userId);
-            ps.setDouble(3, amount);
+            if (amount >= 0) {
+                ps.setDouble(3, amount);
+            }
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected == 0) {
