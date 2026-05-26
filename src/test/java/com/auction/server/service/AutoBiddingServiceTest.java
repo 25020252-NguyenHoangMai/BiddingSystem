@@ -21,7 +21,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -35,6 +34,9 @@ public class AutoBiddingServiceTest {
     @Mock private UserService userService;
     @Mock private AutoBidDAO autoBidDAO;
     @Mock private AntiSnipingService antiSnipingService;
+
+    @Mock private ProxyAutoBidResolver proxyAutoBidResolver;
+
     @Mock private Connection mockConn;
     @Mock private DatabaseManager mockDbManager;
 
@@ -44,8 +46,9 @@ public class AutoBiddingServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         MockitoAnnotations.openMocks(this);
+
         autoBiddingService = new AutoBiddingService(bidValidationService, sessionService, bidIncrementService,
-                bidTransactionExecutor, userService, autoBidDAO, antiSnipingService);
+                bidTransactionExecutor, userService, autoBidDAO, antiSnipingService, proxyAutoBidResolver);
 
         mockedStaticDbManager = mockStatic(DatabaseManager.class);
         mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
@@ -63,13 +66,17 @@ public class AutoBiddingServiceTest {
     class ConstructorTests {
         @Test
         void nullDependencies_ThrowsException() {
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(null, sessionService, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService));
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, null, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService));
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, null, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService));
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, null, userService, autoBidDAO, antiSnipingService));
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, null, autoBidDAO, antiSnipingService));
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, userService, null, antiSnipingService));
-            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, null));
+
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(null, sessionService, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService, proxyAutoBidResolver));
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, null, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService, proxyAutoBidResolver));
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, null, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService, proxyAutoBidResolver));
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, null, userService, autoBidDAO, antiSnipingService, proxyAutoBidResolver));
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, null, autoBidDAO, antiSnipingService, proxyAutoBidResolver));
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, userService, null, antiSnipingService, proxyAutoBidResolver));
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, null, proxyAutoBidResolver));
+
+
+            assertThrows(IllegalArgumentException.class, () -> new AutoBiddingService(bidValidationService, sessionService, bidIncrementService, bidTransactionExecutor, userService, autoBidDAO, antiSnipingService, null));
         }
     }
 
@@ -102,10 +109,10 @@ public class AutoBiddingServiceTest {
             assertFalse(result.isSuccess());
             assertEquals("Not biddable", result.getMessage());
         }
-        
+
         @Test
         void maxAmountLessThanMinimumNextBid_ReturnsFalse() {
-             AuctionSession session = new AuctionSession();
+            AuctionSession session = new AuctionSession();
             session.setId("S1");
             session.setCurrentPrice(50.0);
             when(sessionService.getSession("S1")).thenReturn(session);
@@ -128,10 +135,13 @@ public class AutoBiddingServiceTest {
             when(bidValidationService.isSessionCurrentlyBiddable(session)).thenReturn(true);
             when(bidIncrementService.getMinimumNextBid(50.0)).thenReturn(60.0);
 
-
             User mockUser = mock(User.class);
             when(mockUser.getUsername()).thenReturn("nguyen_cong_minh");
             when(userService.getUserById("B1")).thenReturn(mockUser);
+
+
+            BidExecutionResult mockResolveResult = new BidExecutionResult(true, "Auto bid enabled", "S1", 100.0, "B1", "RUNNING");
+            when(proxyAutoBidResolver.resolve("S1")).thenReturn(mockResolveResult);
 
             BidResult result = autoBiddingService.setAutoBid("S1", "B1", 100.0);
 
@@ -182,7 +192,6 @@ public class AutoBiddingServiceTest {
             session.setCurrentPrice(50.0);
             session.setCurrentWinnerId("B1");
 
-
             AuctionSession updatedSession = new AuctionSession();
             updatedSession.setId("S1");
             updatedSession.setCurrentPrice(60.0);
@@ -204,7 +213,6 @@ public class AutoBiddingServiceTest {
 
             BidExecutionResult executionResult = new BidExecutionResult(true, "Success", "S1", 60.0, "B2", "RUNNING");
             when(bidTransactionExecutor.execute("S1", "B2", 60.0)).thenReturn(executionResult);
-
 
             User mockWinnerB1 = mock(User.class);
             when(mockWinnerB1.getUsername()).thenReturn("nguyen_cong_minh");
