@@ -115,7 +115,7 @@ public class AutoBidDAO {
         SELECT *
         FROM AutoBid
         WHERE sessionId = ? AND isActive = 1
-        ORDER BY maxBidAmount DESC, createdAt ASC, id ASC
+        ORDER BY maxBidAmount DESC, updatedAt ASC, id ASC
     """;
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
