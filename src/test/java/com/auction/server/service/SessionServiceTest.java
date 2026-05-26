@@ -2,6 +2,7 @@ package com.auction.server.service;
 
 import com.auction.model.AuctionSession;
 import com.auction.model.Item;
+import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.DatabaseManager;
 import com.auction.server.dao.SessionDAO;
 import com.auction.server.dao.UserDAO;
@@ -38,6 +39,8 @@ public class SessionServiceTest {
     private Item mockItem;
     @Mock
     private UserDAO mockUserDAO;
+    @Mock
+    private BidDAO mockBidDAO;
 
     private MockedStatic<DatabaseManager> mockedStaticDbManager;
     private SessionService sessionService;
@@ -46,7 +49,7 @@ public class SessionServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         MockitoAnnotations.openMocks(this);
-        sessionService = new SessionService(sessionDAO, mockUserDAO);
+        sessionService = new SessionService(sessionDAO, mockUserDAO, mockBidDAO);
         now = LocalDateTime.now(); //lấy mốc time chuẩn cho mỗi test
 
         when(mockItem.getId()).thenReturn("ITEM_1");
@@ -71,13 +74,29 @@ public class SessionServiceTest {
 
         @Test
         void SessionDAONotNull_Success() {
-            assertDoesNotThrow(() -> new SessionService(sessionDAO, mockUserDAO));
+            assertDoesNotThrow(() -> new SessionService(sessionDAO, mockUserDAO, mockBidDAO));
         }
 
         @Test
         void SessionDAONull_ThrowIllegalArgumentException() {
-            IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new SessionService(null, mockUserDAO));
-            assertEquals("sessionDAO cannot be null", e.getMessage());
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> new SessionService(null, mockUserDAO, mockBidDAO));
+
+            assertTrue(e.getMessage().toLowerCase().contains("sessiondao cannot be null"));
+        }
+
+        @Test
+        void UserDAONull_ThrowIllegalArgumentException() {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> new SessionService(sessionDAO, null, mockBidDAO));
+            assertEquals("UserDAO cannot be null", e.getMessage());
+        }
+
+        @Test
+        void BidDAONull_ThrowIllegalArgumentException() {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> new SessionService(sessionDAO, mockUserDAO, null));
+            assertEquals("BidDAO cannot be null", e.getMessage());
         }
     }
 
@@ -294,12 +313,8 @@ public class SessionServiceTest {
             session.setStatus(SessionService.STATUS_RUNNING);
             session.setCurrentPrice(100.0);
 
-            DatabaseManager spyDbManager = spy(mockDbManager);
-            mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(spyDbManager);
-
-            when(spyDbManager.getConnection())
-                    .thenReturn(mockConn)
-                    .thenReturn(mockConn)
+            when(mockDbManager.getConnection())
+                    .thenReturn(mockConn, mockConn, mockConn)
                     .thenThrow(new SQLException("Deadlock / Connection lost"));
 
             when(sessionDAO.getSessionById(any(Connection.class), eq("S1"))).thenReturn(session);

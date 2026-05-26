@@ -7,6 +7,7 @@ import com.auction.model.Bidder;
 import com.auction.model.Item;
 import com.auction.model.User;
 import com.auction.model.Vehicle;
+import com.auction.server.dao.BidDAO;
 import com.auction.server.dao.ItemDAO;
 import com.auction.dto.ItemDTO;
 import com.auction.server.dao.SessionDAO;
@@ -31,6 +32,7 @@ public class ItemServiceTest {
     @Mock private SessionDAO sessionDAO;
     @Mock private Connection mockConn;
     @Mock private DatabaseManager mockDbManager;
+    @Mock private BidDAO bidDAO;
 
     private org.mockito.MockedStatic<DatabaseManager> mockedStaticDbManager;
     private ItemService itemService;
@@ -40,7 +42,7 @@ public class ItemServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         MockitoAnnotations.openMocks(this);
-        itemService = new ItemService(itemDAO, userService, sessionDAO);
+        itemService = new ItemService(itemDAO, userService, sessionDAO, bidDAO);
 
         validSeller = new Bidder("U1", "seller_minh", "pass", "Nguyen Cong Minh", "BIDDER", 0, 0);
         validSeller.setSellerEnabled(true);
@@ -66,22 +68,27 @@ public class ItemServiceTest {
     class ConstructorTests {
         @Test
         void CreateSuccessfully() {
-            assertDoesNotThrow(() -> new ItemService(itemDAO, userService, sessionDAO));
+            assertDoesNotThrow(() -> new ItemService(itemDAO, userService, sessionDAO, bidDAO));
         }
 
         @Test
         void ItemDAONull() {
-            assertThrows(IllegalArgumentException.class, () -> new ItemService(null, userService, sessionDAO));
+            assertThrows(IllegalArgumentException.class, () -> new ItemService(null, userService, sessionDAO, bidDAO));
         }
 
         @Test
         void UserServiceNull() {
-            assertThrows(IllegalArgumentException.class, () -> new ItemService(itemDAO, null, sessionDAO));
+            assertThrows(IllegalArgumentException.class, () -> new ItemService(itemDAO, null, sessionDAO, bidDAO));
         }
 
         @Test
         void SessionDAONull() {
-            assertThrows(IllegalArgumentException.class, () -> new ItemService(itemDAO, userService, null));
+            assertThrows(IllegalArgumentException.class, () -> new ItemService(itemDAO, userService, null, bidDAO));
+        }
+
+        @Test
+        void BidDAONull() {
+            assertThrows(IllegalArgumentException.class, () -> new ItemService(itemDAO, userService, sessionDAO, null));
         }
     }
 
@@ -135,8 +142,7 @@ public class ItemServiceTest {
         }
 
         @Test void success() throws SQLException {
-            when(userService.getUserById("U1")).thenReturn(validSeller);
-
+            when(userService.requireActiveUserById("U1")).thenReturn(validSeller);
             itemService.addItem("U1", validItem);
 
             assertNotNull(validItem.getId());
@@ -154,7 +160,7 @@ public class ItemServiceTest {
         }
 
         @Test void successAndChecksUppercase() throws SQLException {
-            when(userService.getUserById("U1")).thenReturn(validSeller);
+            when(userService.requireActiveUserById("U1")).thenReturn(validSeller);
             ItemDTO dto = new ItemDTO();
             dto.setName("Laptop");
             dto.setStartingPrice(500.0);
@@ -426,5 +432,122 @@ public class ItemServiceTest {
             verify(mockConn, times(1)).commit();
         }
 
+    }
+    @Nested
+    class UpdateItemBySellerTests {
+
+        @Test
+        void sellerIdNull_ThrowsException() {
+            assertThrows(AuctionException.class, () -> itemService.updateItemBySeller(null, new ItemDTO()));
+        }
+
+        @Test
+        void notOwnItem_ThrowsException() throws SQLException {
+            ItemDTO updateRequest = new ItemDTO();
+            updateRequest.setId("I1");
+
+            ItemDTO dbItem = new ItemDTO();
+            dbItem.setId("I1");
+            dbItem.setSellerId("OTHER_SELLER"); //kpk U1
+
+            when(userService.requireActiveUserById("U1")).thenReturn(validSeller);
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(dbItem);
+
+            AuctionException e = assertThrows(AuctionException.class, () -> itemService.updateItemBySeller("U1", updateRequest));
+            assertEquals("You can only update your own item.", e.getMessage());
+        }
+
+        @Test
+        void hasBids_ThrowsException() throws SQLException {
+            ItemDTO updateRequest = new ItemDTO();
+            updateRequest.setId("I1");
+
+            ItemDTO dbItem = new ItemDTO();
+            dbItem.setId("I1");
+            dbItem.setSellerId("U1");
+
+            AuctionSession runningSession = new AuctionSession();
+            runningSession.setId("SS-1");
+            runningSession.setStatus(SessionService.STATUS_RUNNING);
+            //có người đang thắng -> đã có bid
+            runningSession.setCurrentWinnerId("BIDDER_2");
+
+            when(userService.requireActiveUserById("U1")).thenReturn(validSeller);
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(dbItem);
+            when(sessionDAO.getSessionsByItemIdForUpdate(any(Connection.class), eq("I1"))).thenReturn(List.of(runningSession));
+
+            AuctionException e = assertThrows(AuctionException.class, () -> itemService.updateItemBySeller("U1", updateRequest));
+            assertEquals("Cannot update auction after it has bids.", e.getMessage());
+        }
+    }
+
+    @Nested
+    class AddItemWithSessionTests {
+
+        @Test
+        void success() throws SQLException {
+            ItemDTO newDto = new ItemDTO();
+            newDto.setName("Đồng hồ Rolex");
+            newDto.setStartingPrice(1000.0);
+            newDto.setItemType("OTHER");
+
+            newDto.setSellerId("U1");
+
+            java.time.LocalDateTime startTime = java.time.LocalDateTime.now().plusDays(1);
+            java.time.LocalDateTime endTime = startTime.plusDays(2);
+
+
+            when(userService.requireActiveUserById("U1")).thenReturn(validSeller);
+            when(userService.getUserById("U1")).thenReturn(validSeller);
+
+            when(sessionDAO.existsActiveSessionByItemId(any(Connection.class), anyString())).thenReturn(false);
+            when(sessionDAO.getSessionById(any(Connection.class), anyString())).thenReturn(null);
+            when(itemDAO.getItemById(any(Connection.class), anyString())).thenReturn(newDto);
+
+            ItemDTO result = itemService.addItemWithSession("U1", newDto, startTime, endTime);
+
+            assertNotNull(result);
+            assertEquals("U1", result.getSellerId());
+            verify(itemDAO, times(1)).insertItem(any(Connection.class), any(Item.class));
+            verify(sessionDAO, times(1)).insertSession(any(Connection.class), any(AuctionSession.class), any(Item.class));
+            verify(mockConn, times(1)).commit();
+        }
+    }
+
+    @Nested
+    class GetAuctionDetailDTOTests {
+
+        @Test
+        void success() throws SQLException {
+            AuctionSession session = new AuctionSession();
+            session.setId("SS-99");
+            session.setStatus(SessionService.STATUS_RUNNING);
+            session.setCurrentPrice(550.0);
+            session.setItem(validItem);
+            session.setCurrentWinnerId("WINNER_1");
+
+            ItemDTO dbItemDto = new ItemDTO();
+            dbItemDto.setId("I1");
+            dbItemDto.setSellerId("U1");
+
+            User mockSeller = mock(User.class);
+            when(mockSeller.getUsername()).thenReturn("nguyen_cong_minh");
+
+            User mockWinner = mock(User.class);
+            when(mockWinner.getUsername()).thenReturn("winner_pro");
+
+            when(sessionDAO.getSessionById(any(Connection.class), eq("SS-99"))).thenReturn(session);
+            when(itemDAO.getItemById(any(Connection.class), eq("I1"))).thenReturn(dbItemDto);
+            when(userService.getUserById("U1")).thenReturn(mockSeller);
+            when(userService.getUserById("WINNER_1")).thenReturn(mockWinner);
+
+            ItemDTO result = itemService.getAuctionDetailDTO("SS-99");
+
+            assertNotNull(result);
+            assertEquals("SS-99", result.getSessionId());
+            assertEquals(550.0, result.getCurrentPrice());
+            assertEquals("nguyen_cong_minh", result.getSellerUsername());
+            assertEquals("winner_pro", result.getCurrentWinnerUsername());
+        }
     }
 }
