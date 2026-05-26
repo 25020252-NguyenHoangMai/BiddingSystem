@@ -83,7 +83,8 @@ class BidValidationServiceTest {
         @Test
         void validBidder_ReturnsBidder() {
             Bidder mockBidder = mock(Bidder.class);
-            when(userService.getUserById("bidder1")).thenReturn(mockBidder);
+
+            when(userService.requireActiveUserById("bidder1")).thenReturn(mockBidder);
 
             Bidder result = validationService.requireBidder("bidder1");
             assertNotNull(result);
@@ -92,7 +93,8 @@ class BidValidationServiceTest {
         @Test
         void notABidder_ThrowsException() {
             User mockNormalUser = mock(User.class);
-            when(userService.getUserById("user1")).thenReturn(mockNormalUser);
+
+            when(userService.requireActiveUserById("user1")).thenReturn(mockNormalUser);
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> validationService.requireBidder("user1"));
@@ -101,7 +103,8 @@ class BidValidationServiceTest {
 
         @Test
         void userNotFound_ThrowsException() {
-            when(userService.getUserById("ghost")).thenThrow(new UserNotFoundException("Not found"));
+
+            when(userService.requireActiveUserById("ghost")).thenThrow(new UserNotFoundException("Not found"));
 
             IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> validationService.requireBidder("ghost"));

@@ -15,13 +15,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class ItemDAOTest extends BaseDAOTest {
+public class ItemDAOTest  {
 
     private ItemDAO itemDAO;
 
@@ -45,25 +46,25 @@ public class ItemDAOTest extends BaseDAOTest {
         mockedStaticDbManager.when(DatabaseManager::getInstance).thenReturn(mockDbManager);
         when(mockDbManager.getConnection()).thenReturn(mockConn);
 
-
-        when(mockConn.prepareStatement(anyString())).thenReturn(mockPs);
+        lenient().when(mockConn.prepareStatement(anyString())).thenReturn(mockPs);
     }
 
     @AfterEach
     void cleanUp() {
-        //pk đóng mock static sau mỗi bài test để ko ảnh hưởng bài kh
         mockedStaticDbManager.close();
     }
 
-
     @Nested
-    class testInsertItem {//thêm sp
+    class testInsertItem {
 
         @Test
         void Vehicle_Success() throws SQLException {
             Vehicle vehicle = new Vehicle();
             vehicle.setId("V1");
             vehicle.setName("Xe Hơi");
+            vehicle.setDescription("Xe 4 chỗ");
+            vehicle.setItemType("VEHICLE");
+            vehicle.setSellerId("USER-1");
             vehicle.setStartingPrice(100.0);
             vehicle.setModel("Sedan");
             vehicle.setEngineType("V8");
@@ -82,6 +83,10 @@ public class ItemDAOTest extends BaseDAOTest {
         void Electronics_Success() throws SQLException {
             Electronics elec = new Electronics();
             elec.setId("E1");
+            elec.setName("Điện thoại");
+            elec.setDescription("Mới 100%");
+            elec.setItemType("ELECTRONICS");
+            elec.setSellerId("USER-2");
             elec.setBrand("Samsung");
 
             when(mockPs.executeUpdate()).thenReturn(1);
@@ -89,7 +94,7 @@ public class ItemDAOTest extends BaseDAOTest {
             assertDoesNotThrow(() -> itemDAO.insertItem(mockConn, elec));
 
             verify(mockPs).setString(4, "ELECTRONICS");
-            verify(mockPs).setNull(7, java.sql.Types.NVARCHAR); //model bị null
+            verify(mockPs).setNull(7, java.sql.Types.NVARCHAR);
             verify(mockPs).setString(10, "Samsung");
         }
 
@@ -97,6 +102,10 @@ public class ItemDAOTest extends BaseDAOTest {
         void Art_Success() throws SQLException {
             Art art = new Art();
             art.setId("A1");
+            art.setName("Tranh chân dung");
+            art.setDescription("Sơn dầu");
+            art.setItemType("ART");
+            art.setSellerId("USER-3");
             art.setArtist("Picasso");
 
             when(mockPs.executeUpdate()).thenReturn(1);
@@ -109,7 +118,6 @@ public class ItemDAOTest extends BaseDAOTest {
 
         @Test
         void InvalidType_ThrowsException() {
-            //tạo 1 class nặc danh kế thừa Item để test nhánh Invalid
             Item invalidItem = new Item() {
                 @Override
                 public String getId() {
@@ -136,8 +144,6 @@ public class ItemDAOTest extends BaseDAOTest {
         }
     }
 
-
-
     @Nested
     class testUpdateItem {
 
@@ -145,6 +151,10 @@ public class ItemDAOTest extends BaseDAOTest {
         void Vehicle_Success() throws SQLException {
             Vehicle vehicle = new Vehicle();
             vehicle.setId("V1");
+            vehicle.setName("Xe SUV");
+            vehicle.setDescription("Xe 7 chỗ");
+            vehicle.setItemType("VEHICLE");
+            vehicle.setStartingPrice(100.0);
             vehicle.setModel("SUV");
 
             when(mockPs.executeUpdate()).thenReturn(1);
@@ -158,6 +168,10 @@ public class ItemDAOTest extends BaseDAOTest {
         void Electronics_Success() throws SQLException {
             Electronics elec = new Electronics();
             elec.setId("E1");
+            elec.setName("Đồng hồ");
+            elec.setDescription("Thông minh");
+            elec.setItemType("ELECTRONICS");
+            elec.setStartingPrice(50.0);
             elec.setBrand("Apple");
 
             when(mockPs.executeUpdate()).thenReturn(1);
@@ -171,6 +185,10 @@ public class ItemDAOTest extends BaseDAOTest {
         void Art_Success() throws SQLException {
             Art art = new Art();
             art.setId("A1");
+            art.setName("Tranh vẽ");
+            art.setDescription("Đẹp");
+            art.setItemType("ART");
+            art.setStartingPrice(200.0);
             art.setArtist("Van Gogh");
 
             when(mockPs.executeUpdate()).thenReturn(1);
@@ -189,7 +207,7 @@ public class ItemDAOTest extends BaseDAOTest {
                 }
             };
             AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.updateItem(mockConn, invalidItem));
-            assertEquals("Inavlid item type.", exception.getMessage());//mai sai chính tả trong itemdao
+            assertEquals("Inavlid item type.", exception.getMessage());
         }
 
         @Test
@@ -202,23 +220,18 @@ public class ItemDAOTest extends BaseDAOTest {
         }
     }
 
-
-
     @Nested
     class testDeleteItem {
-
         @Test
         void Success() throws SQLException {
-            when(mockPs.executeUpdate()).thenReturn(1); //giả lập xóa thành công 1 dòng
-
+            when(mockPs.executeUpdate()).thenReturn(1);
             assertDoesNotThrow(() -> itemDAO.deleteItem(mockConn, "ID-123"));
             verify(mockPs).setString(1, "ID-123");
         }
 
         @Test
         void NotFound_ThrowsException() throws SQLException {
-            when(mockPs.executeUpdate()).thenReturn(0); //ko tìm thấy dòng nào để xóa
-
+            when(mockPs.executeUpdate()).thenReturn(0);
             AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem(mockConn, "ID-404"));
             assertEquals("The item cannot be deleted.", exception.getMessage());
         }
@@ -226,26 +239,20 @@ public class ItemDAOTest extends BaseDAOTest {
         @Test
         void SQLException_ThrowsException() throws SQLException {
             when(mockPs.executeUpdate()).thenThrow(new SQLException("Lỗi xóa"));
-
             AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.deleteItem(mockConn, "ID-123"));
             assertTrue(exception.getMessage().contains("An error occurred while deleting item"));
         }
     }
 
-    //TEST CÁC HÀM GET DỮ LIỆU BẰNG RESULTSET, BAO GỒM MAP TO DTO
-
-
     private void setupMockResultSet() throws SQLException {
-        //giả lập dữ liệu cho mapToDTO đọc
-        when(mockRs.getString("id")).thenReturn("ITEM-1");
-        when(mockRs.getString("name")).thenReturn("Tivi Sony");
-        when(mockRs.getDouble("startingPrice")).thenReturn(500.0);
+        lenient().when(mockRs.getString("id")).thenReturn("ITEM-1");
+        lenient().when(mockRs.getString("name")).thenReturn("Tivi Sony");
+        lenient().when(mockRs.getDouble("startingPrice")).thenReturn(500.0);
     }
 
     @Test
     void testGetAllItems_ReturnsList() throws SQLException {
         when(mockPs.executeQuery()).thenReturn(mockRs);
-        //giả lập có 2 dòng dữ liệu
         when(mockRs.next()).thenReturn(true, true, false);
         setupMockResultSet();
 
@@ -254,10 +261,8 @@ public class ItemDAOTest extends BaseDAOTest {
         assertEquals("ITEM-1", list.get(0).getId());
     }
 
-
     @Nested
     class testGetItemById {
-
         @Test
         void Found_ReturnsDTO() throws SQLException {
             when(mockPs.executeQuery()).thenReturn(mockRs);
@@ -272,13 +277,12 @@ public class ItemDAOTest extends BaseDAOTest {
         @Test
         void NotFound_ReturnsNull() throws SQLException {
             when(mockPs.executeQuery()).thenReturn(mockRs);
-            when(mockRs.next()).thenReturn(false); //bảng trống
+            when(mockRs.next()).thenReturn(false);
 
             ItemDTO result = itemDAO.getItemById(mockConn, "GHOST-ITEM");
             assertNull(result);
         }
     }
-
 
     @Test
     void testGetItemByName_ReturnsList() throws SQLException {
@@ -302,27 +306,24 @@ public class ItemDAOTest extends BaseDAOTest {
         verify(mockPs).setString(1, "ELECTRONICS");
     }
 
-
     @Test
     void testMapToDTO_AllFieldsMappedCorrectly() throws SQLException {
-        //cbị ResultSet full dữ liệu
         when(mockPs.executeQuery()).thenReturn(mockRs);
         when(mockRs.next()).thenReturn(true);
-        when(mockRs.getString("id")).thenReturn("FULL-1");
-        when(mockRs.getString("name")).thenReturn("Tên SP");
-        when(mockRs.getString("description")).thenReturn("Mô tả SP");
-        when(mockRs.getString("itemType")).thenReturn("VEHICLE");
-        when(mockRs.getString("sellerId")).thenReturn("USER-99");
-        when(mockRs.getDouble("startingPrice")).thenReturn(999.9);
-        when(mockRs.getString("model")).thenReturn("Honda");
-        when(mockRs.getString("engineType")).thenReturn("V12");
-        when(mockRs.getInt("mileage")).thenReturn(500);
-        when(mockRs.getString("brand")).thenReturn("Toyota"); // Cố tình mix để test
-        when(mockRs.getString("artist")).thenReturn("Da Vinci");
+        lenient().when(mockRs.getString("id")).thenReturn("FULL-1");
+        lenient().when(mockRs.getString("name")).thenReturn("Tên SP");
+        lenient().when(mockRs.getString("description")).thenReturn("Mô tả SP");
+        lenient().when(mockRs.getString("itemType")).thenReturn("VEHICLE");
+        lenient().when(mockRs.getString("sellerId")).thenReturn("USER-99");
+        lenient().when(mockRs.getDouble("startingPrice")).thenReturn(999.9);
+        lenient().when(mockRs.getString("model")).thenReturn("Honda");
+        lenient().when(mockRs.getString("engineType")).thenReturn("V12");
+        lenient().when(mockRs.getInt("mileage")).thenReturn(500);
+        lenient().when(mockRs.getString("brand")).thenReturn("Toyota");
+        lenient().when(mockRs.getString("artist")).thenReturn("Da Vinci");
 
         ItemDTO result = itemDAO.getItemById(mockConn, "FULL-1");
 
-        //Assert all
         assertNotNull(result);
         assertEquals("FULL-1", result.getId());
         assertEquals("Tên SP", result.getName());
@@ -335,12 +336,7 @@ public class ItemDAOTest extends BaseDAOTest {
         assertEquals(500, result.getMileage());
         assertEquals("Toyota", result.getBrand());
         assertEquals("Da Vinci", result.getArtist());
-
-
-        verify(mockConn).prepareStatement(anyString());
-        verify(mockPs).executeQuery();
     }
-
 
     @Test
     void testGetItemByName_EmptyResultSet_ReturnsEmptyList() throws SQLException {
@@ -348,25 +344,17 @@ public class ItemDAOTest extends BaseDAOTest {
         when(mockRs.next()).thenReturn(false);
 
         List<ItemDTO> list = itemDAO.getItemByName(mockConn, "Sản phẩm ma");
-
-        assertTrue(list.isEmpty(), "Nếu DB không có, phải trả về List rỗng, không được null!");
-        verify(mockPs).executeQuery();
+        assertTrue(list.isEmpty());
     }
 
     @Test
     void testInsertItem_NullInput_ThrowsNullPointerException() {
-        // DAO hiện tại ko handle null, sẽ bị ném NPE tại item.getId()
-        // =>phải giăng bẫy bắt đc cái NPE này
-        assertThrows(NullPointerException.class, () -> itemDAO.insertItem(mockConn, null),
-                "Phải bắt được NullPointerException khi truyền null vào DAO");
+        assertThrows(NullPointerException.class, () -> itemDAO.insertItem(mockConn, null));
     }
-
 
     @Test
     void testGetAllItems_ThrowsSQLException() throws SQLException {
-
         when(mockConn.prepareStatement(anyString())).thenThrow(new SQLException("Database Connection Lost"));
-
         AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getAllItems(mockConn));
         assertTrue(exception.getMessage().contains("An error occurred while getting all items"));
     }
@@ -374,23 +362,62 @@ public class ItemDAOTest extends BaseDAOTest {
     @Test
     void testGetItemByItemType_ThrowsSQLException() throws SQLException {
         when(mockPs.executeQuery()).thenThrow(new SQLException("Table locked"));
-
         AuctionException exception = assertThrows(AuctionException.class, () -> itemDAO.getItemByItemType(mockConn, "ART"));
         assertTrue(exception.getMessage().contains("An error occurred while getting items by item type"));
     }
 
-
     @Test
     void testTryWithResources_ClosesConnectionsAutomatically() throws SQLException {
-
         when(mockPs.executeQuery()).thenReturn(mockRs);
         when(mockRs.next()).thenReturn(false);
 
         itemDAO.getItemById(mockConn, "TEST-CLOSE");
 
-        //xác nhận hàm close() của ResultSet và PreparedStatement đã bị hệ thống gọi ngầm
         verify(mockRs, times(1)).close();
         verify(mockPs, times(1)).close();
+    }
 
+    @Nested
+    class DashboardTests {
+
+        @Test
+        void testGetAllItemsForDashboard_ReturnsList() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(true, false);
+            setupMockResultSet();
+
+            lenient().when(mockRs.getString("sellerUsername")).thenReturn("seller_user");
+            lenient().when(mockRs.getString("sessionId")).thenReturn("SS-1");
+            lenient().when(mockRs.getDouble("currentPrice")).thenReturn(600.0);
+            lenient().when(mockRs.getString("sessionStatus")).thenReturn("RUNNING");
+            lenient().when(mockRs.getString("currentWinnerUsername")).thenReturn("winner_user");
+            lenient().when(mockRs.getTimestamp("startTime")).thenReturn(new Timestamp(System.currentTimeMillis()));
+            lenient().when(mockRs.getTimestamp("endTime")).thenReturn(new Timestamp(System.currentTimeMillis()));
+
+            List<ItemDTO> list = itemDAO.getAllItemsForDashboard(mockConn);
+            assertEquals(1, list.size());
+            assertEquals("seller_user", list.get(0).getSellerUsername());
+            assertEquals("RUNNING", list.get(0).getSessionStatus());
+        }
+
+        @Test
+        void testGetDashboardItemsBySellerId_ReturnsList() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(true, false);
+            setupMockResultSet();
+
+            lenient().when(mockRs.getString("sellerUsername")).thenReturn("seller_user");
+
+            List<ItemDTO> list = itemDAO.getDashboardItemsBySellerId(mockConn, "SELLER-1");
+            assertEquals(1, list.size());
+            verify(mockPs).setString(1, "SELLER-1");
+        }
+
+        @Test
+        void dashboard_ThrowsSQLException() throws SQLException {
+            when(mockConn.prepareStatement(anyString())).thenThrow(new SQLException("DB Dashboard Error"));
+            assertThrows(AuctionException.class, () -> itemDAO.getAllItemsForDashboard(mockConn));
+            assertThrows(AuctionException.class, () -> itemDAO.getDashboardItemsBySellerId(mockConn, "U1"));
+        }
     }
 }

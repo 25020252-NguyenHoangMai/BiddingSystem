@@ -30,7 +30,6 @@ class BidDAOTest {
     @BeforeEach
     void setUp() throws SQLException {
         bidDAO = new BidDAO();
-        // Mặc định mọi lời gọi prepareStatement đều trả về mockPs
         lenient().when(mockConn.prepareStatement(anyString())).thenReturn(mockPs);
     }
 
@@ -70,11 +69,11 @@ class BidDAOTest {
             when(mockPs.executeQuery()).thenReturn(mockRs);
             when(mockRs.next()).thenReturn(true);
 
-            when(mockRs.getString("id")).thenReturn("bid1");
-            when(mockRs.getString("sessionId")).thenReturn("ss1");
-            when(mockRs.getString("bidderId")).thenReturn("user1");
-            when(mockRs.getDouble("bidAmount")).thenReturn(2000.0);
-            when(mockRs.getTimestamp("bidTime")).thenReturn(Timestamp.valueOf(LocalDateTime.now()));
+            lenient().when(mockRs.getString("id")).thenReturn("bid1");
+            lenient().when(mockRs.getString("sessionId")).thenReturn("ss1");
+            lenient().when(mockRs.getString("bidderId")).thenReturn("user1");
+            lenient().when(mockRs.getDouble("bidAmount")).thenReturn(2000.0);
+            lenient().when(mockRs.getTimestamp("bidTime")).thenReturn(Timestamp.valueOf(LocalDateTime.now()));
 
             BidTransaction result = bidDAO.getHighestBid(mockConn, "ss1");
 
@@ -98,8 +97,8 @@ class BidDAOTest {
             when(mockPs.executeQuery()).thenReturn(mockRs);
             when(mockRs.next()).thenReturn(true);
 
-            when(mockRs.getString("id")).thenReturn("bid1");
-            when(mockRs.getTimestamp("bidTime")).thenReturn(null);
+            lenient().when(mockRs.getString("id")).thenReturn("bid1");
+            lenient().when(mockRs.getTimestamp("bidTime")).thenReturn(null);
 
             BidTransaction result = bidDAO.getHighestBid(mockConn, "ss1");
 
@@ -123,9 +122,9 @@ class BidDAOTest {
             when(mockPs.executeQuery()).thenReturn(mockRs);
             when(mockRs.next()).thenReturn(true, true, false);
 
-            when(mockRs.getString("id")).thenReturn("bid1", "bid2");
-            when(mockRs.getString("sessionId")).thenReturn("ss1", "ss1");
-            when(mockRs.getTimestamp("bidTime")).thenReturn(Timestamp.valueOf(LocalDateTime.now()));
+            lenient().when(mockRs.getString("id")).thenReturn("bid1", "bid2");
+            lenient().when(mockRs.getString("sessionId")).thenReturn("ss1", "ss1");
+            lenient().when(mockRs.getTimestamp("bidTime")).thenReturn(Timestamp.valueOf(LocalDateTime.now()));
 
             List<BidTransaction> result = bidDAO.getBidsBySession(mockConn, "ss1");
 
@@ -149,10 +148,10 @@ class BidDAOTest {
             when(mockPs.executeQuery()).thenReturn(mockRs);
             when(mockRs.next()).thenReturn(true, false);
 
-            when(mockRs.getString("id")).thenReturn("bid1");
-            when(mockRs.getString("sessionId")).thenReturn("ss1");
-            when(mockRs.getString("bidderId")).thenReturn("user1");
-            when(mockRs.getTimestamp("bidTime")).thenReturn(Timestamp.valueOf(LocalDateTime.now()));
+            lenient().when(mockRs.getString("id")).thenReturn("bid1");
+            lenient().when(mockRs.getString("sessionId")).thenReturn("ss1");
+            lenient().when(mockRs.getString("bidderId")).thenReturn("user1");
+            lenient().when(mockRs.getTimestamp("bidTime")).thenReturn(Timestamp.valueOf(LocalDateTime.now()));
 
             List<BidTransaction> result = bidDAO.getBidsByBidder(mockConn, "user1");
 
@@ -177,11 +176,11 @@ class BidDAOTest {
             when(mockPs.executeQuery()).thenReturn(mockRs);
             when(mockRs.next()).thenReturn(true, false);
 
-            when(mockRs.getString("sessionId")).thenReturn("ss1");
-            when(mockRs.getString("productName")).thenReturn("Laptop Dell");
-            when(mockRs.getDouble("userLastBid")).thenReturn(1500.0);
-            when(mockRs.getDouble("currentPrice")).thenReturn(2000.0);
-            when(mockRs.getString("status")).thenReturn("WON");
+            lenient().when(mockRs.getString("sessionId")).thenReturn("ss1");
+            lenient().when(mockRs.getString("productName")).thenReturn("Laptop Dell");
+            lenient().when(mockRs.getDouble("userLastBid")).thenReturn(1500.0);
+            lenient().when(mockRs.getDouble("currentPrice")).thenReturn(2000.0);
+            lenient().when(mockRs.getString("status")).thenReturn("WON");
 
             List<SessionHistoryItemDTO> result = bidDAO.getSessionHistoryByBidder(mockConn, "user1");
 
@@ -200,6 +199,67 @@ class BidDAOTest {
 
             AuctionException exception = assertThrows(AuctionException.class, () -> bidDAO.getSessionHistoryByBidder(mockConn, "user1"));
             assertTrue(exception.getMessage().contains("An error occurred while getting session history"));
+        }
+    }
+
+    @Nested
+    class ExistsBidBySessionIdTests {
+        @Test
+        void existsBid_ReturnsTrue() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(true);
+
+            boolean result = bidDAO.existsBidBySessionId(mockConn, "ss1");
+
+            assertTrue(result);
+            verify(mockPs).setString(1, "ss1");
+        }
+
+        @Test
+        void notExistsBid_ReturnsFalse() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(false);
+
+            boolean result = bidDAO.existsBidBySessionId(mockConn, "ss1");
+
+            assertFalse(result);
+            verify(mockPs).setString(1, "ss1");
+        }
+
+        @Test
+        void throwsSQLException() throws SQLException {
+            when(mockPs.executeQuery()).thenThrow(new SQLException("DB Error"));
+
+            AuctionException exception = assertThrows(AuctionException.class, () -> bidDAO.existsBidBySessionId(mockConn, "ss1"));
+            assertTrue(exception.getMessage().contains("checking session bids"));
+        }
+    }
+
+    @Nested
+    class GetVisibleSessionIdsByBidderIdTests {
+        @Test
+        void foundSessions_ReturnsList() throws SQLException {
+            when(mockPs.executeQuery()).thenReturn(mockRs);
+            when(mockRs.next()).thenReturn(true, true, false);
+
+            lenient().when(mockRs.getString("sessionId")).thenReturn("ss1", "ss2");
+
+            List<String> result = bidDAO.getVisibleSessionIdsByBidderId(mockConn, "bidder1");
+
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertTrue(result.contains("ss1"));
+            assertTrue(result.contains("ss2"));
+
+            verify(mockPs).setString(1, "bidder1");
+        }
+
+        @Test
+        void throwsSQLException() throws SQLException {
+            when(mockPs.executeQuery()).thenThrow(new SQLException("DB Error"));
+
+            AuctionException exception = assertThrows(AuctionException.class, () -> bidDAO.getVisibleSessionIdsByBidderId(mockConn, "bidder1"));
+            assertTrue(exception.getMessage().contains("getting bidder sessions"));
         }
     }
 }

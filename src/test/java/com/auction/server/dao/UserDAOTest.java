@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class UserDAOTest extends BaseDAOTest {
+public class UserDAOTest  {
 
     private UserDAO userDAO;
 
