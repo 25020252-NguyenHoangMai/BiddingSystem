@@ -35,6 +35,7 @@ public class AdminController {
     private final ProductService productService = ProductService.getInstance();
 
     @FXML private TextField txtSearchItem;
+    @FXML private Button btnReloadProducts;
     @FXML private Button btnDeleteItem;
 
     // --- PHẦN QUẢN LÝ NGƯỜI DÙNG ---
@@ -449,6 +450,42 @@ public class AdminController {
             alert.setContentText("Không thể mở auction detail");
             alert.showAndWait();
         }
+    }
+
+    @FXML
+    private void handleReloadProducts() {
+        btnReloadProducts.setDisable(true);
+        btnReloadProducts.setText("Đang tải...");
+
+        Task<LoadResult> task = new Task<>() {
+            @Override
+            protected LoadResult call() throws Exception {
+                List<ItemDTO> products = productService.getAllProducts();
+                List<UserSessionDTO> users = userService.getAllUsers();
+                return new LoadResult(products, users);
+            }
+        };
+
+        task.setOnSucceeded(e -> Platform.runLater(() -> {
+            LoadResult r = task.getValue();
+            masterDataItems.setAll(r.products());
+            masterDataUsers.setAll(r.users());
+            btnReloadProducts.setDisable(false);
+            btnReloadProducts.setText("Làm mới");
+        }));
+
+        task.setOnFailed(e -> Platform.runLater(() -> {
+            btnReloadProducts.setDisable(false);
+            btnReloadProducts.setText("Làm mới");
+
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Lỗi");
+            alert.setHeaderText(null);
+            alert.setContentText("Lỗi khi tải lại: " + task.getException().getMessage());
+            alert.show();
+        }));
+
+        runTask(task);
     }
 }
 

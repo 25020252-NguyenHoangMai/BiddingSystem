@@ -36,6 +36,8 @@
                                             <children>
                                                 <Label style="-fx-font-weight: bold;" text="Tìm kiếm SP:" />
                                                 <TextField fx:id="txtSearchItem" prefWidth="300.0" promptText="Nhập tên sản phẩm..." style="-fx-background-radius: 15;" />
+                                                <Button fx:id="btnReloadProducts" onAction="#handleReloadProducts" style="-fx-background-color: #2980b9; -fx-text-fill: white;-fx-font-weight: bold; -fx-padding: 8 18 8 18;-fx-cursor: hand; -fx-background-radius: 6;"
+                                                        text="🔄 Tải lại" />
                                                 <Region HBox.hgrow="ALWAYS" />
                                                 <Button fx:id="btnDeleteItem" onAction="#handleDeleteItem" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 18 8 18; -fx-cursor: hand; " text="XÓA MỤC ĐÃ TÍCH" />
                                             </children>

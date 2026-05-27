@@ -229,7 +229,13 @@ public class ItemDAO {
             seller.username AS sellerUsername,
             s.id AS sessionId,
             s.currentPrice,
-            s.status AS sessionStatus,
+            CASE
+                WHEN s.status IN ('FINISHED', 'PAID', 'CANCELED') THEN s.status
+                WHEN GETDATE() < s.startTime THEN 'OPEN'
+                WHEN GETDATE() >= s.startTime AND GETDATE() < s.endTime THEN 'RUNNING'
+                WHEN GETDATE() >= s.endTime THEN 'FINISHED'
+                ELSE s.status
+            END AS sessionStatus,
             s.startTime,
             s.endTime,
             winner.username AS currentWinnerUsername
