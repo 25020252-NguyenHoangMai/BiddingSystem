@@ -534,10 +534,7 @@ public class MainController implements ClientSocket.DashboardUpdateListener {
                     if (!"OPEN".equalsIgnoreCase(status)) return false;
                 }
                 if ("RUNNING".equalsIgnoreCase(activeStatusFilter)) {
-                    boolean running = "OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
-                    if (!running) {
-                        return false;
-                    }
+                    if (!"RUNNING".equalsIgnoreCase(status)) return false;
                 }
                 if ("CLOSED".equalsIgnoreCase(activeStatusFilter)) {
                     boolean running = "OPEN".equalsIgnoreCase(status) || "RUNNING".equalsIgnoreCase(status);
