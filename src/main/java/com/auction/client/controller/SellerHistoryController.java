@@ -147,7 +147,7 @@ public class SellerHistoryController {
                 else {
                     String expectedStatus = switch (statusFilter) {
                         case CANCELED_SESSIONS -> "CANCELED";
-                        case UPCOMING_SESSIONS -> "UPCOMING";
+                        case UPCOMING_SESSIONS -> "OPEN";
                         case RUNNING_SESSIONS -> "RUNNING";
                         default -> "";
                     };
