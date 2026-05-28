@@ -7,11 +7,11 @@ public class AuctionSession extends Entity {
     private static final long serialVersionUID = 1L;
 
     private Item item;
-    private double currentPrice;
-    private String currentWinnerId;
+    private volatile double currentPrice;
+    private volatile String currentWinnerId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private String status; // "OPEN", "RUNNING", "FINISHED", "CANCELLED"
+    private volatile String status; // "OPEN", "RUNNING", "FINISHED", "CANCELLED"
 
     public AuctionSession() { super(); }
 
