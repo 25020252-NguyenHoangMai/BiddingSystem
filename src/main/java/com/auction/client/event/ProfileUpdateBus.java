@@ -1,12 +1,12 @@
 package com.auction.client.event;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 public class ProfileUpdateBus {
 
-    private static final List<Consumer<String>> listeners = new ArrayList<>();
+    private static final List<Consumer<String>> listeners = new CopyOnWriteArrayList<>();
 
     public static void subscribe(Consumer<String> listener) {
         listeners.add(listener);
