@@ -136,12 +136,6 @@ public class SessionItemCellController {
             );
         });
 
-//        task.setOnFailed(event -> {
-//            Throwable ex = task.getException();
-//            if (ex != null) {
-//                ex.printStackTrace();
-//            }
-//        });
         task.setOnFailed(e -> {
             if (requestedImagePath.equals(currentImagePath)) {
                 imgProduct.setImage(null);
